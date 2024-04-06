@@ -6,7 +6,7 @@ def pods
 	pod "PromiseKit", "~> 6"
 	pod 'SAMKeychain', "~> 1.5.0"
 	pod 'SwiftyJSON', "~> 5"
-	pod 'RealmSwift', "~> 3"
+	pod 'RealmSwift', "~> 10"
 	pod "hpple", :git => 'https://github.com/topfunky/hpple.git'
 end
 
