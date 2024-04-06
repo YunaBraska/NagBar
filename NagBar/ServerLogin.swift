@@ -120,7 +120,7 @@ enum LoginType : Int {
         serverLoginItem.host = monitoringItem.host
         serverLoginItem.loginType = loginType.rawValue
         try! realm.write {
-            realm.add(serverLoginItem, update: true)
+            realm.add(serverLoginItem, update: .modified)
         }
     }
     
@@ -129,7 +129,7 @@ enum LoginType : Int {
         serverLoginItem.host = monitoringItem.host
         serverLoginItem.username = username
         try! realm.write {
-            realm.add(serverLoginItem, update: true)
+            realm.add(serverLoginItem, update: .modified)
         }
     }
 }

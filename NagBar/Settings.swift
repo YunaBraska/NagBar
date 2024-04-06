@@ -60,7 +60,7 @@ class Settings {
         setting.key = forKey
         setting.value = resultMap[value] ?? "0"
         try! realm.write {
-            realm.add(setting, update: true)
+            realm.add(setting, update: .modified)
         }
     }
     
@@ -69,7 +69,7 @@ class Settings {
         setting.key = forKey
         setting.value = String(value)
         try! realm.write {
-            realm.add(setting, update: true)
+            realm.add(setting, update: .modified)
         }
     }
     
@@ -78,7 +78,7 @@ class Settings {
         setting.key = forKey
         setting.value = value
         try! realm.write {
-            realm.add(setting, update: true)
+            realm.add(setting, update: .modified)
         }
     }
 }
