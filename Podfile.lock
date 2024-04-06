@@ -1,31 +1,31 @@
 PODS:
-  - Alamofire (4.8.2)
+  - Alamofire (4.9.1)
   - hpple (0.3.0)
-  - PromiseKit (6.8.4):
-    - PromiseKit/CorePromise (= 6.8.4)
-    - PromiseKit/Foundation (= 6.8.4)
-    - PromiseKit/UIKit (= 6.8.4)
-  - PromiseKit/CorePromise (6.8.4)
-  - PromiseKit/Foundation (6.8.4):
+  - PromiseKit (6.18.1):
+    - PromiseKit/CorePromise (= 6.18.1)
+    - PromiseKit/Foundation (= 6.18.1)
+    - PromiseKit/UIKit (= 6.18.1)
+  - PromiseKit/CorePromise (6.18.1)
+  - PromiseKit/Foundation (6.18.1):
     - PromiseKit/CorePromise
-  - Realm (3.15.0):
-    - Realm/Headers (= 3.15.0)
-  - Realm/Headers (3.15.0)
-  - RealmSwift (3.15.0):
-    - Realm (= 3.15.0)
+  - Realm (10.49.1):
+    - Realm/Headers (= 10.49.1)
+  - Realm/Headers (10.49.1)
+  - RealmSwift (10.49.1):
+    - Realm (= 10.49.1)
   - SAMKeychain (1.5.3)
-  - SwiftyJSON (5.0.0)
+  - SwiftyJSON (5.0.1)
 
 DEPENDENCIES:
   - Alamofire (~> 4)
   - hpple (from `https://github.com/topfunky/hpple.git`)
   - PromiseKit (~> 6)
-  - RealmSwift (~> 3)
+  - RealmSwift (~> 10)
   - SAMKeychain (~> 1.5.0)
   - SwiftyJSON (~> 5)
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  trunk:
     - Alamofire
     - PromiseKit
     - Realm
@@ -43,14 +43,14 @@ CHECKOUT OPTIONS:
     :git: https://github.com/topfunky/hpple.git
 
 SPEC CHECKSUMS:
-  Alamofire: ae5c501addb7afdbb13687d7f2f722c78734c2d3
+  Alamofire: 85e8a02c69d6020a0d734f6054870d7ecb75cf18
   hpple: 37ac0a804d0f8a7f488712b5ff5f06129e1c9e31
-  PromiseKit: 51794a832647e7b819336dc2279039ce9f1cc49b
-  Realm: 9b834e1be6062f544805252c812348872dc5d4ed
-  RealmSwift: 8a41886f8ab6efef9eb8df97de2f2bb911561a79
+  PromiseKit: 49d70c53d5d20e346beaea4b276b5dd2ab446bb4
+  Realm: 1fab4a224fd7a294eca142a0efe8b54546290fbf
+  RealmSwift: 7c3a9c001161eb01b96b171ad965a9c498b962b0
   SAMKeychain: 483e1c9f32984d50ca961e26818a534283b4cd5c
-  SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
+  SwiftyJSON: 2f33a42c6fbc52764d96f13368585094bfd8aa5e
 
-PODFILE CHECKSUM: a6326323d056a753fed1a4c1a5f77b515d5edf10
+PODFILE CHECKSUM: 399d0343cd4f004006815a850bcd19963929db9e
 
-COCOAPODS: 1.6.1
+COCOAPODS: 1.15.2
