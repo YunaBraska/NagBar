@@ -15,6 +15,11 @@ class StatusItemView: NSStatusBarButton {
     
 //    var title: String?
     var statusItem: NSStatusItem?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        StatusItemAccessibility.applyMainButtonMetadata(to: self)
+    }
     
     override func draw(_ dirtyRect: NSRect) {
         let origin = NSMakePoint(StatusItemViewPaddingWidth, StatusItemViewPaddingHeight);
@@ -45,31 +50,46 @@ class StatusItemView: NSStatusBarButton {
     }
     
     override func rightMouseDown(with theEvent: NSEvent) {
-        
-        let menu = NSMenu(title: "")
-        
-        menu.addItem(withTitle: "Refresh", action: #selector(StatusItemView.refresh), keyEquivalent: "")
-        
-        menu.addItem(NSMenuItem.separator())
-        
-        if !Settings().boolForKey("showDockIcon") as Bool {
-            menu.addItem(withTitle: "Preferences", action: #selector(AppDelegate.openPreferences(_:)), keyEquivalent: "")
-        }
-        
-        menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
-        NSMenu.popUpContextMenu(menu, with: theEvent, for: self)
-        
+        openStatusItemMenu(with: theEvent)
+    }
+
+    func statusItemMenu() -> NSMenu {
+        return StatusItemMenuBuilder.build(
+            target: self,
+            actions: StatusItemMenuActions(
+                status: #selector(StatusItemView.showStatus),
+                about: #selector(StatusItemView.showAbout),
+                preferences: #selector(StatusItemView.openPreferences),
+                refresh: #selector(StatusItemView.refresh)
+            )
+        )
     }
     
     override func mouseDown(with theEvent: NSEvent) {
-        // show the panel
+        openStatusItemMenu(with: theEvent)
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        openStatusItemMenu()
+        return true
+    }
+
+    @objc func showStatus() {
         StatusBar.get().onClick()
     }
     
     @objc func refresh() {
         LoadMonitoringData().refreshStatusData()
     }
-    
+
+    @objc func showAbout() {
+        (NSApplication.shared.delegate as? AppDelegate)?.openAbout(self)
+    }
+
+    @objc func openPreferences() {
+        (NSApplication.shared.delegate as? AppDelegate)?.openPreferences(self)
+    }
+
     func setStatusItemTitle(_ newTitle: String) {
         if self.title == newTitle {
             return
@@ -85,5 +105,20 @@ class StatusItemView: NSStatusBarButton {
     
     func titleBoundingRect() -> NSRect {
         return title.boundingRect(with: NSMakeSize(0, 0), options: .usesFontLeading, attributes: self.titleAttributes())
+    }
+
+    private func openStatusItemMenu(with event: NSEvent? = nil) {
+        let menu = statusItemMenu()
+        if let statusItem = statusItem, let button = statusItem.button {
+            statusItem.menu = menu
+            button.performClick(self)
+            return
+        }
+
+        if let event = event {
+            NSMenu.popUpContextMenu(menu, with: event, for: self)
+            return
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: bounds.minY), in: self)
     }
 }

@@ -28,6 +28,10 @@ class StatusBar : NSObject {
     private var oldResults: Array<MonitoringItem>?
     
     private var statusPanel: StatusPanel?
+
+    var refreshStatusData: () -> Void = {
+        LoadMonitoringData().refreshStatusData()
+    }
     
     func load(_ results: Array<MonitoringItem>, failedMonitoringInstances: FailedMonitoringInstances) {
         
@@ -39,20 +43,10 @@ class StatusBar : NSObject {
         // show the failed monitoring instances status bar
         self.failedMonitoringInstancesView(failedMonitoringInstances)
         
-        // init the status bar view
-        let statusItemView = StatusItemView()
-        
-        statusItemView.statusItem = self.statusItem
-        
-        self.statusItem.button?.subviews = [statusItemView]
-        
-        if Settings().boolForKey("showExtendedStatusInformation") {
-            statusItemView.setStatusItemTitle(self.resultsToCodes(results))
-        } else {
-            statusItemView.setStatusItemTitle(NSLocalizedString("totalCount", comment: "") + " " + String(results.count))
-        }
-        
-        statusItemView.frame = self.statusItem.button!.frame
+        self.statusItem.length = NSStatusItem.variableLength
+        self.statusItem.button?.title = statusItemTitle(for: results)
+        StatusItemAccessibility.applyMainButtonMetadata(to: self.statusItem.button)
+        self.statusItem.menu = statusItemMenu()
         
         // finally animate the status bar (shake, change color and etc.)
         self.animateStatusBar()
@@ -75,6 +69,7 @@ class StatusBar : NSObject {
         cautionImage?.size = CGSize(width: 18, height: 18)
         
         statusItemFailed!.button?.image = cautionImage
+        StatusItemAccessibility.applyFailedButtonMetadata(to: statusItemFailed!.button)
         
         let menu = NSMenu()
         
@@ -98,93 +93,121 @@ class StatusBar : NSObject {
     
     func onClick() {
         NSApp.activate(ignoringOtherApps: true)
-        self.loadStatusPanel()
+        _ = self.showStatusPanel()
+    }
+
+    @objc func showStatus() {
+        onClick()
+    }
+
+    @objc func refresh() {
+        StatusItemRefreshAction.perform(refresh: refreshStatusData)
+    }
+
+    @objc func showAbout() {
+        (NSApplication.shared.delegate as? AppDelegate)?.openAbout(self)
+    }
+
+    @objc func openPreferences() {
+        (NSApplication.shared.delegate as? AppDelegate)?.openPreferences(self)
+    }
+
+    @discardableResult
+    func showStatusPanel() -> Bool {
+        guard let results = self.results else {
+            return StatusPanelEntrypoint.requestPresentation(
+                hasResults: false,
+                refresh: refreshStatusData,
+                present: {}
+            )
+        }
+
+        guard let frameOrigin = self.statusItemFrame() else {
+            return false
+        }
+
+        return StatusPanelEntrypoint.requestPresentation(
+            hasResults: true,
+            refresh: {},
+            present: {
+                self.loadStatusPanel(results: results, panelBounds: frameOrigin)
+            }
+        )
     }
     
     private func refreshStatusPanel() {
         // refresh the status panel if it is opened, it won't be opened if self.statusPanel is nil
         if self.statusPanel != nil {
-            self.loadStatusPanel()
+            _ = self.showStatusPanel()
         }
     }
     
-    private func loadStatusPanel() {
-        // This is an ugly workaround to get the position of the status bar
-        let frameOrigin = (self.statusItem.value(forKey: "window")! as AnyObject).frame
-
+    private func loadStatusPanel(results: Array<MonitoringItem>, panelBounds: NSRect) {
         // If there is an existing panel (this will be the case when the
         // panel is already opened and is just being refreshed or if the panel is again
         // already opened and the status bar is clicked on second time), close it
         self.statusPanel?.panel?.close()
         self.statusPanel = nil
         
-        self.statusPanel = StatusPanel(results: self.results!, panelBounds: frameOrigin!)
+        self.statusPanel = StatusPanel(results: results, panelBounds: panelBounds)
+        if let observer = self.observer as? NSObjectProtocol {
+            Foundation.NotificationCenter.default.removeObserver(observer)
+            self.observer = nil
+        }
         observer = Foundation.NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: nil, using: {_ in
             // dismiss the panel only if another application is in foreground
             // otherwise the panel will be dismissed also on functions which open a modal inside the app
             // (e.g. acknowledge, schedule downtime) and when submitting the modal, the error
             // "sent to deallocated instance" will occur because the StatusPanel keeps reference to
             // these modals
-            if NSWorkspace.shared.frontmostApplication!.bundleIdentifier! != Bundle.main.bundleIdentifier! {
+            guard let frontmostBundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+                  let bundleIdentifier = Bundle.main.bundleIdentifier else {
+                return
+            }
+
+            if frontmostBundleIdentifier != bundleIdentifier {
                 self.statusPanel?.panel?.close()
                 self.statusPanel = nil
-                Foundation.NotificationCenter.default.removeObserver(self.observer as! NSObjectProtocol)
+                if let observer = self.observer as? NSObjectProtocol {
+                    Foundation.NotificationCenter.default.removeObserver(observer)
+                    self.observer = nil
+                }
             }
             }
         )
         
         self.statusPanel!.load()
     }
-    
-    private func resultsToCodes(_ results: Array<MonitoringItem>) -> String {
-        var cCount = 0
-        var wCount = 0
-        var uCount = 0
-        var pCount = 0
-        var oCount = 0
-        var unreachableCount = 0
-        var downCount = 0
-        var upCount = 0
-        
-        for i in results {
-            switch i.status {
-            case "CRITICAL":
-                cCount += 1
-            case "WARNING":
-                wCount += 1
-            case "UNKNOWN":
-                uCount += 1
-            case "PENDING":
-                pCount += 1
-            case "UP":
-                upCount += 1
-            case "OK":
-                oCount += 1
-            case "UNREACHABLE":
-                unreachableCount += 1
-            case "DOWN":
-                downCount += 1
-            default: break
-            }
+
+    private func statusItemFrame() -> NSRect? {
+        if let frame = self.statusItem.button?.window?.frame {
+            return frame
         }
-        
-        // break up the following statements to avoid compiler error "Expression was too complex to be solved in reasonable time"
-        let criticalText = cCount > 0 ? "C:" + String(cCount) : ""
-        let warningText = wCount > 0 ? " W:" + String(wCount) : ""
-        let unknownText = uCount > 0 ? " U:" + String(uCount) : ""
-        let pendingText = pCount > 0 ? " P:" + String(pCount) : ""
-        let okText = oCount > 0 ? " O:" + String(oCount) : ""
-        let unreachableText = unreachableCount > 0 ? " UR:" + String(unreachableCount) : ""
-        let downText = downCount > 0 ? " D:" + String(downCount) : ""
-        let upText = upCount > 0 ? " UP:" + String(upCount) : ""
-        
-        let text = criticalText + warningText + unknownText + pendingText + okText + unreachableText + downText + upText
-        
-        if text == "" {
-            return NSLocalizedString("noAlarms", comment: "")
-        } else {
-            return text
+
+        if let window = self.statusItem.value(forKey: "window") as? NSWindow {
+            return window.frame
         }
+
+        return NSScreen.main?.visibleFrame
+    }
+
+    private func statusItemMenu() -> NSMenu {
+        return StatusItemMenuBuilder.build(
+            target: self,
+            actions: StatusItemMenuActions(
+                status: #selector(StatusBar.showStatus),
+                about: #selector(StatusBar.showAbout),
+                preferences: #selector(StatusBar.openPreferences),
+                refresh: #selector(StatusBar.refresh)
+            )
+        )
+    }
+
+    private func statusItemTitle(for results: Array<MonitoringItem>) -> String {
+        return StatusItemTitleFormatter.title(
+            for: results,
+            showExtendedStatusInformation: Settings().boolForKey("showExtendedStatusInformation")
+        )
     }
     
     private func animateStatusBar() {
@@ -200,4 +223,3 @@ class StatusBar : NSObject {
         animateTypes[animateType]?.animate(oldResults: self.oldResults, newResults: self.results)
     }
 }
-

@@ -53,8 +53,13 @@ class MonitoringItemSorter {
         case descending = 2
     }
     
-    let sortColumn = SortColumn(rawValue: Settings().integerForKey("sortColumn"))!
-    let sortOrder = SortOrder(rawValue: Settings().integerForKey("sortOrder"))!
+    private let sortColumn: SortColumn
+    private let sortOrder: SortOrder
+
+    init(settings: Settings = Settings()) {
+        self.sortColumn = SortColumn(rawValue: settings.integerForKey("sortColumn")) ?? .none
+        self.sortOrder = SortOrder(rawValue: settings.integerForKey("sortOrder")) ?? .none
+    }
     
     func sortHosts(_ monitoringItems: Array<HostMonitoringItem>) -> Array<HostMonitoringItem> {
         
@@ -147,7 +152,8 @@ class MonitoringItemSorter {
     private func sortLastCheck(_ first: String, second: String, sortOrder: SortOrder) -> Bool {
         
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd-MM-YYYY HH:mm:ss"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = "dd-MM-yyyy HH:mm:ss"
         
         guard let firstDate = dateFormatter.date(from: first) else {
             return false
@@ -157,11 +163,7 @@ class MonitoringItemSorter {
             return false
         }
         
-        if firstDate.compare(secondDate) == ComparisonResult.orderedAscending {
-            return self.ascOrDesc(sortOrder, value: false)
-        } else {
-            return self.ascOrDesc(sortOrder, value: true)
-        }
+        return self.ascOrDesc(sortOrder, value: firstDate.compare(secondDate) == .orderedAscending)
     }
     
     /**

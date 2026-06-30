@@ -21,6 +21,7 @@ class StatusPanelTable : NSTableView {
     private var serverLogin: ServerLogin?
     
     func initTable(_ results: Array<MonitoringItem>) {
+        self.setAccessibilityIdentifier(StatusItemAccessibility.statusPanelTableIdentifier)
     
         if self.statusPanelTableViewDatasource == nil {
             self.statusPanelTableViewDatasource = StatusPanelTableViewDatasource(results: results)
@@ -62,6 +63,9 @@ class StatusPanelTable : NSTableView {
         if self.selectedRowIndexes.count == 0 {
             let mousePoint = self.convert(event.locationInWindow, from: nil)
             let row = self.row(at: mousePoint)
+            guard row >= 0, row < (self.results?.count ?? 0) else {
+                return nil
+            }
             
             // Use custom highlighting for the row. With the default highlighting, we have to
             // left click on the row to be highlighted. With our custom highlighting, rows are
@@ -75,7 +79,13 @@ class StatusPanelTable : NSTableView {
         
         var monitoringItems: Array<MonitoringItem> = []
         for i in self.selectedIndexes! {
-            monitoringItems.append(self.results![i])
+            guard let results = self.results, i >= 0, i < results.count else {
+                return nil
+            }
+            monitoringItems.append(results[i])
+        }
+        if monitoringItems.isEmpty {
+            return nil
         }
         
         menu = self.monitoringInstanceCommandCapabilities(monitoringItems: monitoringItems, menu: menu)
@@ -251,23 +261,28 @@ class StatusPanelTable : NSTableView {
 
     private func highlightSelectedRow(_ selectedRow: Int) {
         self.removeHighlight()
+        if selectedRow < 0 || selectedRow >= self.numberOfRows {
+            return
+        }
         
         // add the subview SelectedTableViewCellBackground for the selected row
         
         for l in 0 ..< self.numberOfColumns {
-            let selectedCell = self.view(atColumn: l, row: selectedRow, makeIfNecessary: false)
+            guard let selectedCell = self.view(atColumn: l, row: selectedRow, makeIfNecessary: false) else {
+                continue
+            }
             // this is to avoid adding SelectedTableViewCellBackground as subview TableViewCellBackground if it is already added
             var selectedTableViewCellBackgroundExists = false
             
-            for j in selectedCell!.subviews {
+            for j in selectedCell.subviews {
                 if j.isKind(of: SelectedTableViewCellBackground.self) {
                     selectedTableViewCellBackgroundExists = true
                 }
             }
             
             if !selectedTableViewCellBackgroundExists {
-                let selectedTableViewCellBackground = SelectedTableViewCellBackground(frame: selectedCell!.bounds)
-                selectedCell?.addSubview(selectedTableViewCellBackground)
+                let selectedTableViewCellBackground = SelectedTableViewCellBackground(frame: selectedCell.bounds)
+                selectedCell.addSubview(selectedTableViewCellBackground)
             }
         }
     }

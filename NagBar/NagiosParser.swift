@@ -7,19 +7,16 @@
 //
 
 import Foundation
-import Hpple
 
 class NagiosParser: MonitoringProcessorBase, ParserInterface {
-    
-    var xPathProvider: XPathInterface!
-    
-    override init(_ monitoringInstance: MonitoringInstance) {
-        super.init(monitoringInstance)
-        self.xPathProvider = NagiosXPath()
+    enum HTMLFlavor {
+        case nagios
+        case icinga
     }
-    
+
+    var htmlFlavor = HTMLFlavor.nagios
+
     func parse(urlType: MonitoringURLType, data: Data) -> Array<MonitoringItem> {
-        
         switch urlType {
         case .hosts:
             return self.getHostMonitoringItems(data)
@@ -29,213 +26,371 @@ class NagiosParser: MonitoringProcessorBase, ParserInterface {
             return self.getHostMonitoringItems(data)
         }
     }
-    
+
     private func getHostMonitoringItems(_ data: Data) -> Array<HostMonitoringItem> {
-        
-        let hppleData = TFHpple.init(htmlData: data)
-        let statusCGIHost = hppleData?.search(withXPathQuery: self.xPathProvider.getXPathHostpageQuery())
-        
-        var hostList = [String]()
-        
-        for element in statusCGIHost! {
-            let item: String = (element as AnyObject).firstChild!.content
-            hostList.append(item)
-        }
-        
-        let statusList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostQueryStatus()) as NSArray)
-        let lastCheckList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostQueryLastCheck()) as NSArray)
-        let durationList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostQueryDuration()) as NSArray)
-        let statusInformationList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostQueryStatusInformation()) as NSArray)
-        let itemUrlList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostQueryItemUrl()) as NSArray)
-        let acknowledgedList = self.generateOptionalList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostAcknowledged()) as NSArray)
-        let downtimeList = self.generateOptionalList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathHostDowntime()) as NSArray)
-        
-        var hostItems = [HostMonitoringItem]()
-        
-        for i in 0 ..< hostList.count {
+        let document = HTMLDocument(data: data)
+        let rows = document.rows()
+        let statusInformationIndex = self.htmlFlavor == .icinga ? 5 : 4
+
+        return rows.compactMap { row -> HostMonitoringItem? in
+            let cells = row.directChildren(named: "td")
+            guard cells.count > statusInformationIndex,
+                  let hostLink = cells[0].firstAnchor(where: { href in
+                      href.contains("extinfo.cgi") && href.contains("type=1")
+                  }) else {
+                return nil
+            }
+
+            let host = hostLink.textContent.trimmingNagBarHTMLWhitespace()
+            guard !host.isEmpty else {
+                return nil
+            }
+
             let item = HostMonitoringItem()
-            
-            item.host = self.getValue(hostList, index: i)
-            item.status = self.getValue(statusList, index: i)
-            item.lastCheck = self.getValue(lastCheckList, index: i)
-            item.duration = self.getValue(durationList, index: i)
-            item.statusInformation = self.getValue(statusInformationList, index: i)
-            item.itemUrl = self.getItemUrl(self.getValue(itemUrlList, index: i))
-            item.acknowledged = self.getBoolValue(acknowledgedList, index: i)
-            item.downtime = self.getBoolValue(downtimeList, index: i)
+            item.host = host
+            item.status = cells[1].textContent
+            item.lastCheck = cells[2].textContent
+            item.duration = cells[3].textContent
+            item.statusInformation = cells[statusInformationIndex].textContent
+            item.itemUrl = self.getItemUrl(hostLink.attribute("href"))
+            item.acknowledged = cells[0].containsImage(named: "ack.gif")
+            item.downtime = cells[0].containsImage(named: "downtime.gif")
             item.monitoringInstance = self.monitoringInstance
-            
-            hostItems.append(item)
+
+            return item
         }
-        
-        return hostItems
     }
-    
+
     private func getServiceMonitoringItems(_ data: Data) -> Array<ServiceMonitoringItem> {
-        
-        let hppleData = TFHpple.init(htmlData: data)
-        let statusCGIHost = hppleData?.search(withXPathQuery: self.xPathProvider.getXPathHostQuery())
-        
-        var hostList = [String]()
-        
-        var prevHost = ""
-        
-        for element in statusCGIHost! {
-            var item: String?
-            
-            // we need this for multiple services in a host - if an element does not have children, then the host field is empty and it is just a service of a host
-            if (element as AnyObject).hasChildren() {
-                item = (element as AnyObject).firstChild!.content
-                prevHost = item!
-            } else {
-                item = prevHost
+        let document = HTMLDocument(data: data)
+        let rows = document.rows()
+        var previousHost = ""
+
+        return rows.compactMap { row -> ServiceMonitoringItem? in
+            let cells = row.directChildren(named: "td")
+            guard cells.count > 6,
+                  let serviceLink = cells[1].firstAnchor(where: { href in
+                      href.contains("extinfo.cgi") && href.contains("type=2")
+                  }) else {
+                return nil
             }
-            
-            hostList.append(item!)
-        }
-        
-        
-        let statusCGIService = hppleData?.search(withXPathQuery: self.xPathProvider.getXPathServiceQuery())
-        
-        var serviceList = [String]()
-        
-        for element in statusCGIService! {
-            let item: String = (element as AnyObject).firstChild!.content
-            serviceList.append(item)
-        }
-        
-        let statusList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryStatus()) as NSArray)
-        let lastCheckList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryLastCheck()) as NSArray)
-        let durationList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryDuration()) as NSArray)
-        let attemptList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryAttempt()) as NSArray)
-        let statusInformationList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryStatusInformation()) as NSArray)
-        let itemUrlList = self.generateList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceQueryItemUrl()) as NSArray)
-        let acknowledgedList = self.generateOptionalList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceAcknowledged()) as NSArray)
-        let downtimeList = self.generateOptionalList(hppleData!.search(withXPathQuery: self.xPathProvider.getXPathServiceDowntime()) as NSArray)
-        
-        var serviceItems = [ServiceMonitoringItem]()
-        
-        for i in 0 ..< serviceList.count {
+
+            if let hostLink = cells[0].firstAnchor(where: { href in
+                href.contains("extinfo.cgi") && href.contains("type=1")
+            }) {
+                let host = hostLink.textContent.trimmingNagBarHTMLWhitespace()
+                if !host.isEmpty {
+                    previousHost = host
+                }
+            }
+
+            let service = serviceLink.textContent.trimmingNagBarHTMLWhitespace()
+            guard !service.isEmpty else {
+                return nil
+            }
+
             let item = ServiceMonitoringItem()
-            
-            item.host = self.getValue(hostList, index: i)
-            item.service = self.getValue(serviceList, index: i)
-            item.status = self.getValue(statusList, index: i)
-            item.lastCheck = self.getValue(lastCheckList, index: i)
-            item.duration = self.getValue(durationList, index: i)
-            item.attempt = self.getValue(attemptList, index: i)
-            item.statusInformation = self.getValue(statusInformationList, index: i)
-            item.itemUrl = self.getItemUrl(self.getValue(itemUrlList, index: i))
-            item.acknowledged = self.getBoolValue(acknowledgedList, index: i)
-            item.downtime = self.getBoolValue(downtimeList, index: i)
+            item.host = previousHost
+            item.service = service
+            item.status = cells[2].textContent
+            item.lastCheck = cells[3].textContent
+            item.duration = cells[4].textContent
+            item.attempt = cells[5].textContent
+            item.statusInformation = cells[6].textContent
+            item.itemUrl = self.getItemUrl(serviceLink.attribute("href"))
+            item.acknowledged = cells[1].containsImage(named: "ack.gif")
+            item.downtime = cells[1].containsImage(named: "downtime.gif")
             item.monitoringInstance = self.monitoringInstance
-            
-            serviceItems.append(item)
-        }
-        
-        return serviceItems
-    }
-    
-    private func getValue(_ list: Array<String>, index: Int) -> String {
-        
-        var value = ""
-        
-        if !list.indices.contains(index) {
-            NSLog("Index \(index) does not exist in serviceList")
-        } else {
-            value = list[index]
-        }
-        
-        return value
-    }
-    
-    private func getBoolValue(_ list: Array<String?>, index: Int) -> Bool {
-        
-        var value = false
-        
-        if list.indices.contains(index) {
-            if list[index] != nil {
-                value = true
-            }
-        }
-        
-        return value
-    }
-    
-    private func generateList(_ hppleData: NSArray) -> Array<String> {
-        var itemList = Array<String>()
-        
-        for element in hppleData {
-            
-            let item = (element as AnyObject).firstChild!.content
-            
-            // for some reason there are elements containing newlines so we want to ignore them
-            let itemRange = item?.range(of: "^\n", options: .regularExpression)
-            
-            if !(item?.isEmpty)! && itemRange == nil {
-                itemList.append(item!)
-            }
-        }
-        
-        return itemList
-    }
-    
-    private func generateOptionalList(_ hppleData: NSArray) -> Array<String?> {
-        var itemList = Array<String?>()
-        
-        for element in hppleData {
-            
-            let item = (element as AnyObject).firstChild!.content
 
-            // for some reason there are elements containing newlines so we want to ignore them
-            let itemRange = item?.range(of: "^\n", options: .regularExpression)
-
-            if !(item?.isEmpty)! && itemRange == nil {
-                itemList.append(item!)
-            } else {
-                itemList.append(nil)
-            }
+            return item
         }
-        
-        return itemList
     }
-    
+
     private func getItemUrl(_ itemUrl: String) -> String {
         let monitoringInstanceURL = NagiosParser.stripStatusCGI(self.monitoringInstance!.url)
         return monitoringInstanceURL + itemUrl
     }
-    
+
     static func stripStatusCGI(_ itemUrl: String) -> String {
         if let index = itemUrl.range(of: "status.cgi", options: .regularExpression) {
             var urlCopy = itemUrl
             urlCopy.removeSubrange(index)
-            
+
             return urlCopy
         } else {
             return itemUrl
         }
     }
-    
+
     func parseStartTime(_ data: Data) -> String {
-        let startTime = self.getTimeElement(data, query: "//input[@name='start_time']")
-        return startTime
+        return self.getTimeElement(data, name: "start_time")
     }
-    
+
     func parseEndTime(_ data: Data) -> String {
-        let endTime = self.getTimeElement(data, query: "//input[@name='end_time']")
-        return endTime
+        return self.getTimeElement(data, name: "end_time")
     }
-    
-    private func getTimeElement(_ data: Data, query: String) -> String {
-        
-        var time = ""
-        
-        let hppleData = TFHpple.init(htmlData: data)
-        
-        for element in (hppleData?.search(withXPathQuery: query))! {
-            time = (element as! TFHppleElement).attributes["value"]! as! String
+
+    private func getTimeElement(_ data: Data, name: String) -> String {
+        let document = HTMLDocument(data: data)
+
+        return document.root
+            .descendants(named: "input")
+            .first(where: { $0.attribute("name") == name })?
+            .attribute("value") ?? ""
+    }
+}
+
+private final class HTMLDocument {
+    let root: HTMLNode
+
+    init(data: Data) {
+        let html = String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .isoLatin1)
+            ?? ""
+        self.root = HTMLParser(html: html).parse()
+    }
+
+    func rows() -> [HTMLNode] {
+        return self.root.descendants(named: "tr")
+    }
+}
+
+private final class HTMLNode {
+    let name: String
+    let attributes: [String: String]
+    weak var parent: HTMLNode?
+    var children: [HTMLNode]
+    var textFragments: [String]
+
+    init(name: String, attributes: [String: String] = [:]) {
+        self.name = name.lowercased()
+        self.attributes = attributes.reduce(into: [String: String]()) { result, entry in
+            result[entry.key.lowercased()] = entry.value
         }
-        
-        return time
+        self.children = []
+        self.textFragments = []
+    }
+
+    var textContent: String {
+        let childText = self.children.map { $0.textContent }.joined()
+        return self.textFragments.joined() + childText
+    }
+
+    func attribute(_ name: String) -> String {
+        return self.attributes[name.lowercased()] ?? ""
+    }
+
+    func directChildren(named name: String) -> [HTMLNode] {
+        return self.children.filter { $0.name == name.lowercased() }
+    }
+
+    func descendants(named name: String) -> [HTMLNode] {
+        let normalizedName = name.lowercased()
+        var matches = [HTMLNode]()
+
+        for child in self.children {
+            if child.name == normalizedName {
+                matches.append(child)
+            }
+            matches.append(contentsOf: child.descendants(named: normalizedName))
+        }
+
+        return matches
+    }
+
+    func firstAnchor(where predicate: (String) -> Bool) -> HTMLNode? {
+        for anchor in self.descendants(named: "a") {
+            if predicate(anchor.attribute("href")) {
+                return anchor
+            }
+        }
+
+        return nil
+    }
+
+    func containsImage(named imageName: String) -> Bool {
+        return self.descendants(named: "img").contains { image in
+            image.attribute("src").contains(imageName)
+        }
+    }
+}
+
+private final class HTMLParser {
+    private static let voidTags = Set([
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+    ])
+
+    private let html: String
+
+    init(html: String) {
+        self.html = html
+    }
+
+    func parse() -> HTMLNode {
+        let root = HTMLNode(name: "document")
+        var stack = [root]
+        var index = self.html.startIndex
+
+        while index < self.html.endIndex {
+            guard let tagStart = self.html[index...].firstIndex(of: "<") else {
+                self.appendText(String(self.html[index...]), to: stack.last)
+                break
+            }
+
+            if tagStart > index {
+                self.appendText(String(self.html[index..<tagStart]), to: stack.last)
+            }
+
+            guard let tagEnd = self.html[tagStart...].firstIndex(of: ">") else {
+                self.appendText(String(self.html[tagStart...]), to: stack.last)
+                break
+            }
+
+            let tag = String(self.html[self.html.index(after: tagStart)..<tagEnd])
+            self.apply(tag: tag, stack: &stack)
+            index = self.html.index(after: tagEnd)
+        }
+
+        return root
+    }
+
+    private func appendText(_ text: String, to node: HTMLNode?) {
+        let decoded = HTMLParser.decodeEntities(text)
+        if !decoded.isEmpty {
+            node?.textFragments.append(decoded)
+        }
+    }
+
+    private func apply(tag: String, stack: inout [HTMLNode]) {
+        let trimmedTag = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTag.isEmpty,
+              !trimmedTag.hasPrefix("!"),
+              !trimmedTag.hasPrefix("?") else {
+            return
+        }
+
+        if trimmedTag.hasPrefix("/") {
+            let tagName = HTMLParser.tagName(String(trimmedTag.dropFirst()))
+            self.close(tagName: tagName, stack: &stack)
+            return
+        }
+
+        let selfClosing = trimmedTag.hasSuffix("/")
+        let tagName = HTMLParser.tagName(trimmedTag)
+        guard !tagName.isEmpty else {
+            return
+        }
+
+        let node = HTMLNode(name: tagName, attributes: HTMLParser.attributes(from: trimmedTag))
+        node.parent = stack.last
+        stack.last?.children.append(node)
+
+        if !selfClosing && !HTMLParser.voidTags.contains(tagName) {
+            stack.append(node)
+        }
+    }
+
+    private func close(tagName: String, stack: inout [HTMLNode]) {
+        guard stack.count > 1 else {
+            return
+        }
+
+        while stack.count > 1 {
+            let node = stack.removeLast()
+            if node.name == tagName {
+                return
+            }
+        }
+    }
+
+    private static func tagName(_ tag: String) -> String {
+        let trimmedTag = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = trimmedTag.prefix { character in
+            !character.isWhitespace && character != "/" && character != ">"
+        }
+
+        return String(name).lowercased()
+    }
+
+    private static func attributes(from tag: String) -> [String: String] {
+        let pattern = #"([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*("[^"]*"|'[^']*'|[^\s"'>/]+)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return [:]
+        }
+
+        let text = tag as NSString
+        let matches = regex.matches(in: tag, range: NSRange(location: 0, length: text.length))
+
+        return matches.reduce(into: [String: String]()) { result, match in
+            guard match.numberOfRanges == 3 else {
+                return
+            }
+
+            let key = text.substring(with: match.range(at: 1)).lowercased()
+            var value = text.substring(with: match.range(at: 2))
+
+            if (value.hasPrefix("\"") && value.hasSuffix("\""))
+                || (value.hasPrefix("'") && value.hasSuffix("'")) {
+                value = String(value.dropFirst().dropLast())
+            }
+
+            result[key] = HTMLParser.decodeEntities(value)
+        }
+    }
+
+    private static func decodeEntities(_ value: String) -> String {
+        var decoded = value
+        let namedEntities = [
+            "amp": "&",
+            "apos": "'",
+            "gt": ">",
+            "lt": "<",
+            "nbsp": "\u{00A0}",
+            "quot": "\"",
+        ]
+
+        for (name, replacement) in namedEntities {
+            decoded = decoded.replacingOccurrences(of: "&\(name);", with: replacement)
+        }
+
+        decoded = HTMLParser.decodeNumericEntities(in: decoded, pattern: #"&#(\d+);"#, radix: 10)
+        decoded = HTMLParser.decodeNumericEntities(in: decoded, pattern: #"&#x([0-9a-fA-F]+);"#, radix: 16)
+
+        return decoded
+    }
+
+    private static func decodeNumericEntities(in value: String, pattern: String, radix: Int) -> String {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return value
+        }
+
+        let text = value as NSString
+        var result = value
+
+        for match in regex.matches(in: value, range: NSRange(location: 0, length: text.length)).reversed() {
+            guard match.numberOfRanges == 2 else {
+                continue
+            }
+
+            let numberText = text.substring(with: match.range(at: 1))
+            guard let scalarValue = UInt32(numberText, radix: radix),
+                  let scalar = UnicodeScalar(scalarValue) else {
+                continue
+            }
+
+            let range = Range(match.range(at: 0), in: result)!
+            result.replaceSubrange(range, with: String(Character(scalar)))
+        }
+
+        return result
+    }
+}
+
+private extension String {
+    func trimmingNagBarHTMLWhitespace() -> String {
+        var characterSet = CharacterSet.whitespacesAndNewlines
+        characterSet.insert(charactersIn: "\u{00A0}")
+        return self.trimmingCharacters(in: characterSet)
     }
 }

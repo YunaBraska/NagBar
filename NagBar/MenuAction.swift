@@ -18,8 +18,9 @@ class RecheckAction: NSObject, MenuAction {
         let monitoringItems = sender.representedObject as! Array<MonitoringItem>
         
         let monitoringInstance = monitoringItems[0].monitoringInstance
-        
-        monitoringInstance!.monitoringProcessor().command().recheck(monitoringItems)
+
+        let promise = monitoringInstance!.monitoringProcessor().command().recheck(monitoringItems)
+        CommandFeedback.shared.observe(.recheck, promise: promise)
     }
 }
 

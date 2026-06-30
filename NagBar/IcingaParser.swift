@@ -11,6 +11,6 @@ import Foundation
 class IcingaParser : NagiosParser {
     override init(_ monitoringInstance: MonitoringInstance) {
         super.init(monitoringInstance)
-        self.xPathProvider = IcingaXPath()
+        self.htmlFlavor = .icinga
     }
 }

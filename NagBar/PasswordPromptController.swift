@@ -8,7 +8,6 @@
 
 import Foundation
 import Cocoa
-import Alamofire
 
 class PasswordPromptController : NSWindowController {
     
@@ -65,22 +64,24 @@ class PasswordPromptController : NSWindowController {
         self.startChecking()
         
         // make the request
-        ConnectionManager.sharedInstance.manager!.request(self.currentMonitoringInstance!.url, method: .head).authenticate(user: self.currentMonitoringInstance!.username, password: self.passwordField.stringValue).validate().response { response in
-            if let error = response.error {
-                self.stopChecking()
-                self.retryModal(error as NSError)
-            } else {
-                // on success - set the password for the course of the app's life
-                PasswordStore.sharedInstance.set(self.currentMonitoringInstance!.name, password: self.passwordField.stringValue)
-                
-                // if the passwords for all monitoring instances are set, and there is no next one
-                // then close the window and refresh
-                if !self.nextMonitoringInstance() {
-                    self.window!.close()
-                    LoadMonitoringData().refreshStatusData()
-                } else {
+        ConnectionManager.sharedInstance.request(self.currentMonitoringInstance!.url, method: "HEAD", username: self.currentMonitoringInstance!.username, password: self.passwordField.stringValue, validateStatus: true) { result in
+            DispatchQueue.main.async {
+                if case .failure(let error) = result {
                     self.stopChecking()
-                    self.textField.stringValue = String(format:NSLocalizedString("pleaseEnterPassword", comment: ""), self.currentMonitoringInstance!.name)
+                    self.retryModal(error as NSError)
+                } else {
+                    // on success - set the password for the course of the app's life
+                    PasswordStore.sharedInstance.set(self.currentMonitoringInstance!.name, password: self.passwordField.stringValue)
+
+                    // if the passwords for all monitoring instances are set, and there is no next one
+                    // then close the window and refresh
+                    if !self.nextMonitoringInstance() {
+                        self.window!.close()
+                        LoadMonitoringData().refreshStatusData()
+                    } else {
+                        self.stopChecking()
+                        self.textField.stringValue = String(format:NSLocalizedString("pleaseEnterPassword", comment: ""), self.currentMonitoringInstance!.name)
+                    }
                 }
             }
         }

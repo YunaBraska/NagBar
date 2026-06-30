@@ -7,25 +7,24 @@
 //
 
 import Foundation
-import Alamofire
-import SwiftyJSON
 
 class CheckNewVersion {
     
     func checkNewVersion() {
-        let newVersionUrl = URL(string: "https://sites.google.com/site/nagbarapp/version")
-        Alamofire.request(newVersionUrl!).response { response in
-            if response.error != nil {
-                NSLog("Unable to fetch version data; error code " + String(response.error!._code))
-            } else {
-                self.compareVersions(response.data!)
+        let newVersionUrl = "https://sites.google.com/site/nagbarapp/version"
+        ConnectionManager.sharedInstance.request(newVersionUrl) { result in
+            switch result {
+            case .success(let response):
+                self.compareVersions(response.data)
+            case .failure(let error):
+                NSLog("Unable to fetch version data; error code " + String((error as NSError).code))
             }
         }
     }
     
     private func compareVersions(_ data: Data) {
         
-        guard let json = try? JSON(data: data) else {
+        guard let json = try? JSONValue(data: data) else {
             NSLog("Invalid JSON")
             return
         }
@@ -50,7 +49,7 @@ class CheckNewVersion {
     
     private func showAlert(_ jsonData: Data) {
         
-        guard let json = try? JSON(data: jsonData) else {
+        guard let json = try? JSONValue(data: jsonData) else {
             return
         }
         

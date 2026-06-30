@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SwiftyJSON
 
 class CheckMKParser : MonitoringProcessorBase, ParserInterface {
     
@@ -41,13 +40,9 @@ class CheckMKParser : MonitoringProcessorBase, ParserInterface {
             monitoringItem.duration = jsonHost[3].string ?? ""
             monitoringItem.statusInformation = jsonHost[6].string ?? ""
             
-            // get the site part; i.e. if we have URL http://testmonitoring/test/check_mk/ then
-            // get the "test" string
-            let sitePart = self.monitoringInstance!.url.split{$0 == "/"}.map(String.init)[2]
-            
             let itemUrlHostPart = self.monitoringInstance!.url + "/view.py?host=" + monitoringItem.host
             
-            monitoringItem.itemUrl = itemUrlHostPart + "&site=" + sitePart + "&view_name=host"
+            monitoringItem.itemUrl = itemUrlHostPart + "&site=" + self.sitePart() + "&view_name=host"
             
             results.append(monitoringItem)
         }
@@ -78,11 +73,7 @@ class CheckMKParser : MonitoringProcessorBase, ParserInterface {
             
             let itelUrlHostPart = self.monitoringInstance!.url + "/view.py?host=" + monitoringItem.host
             
-            // get the site part; i.e. if we have URL http://testmonitoring/test/check_mk/ then
-            // get the "test" string
-            let sitePart = self.monitoringInstance!.url.split{$0 == "/"}.map(String.init)[2]
-            
-            let itemUrlServicePart = itelUrlHostPart + "&service=" + monitoringItem.service + "&site=" + sitePart + "&view_name=service"
+            let itemUrlServicePart = itelUrlHostPart + "&service=" + monitoringItem.service + "&site=" + self.sitePart() + "&view_name=service"
             
             monitoringItem.itemUrl = itemUrlServicePart
             
@@ -94,8 +85,8 @@ class CheckMKParser : MonitoringProcessorBase, ParserInterface {
         return results
     }
     
-    func getJSON(_ data: Data) -> [JSON]? {
-        guard let json = try? JSON(data: data) else {
+    func getJSON(_ data: Data) -> [JSONValue]? {
+        guard let json = try? JSONValue(data: data) else {
             NSLog("Invalid JSON")
             return nil
         }
@@ -104,6 +95,10 @@ class CheckMKParser : MonitoringProcessorBase, ParserInterface {
             return nil
         }
         
+        guard !jsonResults.isEmpty else {
+            return []
+        }
+
         // the first value is description of the columns
         jsonResults.removeFirst()
         
@@ -139,5 +134,20 @@ class CheckMKParser : MonitoringProcessorBase, ParserInterface {
         default:
             return "N/A"
         }
+    }
+
+    private func sitePart() -> String {
+        guard let url = self.monitoringInstance?.url,
+              let components = URLComponents(string: url) else {
+            return ""
+        }
+
+        let pathSegments = components.path.split(separator: "/").map(String.init)
+        guard let checkMKIndex = pathSegments.firstIndex(of: "check_mk"),
+              checkMKIndex > pathSegments.startIndex else {
+            return ""
+        }
+
+        return pathSegments[pathSegments.index(before: checkMKIndex)]
     }
 }
