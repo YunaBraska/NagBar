@@ -8,7 +8,6 @@
 
 import Foundation
 import Cocoa
-import RealmSwift
 
 enum LoginType : Int {
     case ssh = 0
@@ -18,7 +17,19 @@ enum LoginType : Int {
 
 @objc class ServerLogin : NSObject {
 
-    let realm = try! Realm()
+    static var storageURLOverride: URL?
+    private static let storageLock = NSLock()
+
+    private var storageURL: URL {
+        if let storageURLOverride = ServerLogin.storageURLOverride {
+            return storageURLOverride
+        }
+
+        let applicationSupport = NagBarStorage.applicationSupportDirectory()
+        return applicationSupport
+            .appendingPathComponent("com.volendavidov.NagBar", isDirectory: true)
+            .appendingPathComponent("server-login.json", isDirectory: false)
+    }
     
     @objc
     func sshLogin(_ sender: NSMenuItem) {
@@ -86,61 +97,109 @@ enum LoginType : Int {
         
         let monitoringItem = sender.representedObject as! MonitoringItem
 
-        let serverLoginItem = realm.objects(ServerLoginItem.self).filter("host == %@", monitoringItem.host).first!
-        
-        try! realm.write {
-            realm.delete(serverLoginItem)
-        }
+        removeLoginSettings(forHost: monitoringItem.host)
     }
     
     func getUsername(_ monitoringItem: MonitoringItem) -> String? {
-        let serverLoginItem = realm.objects(ServerLoginItem.self).filter("host == %@", monitoringItem.host).first
-        if let serverLoginItem = serverLoginItem {
-            if serverLoginItem.username != "" {
-                return serverLoginItem.username
-            } else {
-                return nil
-            }
-        } else {
+        guard let serverLoginItem = loginItem(forHost: monitoringItem.host), serverLoginItem.username != "" else {
             return nil
         }
+
+        return serverLoginItem.username
     }
     
     func getLoginType(_ monitoringItem: MonitoringItem) -> LoginType? {
-        let serverLoginItem = realm.objects(ServerLoginItem.self).filter("host == %@", monitoringItem.host).first
-        if let serverLoginItem = serverLoginItem {
-            return LoginType(rawValue: serverLoginItem.loginType)
-        } else {
+        guard let serverLoginItem = loginItem(forHost: monitoringItem.host) else {
             return nil
         }
+
+        return LoginType(rawValue: serverLoginItem.loginType)
     }
     
     func setLoginType(_ monitoringItem: MonitoringItem, loginType: LoginType) {
-        let serverLoginItem = ServerLoginItem()
-        serverLoginItem.host = monitoringItem.host
+        let serverLoginItem = loginItem(forHost: monitoringItem.host) ?? ServerLoginItem(host: monitoringItem.host)
         serverLoginItem.loginType = loginType.rawValue
-        try! realm.write {
-            realm.add(serverLoginItem, update: .modified)
-        }
+        saveLoginItem(serverLoginItem)
     }
     
     func setUsername(_ monitoringItem: MonitoringItem, username: String) {
-        let serverLoginItem = ServerLoginItem()
-        serverLoginItem.host = monitoringItem.host
+        let serverLoginItem = loginItem(forHost: monitoringItem.host) ?? ServerLoginItem(host: monitoringItem.host)
         serverLoginItem.username = username
-        try! realm.write {
-            realm.add(serverLoginItem, update: .modified)
+        saveLoginItem(serverLoginItem)
+    }
+
+    func importLegacyItems(_ legacyItems: [ServerLoginItem]) {
+        withStorageLock {
+            if !loadLoginItemsWithoutLock().isEmpty {
+                return
+            }
+
+            saveLoginItemsWithoutLock(legacyItems)
         }
+    }
+
+    func resetStorage() {
+        withStorageLock {
+            try? FileManager.default.removeItem(at: storageURL)
+        }
+    }
+
+    private func loginItem(forHost host: String) -> ServerLoginItem? {
+        return withStorageLock {
+            loadLoginItemsWithoutLock().last { $0.host == host }
+        }
+    }
+
+    private func saveLoginItem(_ serverLoginItem: ServerLoginItem) {
+        withStorageLock {
+            var serverLoginItems = loadLoginItemsWithoutLock().filter { $0.host != serverLoginItem.host }
+            serverLoginItems.append(serverLoginItem)
+            saveLoginItemsWithoutLock(serverLoginItems)
+        }
+    }
+
+    private func removeLoginSettings(forHost host: String) {
+        withStorageLock {
+            let serverLoginItems = loadLoginItemsWithoutLock().filter { $0.host != host }
+            saveLoginItemsWithoutLock(serverLoginItems)
+        }
+    }
+
+    private func loadLoginItemsWithoutLock() -> [ServerLoginItem] {
+        guard let data = try? Data(contentsOf: storageURL) else {
+            return []
+        }
+
+        return (try? JSONDecoder().decode([ServerLoginItem].self, from: data)) ?? []
+    }
+
+    private func saveLoginItemsWithoutLock(_ serverLoginItems: [ServerLoginItem]) {
+        do {
+            let directory = storageURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(serverLoginItems)
+            try data.write(to: storageURL, options: .atomic)
+        } catch {
+            NSLog("Could not save server login settings: \(error)")
+        }
+    }
+
+    private func withStorageLock<T>(_ action: () -> T) -> T {
+        ServerLogin.storageLock.lock()
+        defer { ServerLogin.storageLock.unlock() }
+        return action()
     }
 }
 
-class ServerLoginItem : Object {
-    @objc dynamic var host = ""
-    @objc dynamic var username = ""
-    @objc dynamic var loginType = 0
-    
-    override static func primaryKey() -> String? {
-        return "host"
+class ServerLoginItem : Codable {
+    var host = ""
+    var username = ""
+    var loginType = 0
+
+    init(host: String = "", username: String = "", loginType: Int = 0) {
+        self.host = host
+        self.username = username
+        self.loginType = loginType
     }
 }
 

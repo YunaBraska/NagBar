@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import PromiseKit
 
 protocol HTTPClient {
     func get(_ url: String) -> Promise<Data>

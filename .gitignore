@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+*.hmap
+
+# User-specific Xcode data
+*.xcuserdatad/
+!NagBar.xcodeproj/xcshareddata/
+!NagBar.xcodeproj/xcshareddata/**
+
+# CocoaPods
+Pods/
+
+# Swift Package Manager
+.build/
+
+# Logs and local artifacts
+*.log
+*.profraw
+.codex/
+/tmp/
+dist/

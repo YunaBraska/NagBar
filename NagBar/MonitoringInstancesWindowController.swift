@@ -15,6 +15,13 @@ class MonitoringInstancesWindowController: NSWindowController {
     override func awakeFromNib() {
         Foundation.NotificationCenter.default.addObserver(self, selector: #selector(MonitoringInstancesWindowController.refreshTable), name: NSNotification.Name(rawValue: "MonitoringInstanceNameChanged"), object: nil)
     }
+
+    override func windowDidLoad() {
+        super.windowDidLoad()
+
+        window?.setAccessibilityIdentifier(MonitoringInstancesAccessibility.windowIdentifier)
+        monitoringInstancesTable?.setAccessibilityIdentifier(MonitoringInstancesAccessibility.tableIdentifier)
+    }
     
     @IBAction func segControlClicked(_ sender: NSSegmentedControl) {
         let selectedSegment = SegmentControl(rawValue: sender.selectedSegment)

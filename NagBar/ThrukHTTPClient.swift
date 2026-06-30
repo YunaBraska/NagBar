@@ -8,14 +8,10 @@
 
 //  Thruk uses cookie authentication by default. We can force
 //  basic auth as well but we have to send the Authorization header
-//  before receiving a challenge. The .authenticate() method in
-//  Alamofire does not do this, so we use a workaround - manually sending
-//  the Authorization header (https://github.com/Alamofire/Alamofire/issues/32).
+//  before receiving a challenge.
 //  Also, we have to fake the user agent as curl for this to work.
 
-import Alamofire
 import Foundation
-import PromiseKit
 
 class ThrukHTTPClient : MonitoringProcessorBase, HTTPClient {
     
@@ -23,19 +19,18 @@ class ThrukHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
            
-            let authTuple: (key: String, value: String)? = Request.authorizationHeader(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password)
-            let userAgent: (key: String, value: String)? = ("User-agent", "curl")
+            let headers = self.headers()
 
-            ConnectionManager.sharedInstance.manager!.request(url, method: .get, parameters: nil, encoding: Alamofire.JSONEncoding.default, headers: [authTuple!.key : authTuple!.value, userAgent!.key : userAgent!.value]).response { response in
-
-                if response.error == nil {
-                    if response.response!.statusCode == 401 {
+            ConnectionManager.sharedInstance.request(url, method: "GET", headers: headers) { result in
+                switch result {
+                case .success(let response):
+                    if response.response.statusCode == 401 {
                         seal.reject(NSError(domain: "", code: -999, userInfo: nil))
                     } else {
-                        seal.fulfill(response.data!)
+                        seal.fulfill(response.data)
                     }
-                } else {
-                    seal.reject(response.error!)
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
@@ -45,18 +40,17 @@ class ThrukHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            let authTuple: (key: String, value: String)? = Request.authorizationHeader(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password)
-            let userAgent: (key: String, value: String)? = ("User-agent", "curl")
+            let headers = self.headers()
             
-            ConnectionManager.sharedInstance.manager!.request(self.monitoringInstance!.url, method: .get, parameters: nil, encoding: Alamofire.JSONEncoding.default, headers: [authTuple!.key : authTuple!.value, userAgent!.key : userAgent!.value]).response { response in
-                
-                if response.error == nil {
-                    if response.response!.statusCode == 401 {
+            ConnectionManager.sharedInstance.request(self.monitoringInstance!.url, method: "GET", headers: headers) { result in
+                switch result {
+                case .success(let response):
+                    if response.response.statusCode == 401 {
                         seal.fulfill(false)
                     } else {
                         seal.fulfill(true)
                     }
-                } else {
+                case .failure:
                     seal.fulfill(false)
                 }
             }
@@ -67,21 +61,29 @@ class ThrukHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            let authTuple: (key: String, value: String)? = Request.authorizationHeader(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password)
-            let userAgent: (key: String, value: String)? = ("User-agent", "curl")
+            var headers = self.headers()
+            headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+            let body = ConnectionManager.sharedInstance.formBody(postData)
             
-            ConnectionManager.sharedInstance.manager!.request(url, method: .post, parameters: postData, encoding: Alamofire.URLEncoding.default, headers: [authTuple!.key : authTuple!.value, userAgent!.key : userAgent!.value]).response { response in
-
-                if response.error == nil {
-                    if response.response!.statusCode == 401 {
+            ConnectionManager.sharedInstance.request(url, method: "POST", headers: headers, body: body) { result in
+                switch result {
+                case .success(let response):
+                    if response.response.statusCode == 401 {
                         seal.reject(NSError(domain: "", code: -999, userInfo: nil))
                     } else {
-                        seal.fulfill(response.data!)
+                        seal.fulfill(response.data)
                     }
-                } else {
-                    seal.reject(response.error!)
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
+    }
+
+    private func headers() -> [String: String] {
+        return [
+            "Authorization": ConnectionManager.sharedInstance.authorizationHeader(username: self.monitoringInstance!.username, password: self.monitoringInstance!.password),
+            "User-agent": "curl"
+        ]
     }
 }

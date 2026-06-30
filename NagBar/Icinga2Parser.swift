@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SwiftyJSON
 
 class Icinga2Parser : MonitoringProcessorBase, ParserInterface {
     
@@ -88,83 +87,86 @@ class Icinga2Parser : MonitoringProcessorBase, ParserInterface {
         return getMonitoringInstanceForHost()
     }
     
-    func getHostForHost(_ json: JSON) -> String {
+    func getHostForHost(_ json: JSONValue) -> String {
         return json["name"].string ?? ""
     }
     
-    func getHostForService(_ json: JSON) -> String {
+    func getHostForService(_ json: JSONValue) -> String {
         return json["attrs"]["host_name"].string ?? ""
     }
     
-    func getService(_ json: JSON) -> String {
+    func getService(_ json: JSONValue) -> String {
         return json["attrs"]["name"].string ?? ""
     }
     
-    func getAttempt(_ json: JSON) -> String {
+    func getAttempt(_ json: JSONValue) -> String {
         return String(format:"%.0f", json["attrs"]["check_attempt"].double ?? 0.0) + "/" + String(format:"%.0f", json["attrs"]["max_check_attempts"].double ?? 0.0)
     }
     
-    func getStatusForHost(_ json: JSON) -> String {
+    func getStatusForHost(_ json: JSONValue) -> String {
         return self.hostStatusTranslate(json["attrs"]["state"].float)
     }
     
-    func getStatusForService(_ json: JSON) -> String {
-        return self.serviceStatusTranslate(json["attrs"]["state"].float!)
+    func getStatusForService(_ json: JSONValue) -> String {
+        guard let state = json["attrs"]["state"].float else {
+            return ""
+        }
+        return self.serviceStatusTranslate(state)
     }
     
-    func getLastCheckForHost(_ json: JSON) -> String {
+    func getLastCheckForHost(_ json: JSONValue) -> String {
         return self.unixToTimestamp(json["attrs"]["last_check_result"]["schedule_end"].double)
     }
     
-    func getLastCheckForService(_ json: JSON) -> String {
+    func getLastCheckForService(_ json: JSONValue) -> String {
         return self.getLastCheckForHost(json)
     }
     
-    func getDurationForHost(_ json: JSON) -> String {
-        return self.timeSinceSecondsToString(json["attrs"]["last_state_change"].double!)
+    func getDurationForHost(_ json: JSONValue) -> String {
+        return self.timeSinceSecondsToString(json["attrs"]["last_state_change"].double)
     }
     
-    func getDurationForService(_ json: JSON) -> String {
+    func getDurationForService(_ json: JSONValue) -> String {
         return self.getDurationForHost(json)
     }
     
-    func getItemURLForService(_ json: JSON) -> String {
+    func getItemURLForService(_ json: JSONValue) -> String {
         let monitoringHost = URL(string: self.monitoringInstance!.url)!.scheme! + "://" + URL(string: self.monitoringInstance!.url)!.host!
         let url = String(format: monitoringHost + "/icingaweb2/monitoring/service/show?host=%@", self.getHostForService(json)) + "&service=" + self.getService(json)
         return url
     }
     
-    func getItemURLForHost(_ json: JSON) -> String {
+    func getItemURLForHost(_ json: JSONValue) -> String {
         let monitoringHost = URL(string: self.monitoringInstance!.url)!.scheme! + "://" + URL(string: self.monitoringInstance!.url)!.host!
         return String(format: monitoringHost + "/icingaweb2/monitoring/host/show?host=%@", self.getHostForHost(json))
     }
     
-    func getStatusInformationForHost(_ json: JSON) -> String {
+    func getStatusInformationForHost(_ json: JSONValue) -> String {
         return json["attrs"]["last_check_result"]["output"].string ?? ""
     }
     
-    func getStatusInformationForService(_ json: JSON) -> String {
+    func getStatusInformationForService(_ json: JSONValue) -> String {
         return json["attrs"]["last_check_result"]["output"].string ?? ""
     }
     
-    func getAcknowledgementForHost(_ json: JSON) -> Bool {
+    func getAcknowledgementForHost(_ json: JSONValue) -> Bool {
         return json["attrs"]["acknowledgement"].boolValue
     }
     
-    func getAcknowledgementForService(_ json: JSON) -> Bool {
+    func getAcknowledgementForService(_ json: JSONValue) -> Bool {
         return json["attrs"]["acknowledgement"].boolValue
     }
     
-    func getDowntimeForHost(_ json: JSON) -> Bool {
+    func getDowntimeForHost(_ json: JSONValue) -> Bool {
         return json["attrs"]["downtime_depth"].boolValue
     }
     
-    func getDowntimeForService(_ json: JSON) -> Bool {
+    func getDowntimeForService(_ json: JSONValue) -> Bool {
         return json["attrs"]["downtime_depth"].boolValue
     }
     
-    func getJSON(_ data: NSData) -> [JSON]? {
-        guard let json = try? JSON(data: data as Data) else {
+    func getJSON(_ data: NSData) -> [JSONValue]? {
+        guard let json = try? JSONValue(data: data as Data) else {
             return nil
         }
         

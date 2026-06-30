@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import PromiseKit
 
 class NagiosCommands : MonitoringProcessorBase, CommandInterface {
     
@@ -37,14 +36,10 @@ class NagiosCommands : MonitoringProcessorBase, CommandInterface {
         }
     }
     
-    func recheck(_ monitoringItems: Array<MonitoringItem>) {
-        
-        var promise: Promise<String> = Promise<String>.value("")
-        
+    func recheck(_ monitoringItems: Array<MonitoringItem>) -> Promise<CommandResult> {
         let nagiosTimeUrl = NagiosParser.stripStatusCGI(self.monitoringInstance!.url) + String(format: "cmd.cgi?cmd_typ=55&host=%@", monitoringItems[0].host)
-        
-        
-        promise = promise.then { _ -> Promise<Data> in
+
+        let startTimePromise: Promise<String> = Promise<Data>.value(Data()).then { _ -> Promise<Data> in
             // get the start time from nagios first
             return self.monitoringInstance!.monitoringProcessor().httpClient().get(nagiosTimeUrl)
         }.then { data -> Promise<String> in
@@ -54,36 +49,39 @@ class NagiosCommands : MonitoringProcessorBase, CommandInterface {
                 seal.fulfill(parser.parseStartTime(data as Data))
             }
         }
-        
-        // recheck each of the selected monitoring items
-        for monitoringItem in monitoringItems {
-            _ = promise.then {startTime -> Promise<Data> in
-                
-                var parameters: Dictionary<String, String> = [
-                    "cmd_typ": "96",
-                    "cmd_mod": "2",
-                    "start_time": startTime,
-                    "host": monitoringItem.host,
-                    "force_check": "on",
-                    "btnSubmit": "Commit"
-                ]
-                    
-                if monitoringItem.monitoringItemType == .service {
-                    parameters["cmd_typ"] = "7"
-                    parameters["service"] = monitoringItem.service
-                }
-                
 
-                return self.monitoringInstance!.monitoringProcessor().httpClient().post(NagiosParser.stripStatusCGI(self.monitoringInstance!.url) + "cmd.cgi", postData: parameters)
+        let commandPromise = startTimePromise.then { startTime -> Promise<Data> in
+            var promise: Promise<Data> = Promise<Data>.value(Data())
+
+            for monitoringItem in monitoringItems {
+                promise = promise.then { _ -> Promise<Data> in
+                    var parameters: Dictionary<String, String> = [
+                        "cmd_typ": "96",
+                        "cmd_mod": "2",
+                        "start_time": startTime,
+                        "host": monitoringItem.host,
+                        "force_check": "on",
+                        "btnSubmit": "Commit"
+                    ]
+
+                    if monitoringItem.monitoringItemType == .service {
+                        parameters["cmd_typ"] = "7"
+                        parameters["service"] = monitoringItem.service
+                    }
+
+                    return self.monitoringInstance!.monitoringProcessor().httpClient().post(NagiosParser.stripStatusCGI(self.monitoringInstance!.url) + "cmd.cgi", postData: parameters)
+                }
             }
+
+            return promise
         }
-        
-        promise.catch { err in
-            NSLog("Unable to execute recheck, error: %@", err.localizedDescription)
+
+        return commandPromise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .recheck, itemCount: monitoringItems.count))
         }
     }
-    
-    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) {
+
+    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) -> Promise<CommandResult> {
         
         var promise: Promise<Data> = Promise<Data>.value(Data())
         
@@ -113,14 +111,14 @@ class NagiosCommands : MonitoringProcessorBase, CommandInterface {
             }
         }
         
-        promise.catch { err in
-            NSLog("Unable to execute scheduleDowntime, error: %@", err.localizedDescription)
+        return promise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .scheduleDowntime, itemCount: monitoringItems.count))
         }
     }
     
     
     
-    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) {
+    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) -> Promise<CommandResult> {
 
         var promise: Promise<Data> = Promise<Data>.value(Data())
         
@@ -145,8 +143,8 @@ class NagiosCommands : MonitoringProcessorBase, CommandInterface {
             }
         }
         
-        promise.catch { err in
-            NSLog("Unable to execute acknowledge, error: %@", err.localizedDescription)
+        return promise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .acknowledge, itemCount: monitoringItems.count))
         }
     }
 }

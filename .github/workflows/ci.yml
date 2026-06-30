@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+      - "feature/**"
+
+jobs:
+  build-test:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Verify CocoaPods is not required
+        run: |
+          test ! -f Podfile
+          test ! -f Podfile.lock
+          ! grep -ER "Pods\\.xcodeproj|Pods_|Pods/" NagBar.xcworkspace NagBar.xcodeproj
+
+      - name: Check developer helper syntax
+        run: sh -n script/*.sh
+
+      - name: Test
+        run: ./script/build_and_run.sh --test
+
+      - name: Build release
+        run: ./script/build_and_run.sh --release-build
+
+      - name: Check public release credential diagnostics
+        run: |
+          ! ./script/sign_release.sh 2>signing.err
+          grep -F "Developer ID identity is required for public signing." signing.err
+          ! ./script/notarize_release.sh --app build/Release/NagBar.app 2>notary.err
+          grep -F "Apple notarization credentials are required." notary.err

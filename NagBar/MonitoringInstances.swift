@@ -7,15 +7,26 @@
 //
 
 import Foundation
-import RealmSwift
 
 class MonitoringInstances {
-    
-    let realm = try! Realm()
+
+    static var storageURLOverride: URL?
+    private static let storageLock = NSLock()
+
+    private var storageURL: URL {
+        if let storageURLOverride = MonitoringInstances.storageURLOverride {
+            return storageURLOverride
+        }
+
+        let applicationSupport = NagBarStorage.applicationSupportDirectory()
+        return applicationSupport
+            .appendingPathComponent("com.volendavidov.NagBar", isDirectory: true)
+            .appendingPathComponent("monitoring-instances.json", isDirectory: false)
+    }
     
     func getAll() -> MIDictionary {
         var monitoringInstances: MIDictionary = [:]
-        for monitoringInstance in realm.objects(MonitoringInstance.self) {
+        for monitoringInstance in loadItems().filter({ $0.hasSupportedType }) {
             monitoringInstance.password = self.getPassword(monitoringInstance.name)
             monitoringInstances[monitoringInstance.name] = monitoringInstance
         }
@@ -23,8 +34,14 @@ class MonitoringInstances {
     }
     
     func getAllEnabled() -> MIDictionary {
+        let items = loadItems().filter { $0.hasSupportedType }
+        if !items.contains(where: { $0.isConfiguredRemote }) {
+            let fallback = LocalIcingaFallback.instance()
+            return [fallback.name: fallback]
+        }
+
         var monitoringInstances: MIDictionary = [:]
-        for monitoringInstance in realm.objects(MonitoringInstance.self).filter("enabled == 1") {
+        for monitoringInstance in items.filter({ $0.enabled == 1 && $0.isConfiguredRemote }) {
             monitoringInstance.password = self.getPassword(monitoringInstance.name)
             monitoringInstances[monitoringInstance.name] = monitoringInstance
         }
@@ -33,6 +50,10 @@ class MonitoringInstances {
     
     func getByKey(_ key: String) -> MonitoringInstance? {
         return getAll()[key]
+    }
+
+    func hasEnabledConfiguredInstances() -> Bool {
+        return loadItems().contains { $0.enabled == 1 && $0.isConfiguredRemote }
     }
     
     func getKeyById(_ id: Int) -> String {
@@ -53,33 +74,60 @@ class MonitoringInstances {
     }
     
     func updateName(monitoringInstance: MonitoringInstance, name: String) {
-        try! realm.write {
-            monitoringInstance.name = name
+        let originalName = monitoringInstance.name
+        withStorageLock {
+            let monitoringInstances = loadItemsWithoutLock()
+            if let index = monitoringInstances.lastIndex(where: { $0.name == originalName }) {
+                monitoringInstances[index].name = name
+                saveItemsWithoutLock(monitoringInstances)
+            }
         }
+        monitoringInstance.name = name
     }
     
-    func updateUrl(monitoringInstance: MonitoringInstance, url: String) {
-        try! realm.write {
-            monitoringInstance.url = url
+    @discardableResult
+    func updateUrl(monitoringInstance: MonitoringInstance, url: String) -> Bool {
+        let trimmedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedURL.isEmpty && monitoringInstance.enabled == 1 {
+            return false
         }
+
+        if !trimmedURL.isEmpty && !MonitoringInstance.validateURL(trimmedURL).isValid {
+            return false
+        }
+
+        update(monitoringInstance: monitoringInstance) { stored in
+            stored.url = trimmedURL
+        }
+        monitoringInstance.url = trimmedURL
+        return true
     }
     
     func updateType(monitoringInstance: MonitoringInstance, type: MonitoringInstanceType) {
-        try! realm.write {
-            monitoringInstance.type = type
+        update(monitoringInstance: monitoringInstance) { stored in
+            stored.type = type
         }
+        monitoringInstance.type = type
     }
     
-    func updateEnabled(monitoringInstance: MonitoringInstance, enabled: Int) {
-        try! realm.write {
-            monitoringInstance.enabled = enabled
+    @discardableResult
+    func updateEnabled(monitoringInstance: MonitoringInstance, enabled: Int) -> Bool {
+        if enabled == 1 && !monitoringInstance.canBeEnabled {
+            return false
         }
+
+        update(monitoringInstance: monitoringInstance) { stored in
+            stored.enabled = enabled
+        }
+        monitoringInstance.enabled = enabled
+        return true
     }
     
     func updateUsername(monitoringInstance: MonitoringInstance, username: String) {
-        try! realm.write {
-            monitoringInstance.username = username
+        update(monitoringInstance: monitoringInstance) { stored in
+            stored.username = username
         }
+        monitoringInstance.username = username
     }
     
     func updatePassword(monitoringInstance: MonitoringInstance, password: String) {
@@ -115,22 +163,84 @@ class MonitoringInstances {
     }
     
     func removeById(_ id: Int) {
-        var all = getAll()
         let key = getKeyById(id)
         self.deletePassword(key)
         
-        try! realm.write {
-            realm.delete(all[key]!)
+        withStorageLock {
+            var monitoringInstances = loadItemsWithoutLock()
+            if let index = monitoringInstances.lastIndex(where: { $0.name == key }) {
+                monitoringInstances.remove(at: index)
+                saveItemsWithoutLock(monitoringInstances)
+            }
         }
     }
     
     func insert(key: String, value: MonitoringInstance) {
-        try! realm.write {
-            realm.add(value)
+        withStorageLock {
+            var monitoringInstances = loadItemsWithoutLock()
+            monitoringInstances.append(value)
+            saveItemsWithoutLock(monitoringInstances)
+        }
+    }
+
+    func importLegacyItems(_ legacyItems: [MonitoringInstance]) {
+        withStorageLock {
+            if !loadItemsWithoutLock().isEmpty {
+                return
+            }
+
+            saveItemsWithoutLock(legacyItems)
+        }
+    }
+
+    func resetStorage() {
+        withStorageLock {
+            try? FileManager.default.removeItem(at: storageURL)
         }
     }
     
     private func deletePassword(_ account: String) {
         KeychainAccess().get().deletePassword(forService: "NagBar", account: account)
+    }
+
+    private func update(monitoringInstance: MonitoringInstance, apply: (MonitoringInstance) -> Void) {
+        withStorageLock {
+            let monitoringInstances = loadItemsWithoutLock()
+            if let index = monitoringInstances.lastIndex(where: { $0.name == monitoringInstance.name }) {
+                apply(monitoringInstances[index])
+                saveItemsWithoutLock(monitoringInstances)
+            }
+        }
+    }
+
+    private func loadItems() -> [MonitoringInstance] {
+        return withStorageLock {
+            loadItemsWithoutLock()
+        }
+    }
+
+    private func loadItemsWithoutLock() -> [MonitoringInstance] {
+        guard let data = try? Data(contentsOf: storageURL) else {
+            return []
+        }
+
+        return (try? JSONDecoder().decode([MonitoringInstance].self, from: data)) ?? []
+    }
+
+    private func saveItemsWithoutLock(_ monitoringInstances: [MonitoringInstance]) {
+        do {
+            let directory = storageURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(monitoringInstances)
+            try data.write(to: storageURL, options: .atomic)
+        } catch {
+            NagBarDiagnostics.logStorageError("monitoringInstancesSaveFailed", error: error)
+        }
+    }
+
+    private func withStorageLock<T>(_ action: () -> T) -> T {
+        MonitoringInstances.storageLock.lock()
+        defer { MonitoringInstances.storageLock.unlock() }
+        return action()
     }
 }

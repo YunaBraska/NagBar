@@ -10,7 +10,7 @@ import Foundation
 import Cocoa
 
 class AcknowledgeWindow: NSWindowController {
-    
+
     @IBOutlet weak private var comment: NSTextField!
     
     var monitoringItems: Array<MonitoringItem> = []
@@ -18,6 +18,16 @@ class AcknowledgeWindow: NSWindowController {
     override func awakeFromNib() {
         super.awakeFromNib()
         self.comment.stringValue = Settings().stringForKey("acknowledgementDefaultComment")!
+        applyAccessibilityMetadata()
+    }
+
+    func applyAccessibilityMetadata() {
+        window?.setAccessibilityIdentifier(CommandWindowAccessibility.acknowledgeWindowIdentifier)
+        window?.setAccessibilityLabel("Acknowledge monitoring problem")
+        comment.setAccessibilityIdentifier(CommandWindowAccessibility.acknowledgeCommentIdentifier)
+        comment.setAccessibilityLabel("Acknowledgement comment")
+        applyButtonAccessibility(in: window?.contentView, identifier: "ok", accessibilityIdentifier: CommandWindowAccessibility.acknowledgeOKIdentifier, label: "Submit acknowledgement")
+        applyButtonAccessibility(in: window?.contentView, identifier: "cancel", accessibilityIdentifier: CommandWindowAccessibility.acknowledgeCancelIdentifier, label: "Cancel acknowledgement")
     }
     
     @IBAction func buttonClicked(_ sender: NSButton) {
@@ -28,8 +38,9 @@ class AcknowledgeWindow: NSWindowController {
         
         let monitoringInstance = self.monitoringItems[0].monitoringInstance!
         
-        monitoringInstance.monitoringProcessor().command().acknowledge(self.monitoringItems, comment: self.comment.stringValue)
-        
+        let promise = monitoringInstance.monitoringProcessor().command().acknowledge(self.monitoringItems, comment: self.comment.stringValue)
+        CommandFeedback.shared.observe(.acknowledge, promise: promise)
+
         self.close()
     }
     

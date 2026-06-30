@@ -9,6 +9,14 @@
 import Foundation
 import Cocoa
 
+extension MonitoringInstancesAccessibility {
+    static let segmentControlIdentifier = "nagbar.monitoringInstances.segmentedControl"
+
+    static func cellIdentifier(column: String, row: Int) -> String {
+        return "nagbar.monitoringInstances.cell.\(column).\(row)"
+    }
+}
+
 class MonitoringInstancesTableDelegate : NSObject, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         
@@ -62,7 +70,11 @@ class MIPasswordTextField: NSSecureTextField, NSTextFieldDelegate {
 class MIURLTextField: MITextField {
     override func textDidEndEditing(_ obj: Notification) {
         let monitoringInstance = MonitoringInstances().getById(self.tag)
-        MonitoringInstances().updateUrl(monitoringInstance: monitoringInstance, url: self.stringValue)
+        if !MonitoringInstances().updateUrl(monitoringInstance: monitoringInstance, url: self.stringValue) {
+            let validationResult = MonitoringInstance.validateURL(self.stringValue)
+            NagBarAlert().showWarningAlert(validationResult.title, informativeText: validationResult.message)
+            self.stringValue = monitoringInstance.url
+        }
     }
 }
 
@@ -119,7 +131,9 @@ protocol MonitoringInstancesTableColumn {
 class MINameTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
     func createViewForRow(_ row: Int) -> NSView {
         let text = MINameTextField()
+        text.tag = row
         text.stringValue = MonitoringInstances().getKeyById(row)
+        text.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "name", row: row))
         return text
     }
 }
@@ -136,13 +150,21 @@ class MIEnabledTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         // we set a tag for the checkbox, because the checkbox can be clicked without a row being clicked and then we do not know for which row the checkbox was clicked
         button.tag = row
         button.state = NSControl.StateValue(rawValue: MonitoringInstances().getById(row).enabled)
+        button.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "enabled", row: row))
         
         return button
     }
     
     @objc func checkButtonClick(_ sender: NSButton) {
         let monitoringInstance = MonitoringInstances().getById(sender.tag)
-        MonitoringInstances().updateEnabled(monitoringInstance: monitoringInstance, enabled: sender.state.rawValue)
+        let didUpdate = MonitoringInstances().updateEnabled(monitoringInstance: monitoringInstance, enabled: sender.state.rawValue)
+        if !didUpdate {
+            let validationResult = MonitoringInstance.validateURL(monitoringInstance.url)
+            NagBarAlert().showWarningAlert(validationResult.title, informativeText: validationResult.message)
+            sender.state = NSControl.StateValue.off
+            self.connectionStateUnknown(sender.tag)
+            return
+        }
         
         if sender.state == NSControl.StateValue.off {
             self.connectionStateUnknown(sender.tag)
@@ -153,8 +175,10 @@ class MIEnabledTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
     
     private func setConnectionState(_ tag: Int, text: String, image: String) {
         // 2nd column is the status column
-        let view = tableView?.view(atColumn: 2, row: tag, makeIfNecessary: false)
-        for subview in view!.subviews {
+        guard let view = tableView?.view(atColumn: 2, row: tag, makeIfNecessary: false) else {
+            return
+        }
+        for subview in view.subviews {
             if subview is NSTextField {
                 let textField = subview as! NSTextField
                 textField.stringValue = NSLocalizedString(text, comment: "")
@@ -175,11 +199,12 @@ class MIEnabledTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         let monitoringInstance = MonitoringInstances().getById(tag)
         
         _ = monitoringInstance.monitoringProcessor().httpClient().checkConnection().done { result -> Void in
-            
-            if result {
-                self.setConnectionState(tag, text: "ok", image: "NSStatusAvailable")
-            } else {
-                self.setConnectionState(tag, text: "error", image: "NSStatusUnavailable")
+            DispatchQueue.main.async {
+                if result {
+                    self.setConnectionState(tag, text: "ok", image: "NSStatusAvailable")
+                } else {
+                    self.setConnectionState(tag, text: "error", image: "NSStatusUnavailable")
+                }
             }
         }
     }
@@ -189,14 +214,18 @@ class MIStatusTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
     func createViewForRow(_ row: Int) -> NSView {
         
         let statusView = NSView.init(frame: NSMakeRect(0, 0, 75, 15))
-        
+        statusView.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "status", row: row))
+        statusView.setAccessibilityLabel("Monitoring instance connection status")
+
         let text = NSTextField.init(frame: NSMakeRect(15, 5, 60, 15))
         text.isEditable = false
         text.isBezeled = false
         text.isBordered = false
         text.drawsBackground = false
-        
+        text.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "status.text", row: row))
+
         let image = NSImageView.init(frame: NSMakeRect(0, 5, 15, 15))
+        image.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "status.image", row: row))
         
         let monitoringInstance = MonitoringInstances().getById(row)
         
@@ -214,13 +243,14 @@ class MIStatusTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         }
         
         _ = monitoringInstance.monitoringProcessor().httpClient().checkConnection().done { result -> Void in
-            
-            if result {
-                image.image = NSImage.init(named: "NSStatusAvailable")
-                text.stringValue = NSLocalizedString("ok", comment: "")
-            } else {
-                image.image = NSImage.init(named: "NSStatusUnavailable")
-                text.stringValue = NSLocalizedString("error", comment: "")
+            DispatchQueue.main.async {
+                if result {
+                    image.image = NSImage.init(named: "NSStatusAvailable")
+                    text.stringValue = NSLocalizedString("ok", comment: "")
+                } else {
+                    image.image = NSImage.init(named: "NSStatusUnavailable")
+                    text.stringValue = NSLocalizedString("error", comment: "")
+                }
             }
         }
         
@@ -236,6 +266,7 @@ class MIURLTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         let text = MIURLTextField()
         text.tag = row
         text.stringValue = MonitoringInstances().getById(row).url
+        text.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "url", row: row))
         
         return text
     }
@@ -246,6 +277,7 @@ class MIUsernameTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         let text = MIUsernameTextField()
         text.tag = row
         text.stringValue = MonitoringInstances().getById(row).username
+        text.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "username", row: row))
         
         return text
     }
@@ -257,6 +289,7 @@ class MIPasswordTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         text.tag = row
         
         text.stringValue = MonitoringInstances().getById(row).password
+        text.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "password", row: row))
         
         return text
     }
@@ -270,6 +303,7 @@ class MITypeTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         type.target = self
         type.tag = row
         type.action = #selector(MITypeTableColumn.popupButtonClick(_:))
+        type.setAccessibilityIdentifier(MonitoringInstancesAccessibility.cellIdentifier(column: "type", row: row))
         
         type.selectItem(withTitle: MonitoringInstances().getById(row).type.rawValue)
         
