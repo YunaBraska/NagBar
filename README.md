@@ -21,7 +21,7 @@ Status: In progress revival spike.
 
 Current evidence:
 
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 274 tests.
+- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 324 tests.
 - `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes.
 - `./script/build_and_run.sh --acceptance` passes full tests, Release build, and live runtime smoke through one local helper.
 - `./script/build_and_run.sh --package` creates a local/private Release zip, SHA-256 checksum, and manifest under `dist/`.
@@ -29,7 +29,7 @@ Current evidence:
   updates the changelog/version metadata, packages with local/private signing by
   default, and switches to Developer ID signing plus notarization when the
   required secrets are present.
-- Release runtime smoke passes on the maintainer machine; `script/status_item_smoke.sh` runs with isolated app storage/defaults, verifies the status-item menu, Show Status panel/table, keyboard menu activation, Refresh, Apple-menu product-action removal, Settings-to-Monitoring-Instances reachability, Monitoring Instances add-row persistence, and Quit.
+- Release runtime smoke passes on the maintainer machine; `script/status_item_smoke.sh` runs with isolated app storage/defaults, verifies the status-item menu, Show Status onscreen panel, keyboard menu activation, Refresh, Apple-menu product-action removal, onscreen Preferences, and Quit.
 - Public docs keep only app-owned image assets. Smoke screenshots are opt-in local artifacts because full-screen captures can expose private desktop data.
 - Removed dependencies: `SAMKeychain`, `SwiftyJSON`, `Alamofire`, `PromiseKit`, `hpple`, `RealmSwift`, and CocoaPods.
 - Remaining CocoaPods: none. Active scalar settings are on `UserDefaults`;
@@ -54,7 +54,7 @@ Not production-distribution ready yet:
   `./script/sign_release.sh`, `./script/notarize_release.sh`, and
   `./script/package_release.sh --developer-id` provide the explicit public
   release path for maintainers with a Developer ID Application certificate.
-- Coverage is currently 76.32% for `NagBar.app` from Xcode result metrics; the production target
+- Coverage is currently 83.17% for `NagBar.app` from Xcode result metrics; the production target
   remains about 95%.
 - Users upgrading directly from a Realm-only build need release-note guidance to
   reconfigure or migrate through an earlier bridge build.

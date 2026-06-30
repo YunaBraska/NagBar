@@ -56,15 +56,18 @@ class AcknowledgeAction: NSObject, MenuAction {
 }
 
 class AddToFilterAction : NSObject, MenuAction {
-    func action(_ sender: NSMenuItem) {
-        
+    var confirmAddToFilter: () -> Bool = {
         let alert = NSAlert()
         alert.addButton(withTitle: NSLocalizedString("no", comment: ""))
         alert.addButton(withTitle: NSLocalizedString("yes", comment: ""))
         alert.messageText = NSLocalizedString("addToFilter", comment: "")
         alert.informativeText = NSLocalizedString("addToFilterConfirm", comment: "")
         alert.alertStyle = .warning
-        if alert.runModal() == NSApplication.ModalResponse.alertSecondButtonReturn {
+        return alert.runModal() == NSApplication.ModalResponse.alertSecondButtonReturn
+    }
+
+    func action(_ sender: NSMenuItem) {
+        if self.confirmAddToFilter() {
             let monitoringItems = sender.representedObject as! Array<MonitoringItem>
             self.addToFilter(monitoringItems)
         }

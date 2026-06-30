@@ -14,6 +14,10 @@ protocol InterfaceAction {
 }
 
 class DefaultButton : NSButton, InterfaceAction {
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+    }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
@@ -106,6 +110,10 @@ class DefaultPopUpButton : NSPopUpButton {
 }
 
 class DefaultColorWell : NSColorWell {
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+    }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)

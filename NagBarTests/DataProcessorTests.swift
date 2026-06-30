@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import Cocoa
 
 class AdditionProcessorTests: XCTestCase {
     
@@ -204,6 +205,47 @@ class MonitoringItemSorterTests: XCTestCase {
         ])
 
         XCTAssertEqual(results.map { $0.status }, ["WARNING", "PENDING", "OK", "CRITICAL"])
+    }
+
+    func testSortServicesByAttemptAscendingUsesStoredSettings() {
+        Settings().setInteger(5, forKey: "sortColumn")
+        Settings().setInteger(1, forKey: "sortOrder")
+
+        let first = service("web-01", service: "HTTP", status: "CRITICAL")
+        first.attempt = "3/5"
+        let second = service("web-01", service: "Disk", status: "WARNING")
+        second.attempt = "1/5"
+        let third = service("web-01", service: "CPU", status: "OK")
+        third.attempt = "2/5"
+
+        let results = MonitoringItemSorter().sortServices([first, second, third])
+
+        XCTAssertEqual(results.map { $0.attempt }, ["1/5", "2/5", "3/5"])
+    }
+
+    func testSortServicesByDurationAscendingPlacesShortestFirst() {
+        Settings().setInteger(6, forKey: "sortColumn")
+        Settings().setInteger(1, forKey: "sortOrder")
+
+        let results = MonitoringItemSorter().sortServices([
+            service("web-01", service: "days", status: "CRITICAL", duration: "1d 2h 3m 4s"),
+            service("web-01", service: "minutes", status: "WARNING", duration: "32m 54s"),
+            service("web-01", service: "hours", status: "OK", duration: "3h 12m 43s")
+        ])
+
+        XCTAssertEqual(results.map { $0.service }, ["minutes", "hours", "days"])
+    }
+
+    func testSortHostsWithEqualDurationsPreservesInputOrder() {
+        Settings().setInteger(6, forKey: "sortColumn")
+        Settings().setInteger(1, forKey: "sortOrder")
+
+        let first = host("first", status: "DOWN", duration: "3h 12m 43s")
+        let second = host("second", status: "DOWN", duration: "3h 12m 43s")
+        let results = MonitoringItemSorter().sortHosts([first, second])
+
+        XCTAssertTrue(results[0] === first)
+        XCTAssertTrue(results[1] === second)
     }
 
     func testInvalidStoredSortSettingsPreserveInputOrderInsteadOfCrashing() {
@@ -702,6 +744,28 @@ class FilterItemsProcessorTests: XCTestCase {
         XCTAssertEqual(FilterItems().getByKey("router-01")?.status, 9)
     }
 
+    func testAddToFilterMenuActionCreatesFilterAfterConfirmation() {
+        let action = AddToFilterAction()
+        action.confirmAddToFilter = { true }
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [service("web-01", service: "HTTP", status: "CRITICAL")]
+
+        action.action(menuItem)
+
+        XCTAssertEqual(FilterItems().getByKey("web-01HTTP")?.status, 16)
+    }
+
+    func testAddToFilterMenuActionLeavesFiltersUnchangedWhenCancelled() {
+        let action = AddToFilterAction()
+        action.confirmAddToFilter = { false }
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [host("router-01", status: "DOWN")]
+
+        action.action(menuItem)
+
+        XCTAssertNil(FilterItems().getByKey("router-01"))
+    }
+
     func testProcessIgnoresPersistedFilterWithInvalidRegex() {
         let invalidFilter = FilterItem().initDefault(host: "[", service: "", status: 4)
         FilterItems().insert(key: FilterItems.generateKey(invalidFilter.host, service: invalidFilter.service), value: invalidFilter)
@@ -888,6 +952,110 @@ class FilterItemWindowControllerTests: XCTestCase {
     }
 }
 
+class FilterOptionsTabControllerTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        FilterItems.storageURLOverride = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NagBarTests", isDirectory: true)
+            .appendingPathComponent(self.name, isDirectory: false)
+            .appendingPathExtension("json")
+        FilterItems().resetStorage()
+    }
+
+    override func tearDown() {
+        FilterItems().resetStorage()
+        FilterItems.storageURLOverride = nil
+        super.tearDown()
+    }
+
+    func testFilterOptionsAddOpensNewFilterWindow() {
+        let fixture = FilterOptionsTabControllerFixture()
+
+        fixture.controller.segControlClicked(fixture.segmentedControl(selectedSegment: SegmentControl.add.rawValue))
+
+        XCTAssertEqual(fixture.createdWindows.count, 1)
+        XCTAssertTrue(fixture.createdWindows[0].didShowWindow)
+        XCTAssertNil(fixture.createdWindows[0].filterItemKey)
+    }
+
+    func testFilterOptionsDeleteSelectedFilterRemovesStorageAndReloadsTable() {
+        let filter = FilterItem().initDefault(host: "web-01", service: "HTTP", status: 16)
+        FilterItems().insert(key: "web-01HTTP", value: filter)
+        let fixture = FilterOptionsTabControllerFixture(selectedRow: 0)
+
+        fixture.controller.segControlClicked(fixture.segmentedControl(selectedSegment: SegmentControl.delete.rawValue))
+
+        XCTAssertNil(FilterItems().getByKey("web-01HTTP"))
+        XCTAssertEqual(fixture.tableView.reloadDataCallCount, 1)
+        XCTAssertEqual(fixture.createdWindows.count, 0)
+    }
+
+    func testFilterOptionsEditSelectedFilterOpensExistingFilterByGeneratedKey() {
+        let filter = FilterItem().initDefault(host: "web-02", service: "Disk", status: 12)
+        FilterItems().insert(key: "web-02Disk", value: filter)
+        let fixture = FilterOptionsTabControllerFixture(selectedRow: 0)
+
+        fixture.controller.segControlClicked(fixture.segmentedControl(selectedSegment: SegmentControl.edit.rawValue))
+
+        XCTAssertEqual(fixture.createdWindows.count, 1)
+        XCTAssertTrue(fixture.createdWindows[0].didShowWindow)
+        XCTAssertEqual(fixture.createdWindows[0].filterItemKey, "web-02Disk")
+        XCTAssertEqual(FilterItems().count(), 1)
+    }
+
+    func testFilterOptionsDeleteAndEditIgnoreNoSelection() {
+        let filter = FilterItem().initDefault(host: "web-03", service: "", status: 4)
+        FilterItems().insert(key: "web-03", value: filter)
+        let fixture = FilterOptionsTabControllerFixture(selectedRow: -1)
+
+        fixture.controller.segControlClicked(fixture.segmentedControl(selectedSegment: SegmentControl.delete.rawValue))
+        fixture.controller.segControlClicked(fixture.segmentedControl(selectedSegment: SegmentControl.edit.rawValue))
+
+        XCTAssertEqual(FilterItems().count(), 1)
+        XCTAssertEqual(fixture.tableView.reloadDataCallCount, 0)
+        XCTAssertEqual(fixture.createdWindows.count, 0)
+    }
+
+    func testFilterTableDatasourceCountsStoredRows() {
+        FilterItems().insert(key: "web-01HTTP", value: FilterItem().initDefault(host: "web-01", service: "HTTP", status: 16))
+        FilterItems().insert(key: "router-01", value: FilterItem().initDefault(host: "router-01", service: "", status: 4))
+
+        XCTAssertEqual(FilterTableViewDatasource().numberOfRows(in: NSTableView()), 2)
+    }
+
+    func testFilterTableDelegateRendersHostServiceAndPlainColumns() throws {
+        FilterItems().insert(key: "web-01HTTP", value: FilterItem().initDefault(host: "web-01", service: "HTTP", status: 16))
+        let delegate = FilterTableViewDelegate()
+
+        let hostView = try XCTUnwrap(delegate.tableView(NSTableView(), viewFor: HostTableColumn(identifier: NSUserInterfaceItemIdentifier("host")), row: 0) as? NSTextField)
+        let serviceView = try XCTUnwrap(delegate.tableView(NSTableView(), viewFor: ServiceTableColumn(identifier: NSUserInterfaceItemIdentifier("service")), row: 0) as? NSTextField)
+        let plainView = try XCTUnwrap(delegate.tableView(NSTableView(), viewFor: NSTableColumn(identifier: NSUserInterfaceItemIdentifier("plain")), row: 0) as? NSTextField)
+
+        XCTAssertEqual(hostView.stringValue, "web-01")
+        XCTAssertEqual(serviceView.stringValue, "HTTP")
+        XCTAssertEqual(plainView.stringValue, "")
+        XCTAssertFalse(hostView.isEditable)
+        XCTAssertFalse(hostView.isBordered)
+        XCTAssertEqual(hostView.identifier?.rawValue, "host")
+    }
+
+    func testFilterStatusColumnRendersServiceStatusLetters() throws {
+        FilterItems().insert(key: "web-01HTTP", value: FilterItem().initDefault(host: "web-01", service: "HTTP", status: 29))
+
+        let view = try XCTUnwrap(FilterTableViewDelegate().tableView(NSTableView(), viewFor: StatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")), row: 0) as? NSTextField)
+
+        XCTAssertEqual(Set(view.stringValue.split(separator: ",").map(String.init)), Set(["P", "W", "U", "C"]))
+    }
+
+    func testFilterStatusColumnRendersHostStatusLetters() throws {
+        FilterItems().insert(key: "router-01", value: FilterItem().initDefault(host: "router-01", service: "", status: 13))
+
+        let view = try XCTUnwrap(FilterTableViewDelegate().tableView(NSTableView(), viewFor: StatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")), row: 0) as? NSTextField)
+
+        XCTAssertEqual(Set(view.stringValue.split(separator: ",").map(String.init)), Set(["PE", "D", "UR"]))
+    }
+}
+
 private final class FilterItemWindowControllerFixture {
     let controller = FilterItemWindowController(window: NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300), styleMask: [.titled], backing: .buffered, defer: false))
     let window: NSWindow
@@ -924,5 +1092,65 @@ private final class FilterItemWindowControllerFixture {
 
     deinit {
         window.close()
+    }
+}
+
+private final class FilterOptionsTabControllerFixture {
+    let controller = FilterOptionsTabController(window: NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300), styleMask: [.titled], backing: .buffered, defer: false))
+    let tableView: FilterOptionsTableView
+    var createdWindows: [RecordingFilterItemWindowController] = []
+
+    init(selectedRow: Int = -1) {
+        tableView = FilterOptionsTableView(selectedRow: selectedRow)
+        controller.filterItemsTable = tableView
+        controller.filterItemWindowFactory = {
+            let window = RecordingFilterItemWindowController()
+            self.createdWindows.append(window)
+            return window
+        }
+    }
+
+    func segmentedControl(selectedSegment: Int) -> NSSegmentedControl {
+        let control = NSSegmentedControl(labels: ["+", "-", "Edit"], trackingMode: .selectOne, target: nil, action: nil)
+        control.selectedSegment = selectedSegment
+        return control
+    }
+}
+
+private final class FilterOptionsTableView: NSTableView {
+    private let row: Int
+    private(set) var reloadDataCallCount = 0
+
+    init(selectedRow: Int) {
+        row = selectedRow
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override var selectedRow: Int {
+        return row
+    }
+
+    override func reloadData() {
+        reloadDataCallCount += 1
+    }
+}
+
+private final class RecordingFilterItemWindowController: FilterItemWindowController {
+    private(set) var didShowWindow = false
+
+    init() {
+        super.init(window: NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 120), styleMask: [.titled], backing: .buffered, defer: false))
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override func showWindow(_ sender: Any?) {
+        didShowWindow = true
     }
 }

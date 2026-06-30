@@ -103,11 +103,11 @@ The live smoke requires Accessibility permission for the invoking terminal or
 runner process. It builds and launches the Release app with isolated storage
 and defaults, verifies the menu-bar status item through System Events, opens
 the status panel, reaches the Monitoring Instances editor from status-item
-Settings, proves add-row persistence in disposable JSON storage, and quits
+Settings, verifies the Preferences window is onscreen, and quits
 through the status-item menu.
 
 Automated smoke opens the menu extra with Accessibility `AXPress`, then verifies
-keyboard navigation inside the opened menu. Full global keyboard focus into
+named menu-item activation inside the opened menu. Full global keyboard focus into
 macOS menu extras is controlled by system keyboard settings and belongs in
 manual accessibility QA.
 
