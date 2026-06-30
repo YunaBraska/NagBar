@@ -8,6 +8,8 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+## [2026.06.1811748] - 2026-06-30
+
 ### Changed
 
 - Revived the macOS build and test workflow for current Xcode.
@@ -54,3 +56,4 @@ security, upgrade notes, and verification evidence.
 - Local/private ad-hoc builds are not public release artifacts.
 - Coverage remains below the production target documented in
   `docs/PRODUCTION_READINESS.md`.
+
