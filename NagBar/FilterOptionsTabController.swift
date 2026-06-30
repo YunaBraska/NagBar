@@ -6,14 +6,7 @@
 //  Copyright © 2016 Volen Davidov. All rights reserved.
 //
 
-import Foundation
 import Cocoa
-
-enum SegmentControl: Int {
-    case add = 0
-    case delete = 1
-    case edit = 2
-}
 
 class FilterOptionsTabController: NSWindowController {
     

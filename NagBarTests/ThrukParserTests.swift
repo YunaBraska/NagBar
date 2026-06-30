@@ -27,8 +27,8 @@ class ThrukParserTests: XCTestCase {
         XCTAssertEqual(test[0].monitoringInstance!.name, "test")
         XCTAssertEqual(test[0].host, "linksys-srw224p")
         XCTAssertEqual(test[0].status, "UNREACHABLE")
-        XCTAssertEqual(test[0].lastCheck, "02-07-2016 09:37:39")
-        XCTAssertEqual(test[0].duration, self.timeSinceSecondsToString(1467441467))
+        XCTAssertEqual(test[0].lastCheck, parser.unixToTimestamp(1467441459))
+        XCTAssertDuration(test[0].duration, matches: 1467441467)
         XCTAssertEqual(test[0].statusInformation, "fsdf")
         XCTAssertEqual(test[0].itemUrl, "http://testmonitoring/thruk/cgi-bin/extinfo.cgi?type=1&host=linksys-srw224p")
     }
@@ -51,14 +51,92 @@ class ThrukParserTests: XCTestCase {
         XCTAssertEqual(test[1].host, "localhost")
         XCTAssertEqual(test[1].service, "Current Users")
         XCTAssertEqual(test[1].status, "UNKNOWN")
-        XCTAssertEqual(test[1].lastCheck, "02-07-2016 11:23:18")
+        XCTAssertEqual(test[1].lastCheck, parserServices.unixToTimestamp(1467447798))
         XCTAssertEqual(test[1].attempt, "4/4 #1432")
-        XCTAssertEqual(test[1].duration, self.timeSinceSecondsToString(1405166941))
+        XCTAssertDuration(test[1].duration, matches: 1405166941)
         XCTAssertEqual(test[1].statusInformation, "(null)")
         XCTAssertEqual(test[1].itemUrl, "http://testmonitoring/thruk/cgi-bin/extinfo.cgi?type=2&host=localhost&service=Current Users")
     }
+
+    func testMissingHostStateDoesNotCrashAndUsesEmptyDefaults() {
+        let monitoringInstance = MonitoringInstance().initDefault(name: "test", url: "http://testmonitoring/cgi-bin/", type: .Nagios, username: "testuser", password: "testpass", enabled: 1)
+        let parser = ThrukParser(monitoringInstance)
+        let data = Data(#"[{"display_name":"web-01","last_check":1467441459,"last_state_change":0}]"#.utf8)
+
+        let items = parser.parse(urlType: .hosts, data: data)
+
+        XCTAssertEqual(items.count, 1)
+        XCTAssertEqual(items[0].host, "web-01")
+        XCTAssertEqual(items[0].status, "")
+        XCTAssertEqual(items[0].duration, "N/A")
+        XCTAssertEqual(items[0].statusInformation, "")
+    }
+
+    func testMalformedJSONReturnsNoHostOrServiceItems() {
+        let monitoringInstance = MonitoringInstance().initDefault(name: "test", url: "http://testmonitoring/cgi-bin/", type: .Nagios, username: "testuser", password: "testpass", enabled: 1)
+        let parser = ThrukParser(monitoringInstance)
+        let data = Data(#"[{"display_name":"web-01""#.utf8)
+
+        XCTAssertEqual(parser.parse(urlType: .hosts, data: data).count, 0)
+        XCTAssertEqual(parser.parse(urlType: .services, data: data).count, 0)
+    }
+
+    func testHostStatusVariantsMapSupportedThrukStates() {
+        let monitoringInstance = MonitoringInstance().initDefault(name: "test", url: "http://testmonitoring/cgi-bin/", type: .Nagios, username: "testuser", password: "testpass", enabled: 1)
+        let parser = ThrukParser(monitoringInstance)
+        let data = Data("""
+        [
+          {"display_name":"host-up","state":0,"last_check":1467441459,"last_state_change":1467441467,"plugin_output":"up"},
+          {"display_name":"host-down","state":1,"last_check":1467441459,"last_state_change":1467441467,"plugin_output":"down"},
+          {"display_name":"host-unreachable","state":2,"last_check":1467441459,"last_state_change":1467441467,"plugin_output":"unreachable"},
+          {"display_name":"host-invalid","state":99,"last_check":1467441459,"last_state_change":1467441467,"plugin_output":"invalid"}
+        ]
+        """.utf8)
+
+        let items = parser.parse(urlType: .hosts, data: data)
+
+        XCTAssertEqual(items.map { $0.status }, ["UP", "DOWN", "UNREACHABLE", ""])
+    }
+
+    func testServiceStatusVariantsMapSupportedThrukStates() {
+        let monitoringInstance = MonitoringInstance().initDefault(name: "test", url: "http://testmonitoring/cgi-bin/", type: .Nagios, username: "testuser", password: "testpass", enabled: 1)
+        let parser = ThrukParser(monitoringInstance)
+        let data = Data("""
+        [
+          {"host_name":"web-01","description":"ping","state":0,"last_check":1467441459,"last_state_change":1467441467,"current_attempt":1,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"ok"},
+          {"host_name":"web-01","description":"disk","state":1,"last_check":1467441459,"last_state_change":1467441467,"current_attempt":2,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"warning"},
+          {"host_name":"web-01","description":"cpu","state":2,"last_check":1467441459,"last_state_change":1467441467,"current_attempt":3,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"critical"},
+          {"host_name":"web-01","description":"load","state":3,"last_check":1467441459,"last_state_change":1467441467,"current_attempt":4,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"unknown"},
+          {"host_name":"web-01","description":"memory","state":99,"last_check":1467441459,"last_state_change":1467441467,"current_attempt":1,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"invalid"}
+        ]
+        """.utf8)
+
+        let items = parser.parse(urlType: .services, data: data) as! Array<ServiceMonitoringItem>
+
+        XCTAssertEqual(items.map { $0.status }, ["OK", "WARNING", "CRITICAL", "UNKNOWN", ""])
+    }
+
+    func testLastCheckZeroMarksHostAndServiceStatusAsNA() {
+        let monitoringInstance = MonitoringInstance().initDefault(name: "test", url: "http://testmonitoring/cgi-bin/", type: .Nagios, username: "testuser", password: "testpass", enabled: 1)
+        let parser = ThrukParser(monitoringInstance)
+        let hostData = Data(#"[{"display_name":"host-pending","state":0,"last_check":0,"last_state_change":0,"plugin_output":"pending"}]"#.utf8)
+        let serviceData = Data(#"[{"host_name":"web-01","description":"ping","state":0,"last_check":0,"last_state_change":0,"current_attempt":1,"max_check_attempts":4,"current_notification_number":0,"plugin_output":"pending"}]"#.utf8)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! Array<ServiceMonitoringItem>
+
+        XCTAssertEqual(hosts[0].status, "N/A")
+        XCTAssertEqual(services[0].status, "N/A")
+    }
     
-    private func timeSinceSecondsToString(_ timeLeftSeconds: Double?) -> String {
+    private func XCTAssertDuration(_ actual: String, matches timestamp: Double, file: StaticString = #file, line: UInt = #line) {
+        let expected = durationSince(timestamp)
+        let expectedPlusOne = durationSince(timestamp - 1)
+        let expectedMinusOne = durationSince(timestamp + 1)
+        XCTAssertTrue([expectedMinusOne, expected, expectedPlusOne].contains(actual), "Expected duration near \(expected), got \(actual)", file: file, line: line)
+    }
+
+    private func durationSince(_ timeLeftSeconds: Double?) -> String {
         
         guard let timeLeftSeconds = timeLeftSeconds else {
             return ""

@@ -60,6 +60,7 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
             let object = self.value(forKey: value) as! NSButton
             if status/key >= 1 {
                 object.isEnabled = true
+                object.state = NSControl.StateValue.on
                 status -= key
             } else {
                 object.state = NSControl.StateValue.off
@@ -74,6 +75,11 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
     @IBAction func saveButtonClick(_ sender: AnyObject) {
         
         let key = FilterItems.generateKey(host.stringValue, service: service.stringValue)
+        let validationResult = FilterItem.validate(host: host.stringValue, service: service.stringValue)
+        if !validationResult.isValid {
+            NagBarAlert().showWarningAlert(validationResult.title, informativeText: validationResult.message)
+            return
+        }
         
         var status: Int = 0
         if service.stringValue.count != 0 {
@@ -102,11 +108,6 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
         }
         
         let filterItem = FilterItem().initDefault(host: host.stringValue, service: service.stringValue, status: status)
-        
-        // Do not allow something with empty host and service to be saved
-        if key == "" {
-            return
-        }
         
         // Then check if the item already exists. It will in the case of an existing item being edited. If filterItemKey was set (i.e. we are editing FilterItem), then it is OK to continue and overwrite it.
         if FilterItems().getKeys().contains(key) && filterItemKey == nil {

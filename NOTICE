@@ -1,0 +1,16 @@
+NagBar
+
+This product includes sound assets from freesound.org.
+
+Creative Commons 0:
+
+- https://www.freesound.org/people/ertfelda/sounds/243701/
+- https://www.freesound.org/people/plasterbrain/sounds/242856/
+- https://www.freesound.org/people/santino_c/sounds/170825/
+
+Creative Commons Attribution 3.0:
+
+- https://www.freesound.org/people/radian/sounds/63077/
+
+Dependency license inventory is maintained in source and documentation. CocoaPods
+and `Podfile.lock` are no longer part of the active build.

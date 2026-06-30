@@ -7,16 +7,15 @@
 //
 
 import Foundation
-import PromiseKit
 
 class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
     func get(_ url: String) -> Promise<Data> {
         
         return Promise{ seal in
             
-            var promise: Promise<Void> = Promise<Void>.value(Void())
+            let promise: Promise<Void> = Promise<Void>.value(Void())
             
-            promise = promise
+            promise
                 .then { _ -> Promise<Bool> in
                     // check if Check_MK is set to use basic auth or cookie auth
                     return self.checkBasicAuth(self.monitoringInstance!.url)
@@ -24,7 +23,7 @@ class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
                 .then { basicAuth -> Promise<Bool> in
                     // if Check_MK is not using basic auth, then we have to log in
                     if !basicAuth {
-                        if ConnectionManager.sharedInstance.cookies.cookies!.isEmpty {
+                        if !self.hasSessionCookie(for: self.monitoringInstance!) {
                             // try to log in and return the result of the login
                             return self.login(self.monitoringInstance!)
                         } else {
@@ -50,6 +49,9 @@ class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
                         seal.fulfill(data)
                     }
                 }
+                .catch { error in
+                    seal.reject(error)
+                }
         }
     }
     
@@ -59,24 +61,17 @@ class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
             let params = ["_username": monitoringInstance.username,
                 "_password": monitoringInstance.password,
                 "_login": "1"]
-            
-            ConnectionManager.sharedInstance.manager!.request(monitoringInstance.url + "login.py", method: .post, parameters: params).response { response in
-                
-                if response.error != nil {
-                    seal.reject(response.error!)
+
+            let headers = ["Content-Type": "application/x-www-form-urlencoded; charset=utf-8"]
+            let body = ConnectionManager.sharedInstance.formBody(params)
+
+            ConnectionManager.sharedInstance.request(monitoringInstance.url + "login.py", method: "POST", headers: headers, body: body) { result in
+                if case .failure(let error) = result {
+                    seal.reject(error)
+                    return
                 }
                 
-                var failed: Bool = true
-                
-                // if there are cookies, we check if one of them contains the domain for our monitoring instance
-                for cookie in ConnectionManager.sharedInstance.cookies.cookies! {
-                    
-                    if monitoringInstance.url.range(of: cookie.domain) != nil {
-                        failed = false
-                    }
-                }
-                
-                if failed == false {
+                if self.hasSessionCookie(for: monitoringInstance) {
                     seal.fulfill(true)
                 } else {
                     seal.fulfill(false)
@@ -90,18 +85,19 @@ class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(url, method: .head).response { response in
+            ConnectionManager.sharedInstance.request(url, method: "HEAD") { result in
+                switch result {
+                case .success(let response):
                 
-                if response.error != nil {
-                    seal.reject(response.error!)
-                }
-                
-                // if the response is 401, then we have basic auth
-                // otherwise we have cookie auth enabled
-                if response.response!.statusCode == 401 {
-                    seal.fulfill(true)
-                } else {
-                    seal.fulfill(false)
+                    // if the response is 401, then we have basic auth
+                    // otherwise we have cookie auth enabled
+                    if response.response.statusCode == 401 {
+                        seal.fulfill(true)
+                    } else {
+                        seal.fulfill(false)
+                    }
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
@@ -111,39 +107,54 @@ class CheckMKHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(url).authenticate(user: monitoringInstance.username, password: monitoringInstance.password).response { response in
-                
+            ConnectionManager.sharedInstance.request(url, username: monitoringInstance.username, password: monitoringInstance.password) { result in
+                switch result {
+                case .success(let response):
                 // if the response is 401, then we have basic auth
                 // otherwise we have cookie auth enabled
-                if response.response!.statusCode == 401 {
-                    seal.fulfill(Data())
-                }
-                
-                if response.error == nil {
-                    seal.fulfill(response.data!)
-                } else {
-                    seal.reject(response.error!)
+                    if response.response.statusCode == 401 {
+                        seal.fulfill(Data())
+                    } else {
+                        seal.fulfill(response.data)
+                    }
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
     }
     
-    // TODO: complete this
     func checkConnection() -> Promise<Bool> {
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(self.monitoringInstance!.url).authenticate(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password).response { response in
-                
-                seal.fulfill(true)
+            ConnectionManager.sharedInstance.request(self.monitoringInstance!.url, method: "HEAD", username: self.monitoringInstance!.username, password: self.monitoringInstance!.password) { result in
+                switch result {
+                case .success(let response):
+                    seal.fulfill((200...299).contains(response.response.statusCode))
+                case .failure:
+                    seal.fulfill(false)
+                }
             }
         }
     }
     
-    // TODO: implement Check_MK commands
     func post(_ url: String, postData: Dictionary<String, String>) -> Promise<Data> {
         return Promise { seal in
-            seal.fulfill(Data())
+            seal.reject(NSError(domain: "NagBar.CheckMKHTTPClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Check_MK commands are not supported"]))
+        }
+    }
+
+    private func hasSessionCookie(for monitoringInstance: MonitoringInstance) -> Bool {
+        guard let url = URL(string: monitoringInstance.url), let host = url.host else {
+            return false
+        }
+
+        let instancePath = url.path.isEmpty ? "/" : url.path
+        return (ConnectionManager.sharedInstance.cookies.cookies ?? []).contains { cookie in
+            let domain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+            let hostMatches = host == domain || host.hasSuffix("." + domain)
+            let pathMatches = instancePath.hasPrefix(cookie.path)
+            return hostMatches && pathMatches
         }
     }
 }
-

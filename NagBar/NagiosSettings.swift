@@ -66,10 +66,10 @@ class NagiosSettings: MonitoringInstanceSettings {
     }
     
     func getSortOrder() -> String {
-        return Settings().stringForKey("sortOrder")!
+        return Settings().stringForKey("sortOrder") ?? SettingDefaults.values["sortOrder"] ?? "0"
     }
     
     func getSortColumn() -> String {
-        return Settings().stringForKey("sortColumn")!
+        return Settings().stringForKey("sortColumn") ?? SettingDefaults.values["sortColumn"] ?? "0"
     }
 }

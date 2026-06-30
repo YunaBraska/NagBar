@@ -7,17 +7,27 @@
 //
 
 import Foundation
-import RealmSwift
 
 class FilterItems {
     
     typealias FIDictionary = Dictionary<String, FilterItem>
-    
-    let realm = try! Realm()
+
+    static var storageURLOverride: URL?
+
+    private var storageURL: URL {
+        if let storageURLOverride = FilterItems.storageURLOverride {
+            return storageURLOverride
+        }
+
+        let applicationSupport = NagBarStorage.applicationSupportDirectory()
+        return applicationSupport
+            .appendingPathComponent("com.volendavidov.NagBar", isDirectory: true)
+            .appendingPathComponent("filter-items.json", isDirectory: false)
+    }
     
     func getAll() -> FIDictionary {
         var filterItems: FIDictionary = [:]
-        for filterItem in realm.objects(FilterItem.self) {
+        for filterItem in loadItems() {
             filterItems[FilterItems.generateKey(filterItem.host, service: filterItem.service)] = filterItem
         }
         return filterItems
@@ -46,31 +56,61 @@ class FilterItems {
     }
     
     func updateStatus(filterItem: FilterItem, status: Int) {
-        try! realm.write {
-            filterItem.status = status
+        let key = FilterItems.generateKey(filterItem.host, service: filterItem.service)
+        let items = loadItems()
+        if let index = items.lastIndex(where: { FilterItems.generateKey($0.host, service: $0.service) == key }) {
+            items[index].status = status
         }
+        filterItem.status = status
+        saveItems(items)
     }
     
     func insert(key: String, value: FilterItem) {
-        try! realm.write {
-            realm.add(value)
-        }
+        var items = loadItems()
+        items.append(value)
+        saveItems(items)
     }
     
     func removeById(_ id: Int) {
-        var all = getAll()
         let key = getKeyById(id)
-        
-        try! realm.write {
-            realm.delete(all[key]!)
-        }
+        removeByKey(key)
     }
     
     func removeByKey(_ key: String) {
-        var all = getAll()
-        
-        try! realm.write {
-            realm.delete(all[key]!)
+        var items = loadItems()
+        let index = items.lastIndex { FilterItems.generateKey($0.host, service: $0.service) == key }!
+        items.remove(at: index)
+        saveItems(items)
+    }
+
+    func importLegacyItems(_ legacyItems: [FilterItem]) {
+        if count() > 0 {
+            return
+        }
+
+        saveItems(legacyItems)
+    }
+
+    func resetStorage() {
+        try? FileManager.default.removeItem(at: storageURL)
+    }
+
+    private func loadItems() -> [FilterItem] {
+        guard let data = try? Data(contentsOf: storageURL) else {
+            return []
+        }
+
+        return (try? JSONDecoder().decode([FilterItem].self, from: data)) ?? []
+    }
+
+    private func saveItems(_ items: [FilterItem]) {
+        do {
+            let directory = storageURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(items)
+            try data.write(to: storageURL, options: .atomic)
+        } catch {
+            NSLog("Could not save filter items: \(error)")
         }
     }
     

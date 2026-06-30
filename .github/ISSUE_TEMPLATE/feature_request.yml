@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a scoped product or backend improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - UI/UX
+        - Developer experience
+        - Nagios
+        - Icinga
+        - Icinga 2
+        - Thruk
+        - Check_MK
+        - Packaging/release
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How should maintainers know this is done?
+      placeholder: |
+        - ...
+        - ...

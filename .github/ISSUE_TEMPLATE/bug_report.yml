@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible NagBar problem
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use sanitized data only.
+      placeholder: |
+        1. Configure backend ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - Nagios
+        - Icinga
+        - Icinga 2
+        - Thruk
+        - Check_MK
+        - Not backend-specific
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or sanitized fixture data
+      description: Do not paste credentials, tokens, private URLs, private hostnames, or uncropped screenshots. `./script/build_and_run.sh --logs` and `--telemetry` can help capture maintainer diagnostics.

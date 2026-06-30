@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import PromiseKit
-import SwiftyJSON
 
 class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
     
@@ -16,7 +14,7 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
         return [CommandTypes.acknowledge, CommandTypes.openInBrowser, CommandTypes.scheduleDowntime, CommandTypes.recheck]
     }
     
-    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) {
+    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) -> Promise<CommandResult> {
         
         var promise: Promise<Data> = Promise<Data>.value(Data())
         
@@ -33,13 +31,12 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
             }
         }
         
-        promise.catch { err in
-            NSLog("Unable to execute acknowledge, error: %@", err.localizedDescription)
+        return promise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .acknowledge, itemCount: monitoringItems.count))
         }
-        
     }
-    
-    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) {
+
+    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) -> Promise<CommandResult> {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd.MM.yyyy, HH:mm:ss"
@@ -71,12 +68,12 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
             }
         }
         
-        promise.catch { err in
-            NSLog("Unable to schedule downtime, error: %@", err.localizedDescription)
+        return promise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .scheduleDowntime, itemCount: monitoringItems.count))
         }
     }
-    
-    func recheck(_ monitoringItems: Array<MonitoringItem>) {
+
+    func recheck(_ monitoringItems: Array<MonitoringItem>) -> Promise<CommandResult> {
         
         var promise: Promise<Data> = Promise<Data>.value(Data())
         
@@ -92,8 +89,8 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
             }
         }
         
-        promise.catch { err in
-            NSLog("Unable to schedule downtime, error: %@", err.localizedDescription)
+        return promise.then { _ -> Promise<CommandResult> in
+            return Promise<CommandResult>.value(CommandResult(action: .recheck, itemCount: monitoringItems.count))
         }
     }
     
@@ -102,12 +99,18 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
         var queryParams = ""
         
         if monitoringItem.monitoringItemType == .service {
-            queryParams += "service=" + monitoringItem.host + "!" + monitoringItem.service
+            queryParams += "service=" + self.queryValue(monitoringItem.host + "!" + monitoringItem.service)
         } else if monitoringItem.monitoringItemType == .host {
-            queryParams += "host=" + monitoringItem.host
+            queryParams += "host=" + self.queryValue(monitoringItem.host)
         }
         
         return queryParams
+    }
+
+    private func queryValue(_ value: String) -> String {
+        var allowedCharacters = CharacterSet.urlQueryAllowed
+        allowedCharacters.remove(charactersIn: "&+=?/")
+        return value.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? ""
     }
     
     func getTime(_ monitoringItems: Array<MonitoringItem>) -> Promise<(String,String)> {
@@ -125,7 +128,7 @@ class Icinga2Commands : MonitoringProcessorBase, CommandInterface {
                     // parse the start time
                     
                     guard let jsonResults = Icinga2Parser(self.monitoringInstance!).getJSON(data as NSData) else {
-                        seal.reject("Invalid JSON" as! Error)
+                        seal.reject(NSError(domain: "NagBar.Icinga2Commands", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"]))
                         return
                     }
                     

@@ -8,13 +8,13 @@
 
 import Cocoa
 import XCTest
-import RealmSwift
 
 class NagiosSettingsTests: XCTestCase {
     
     override func setUp() {
-        Realm.Configuration.defaultConfiguration.inMemoryIdentifier = self.name
-        
+        let appSettings = Settings()
+        appSettings.resetKnownSettings()
+
         let settings = [
             "refreshInterval": "30",
             "monitoringInstance": "0",
@@ -71,19 +71,8 @@ class NagiosSettingsTests: XCTestCase {
             "scheduleDowntimeDefaultComment": ""
         ]
         
-        let realm = try! Realm()
-        
         for (key, value) in settings {
-            if realm.objects(Setting.self).filter("key == %@", key).first != nil {
-                continue
-            }
-            
-            let setting = Setting()
-            setting.key = key
-            setting.value = value
-            try! realm.write {
-                realm.add(setting)
-            }
+            appSettings.setString(value, forKey: key)
         }
     }
     
@@ -110,8 +99,33 @@ class NagiosSettingsTests: XCTestCase {
     func testGetSortColumn() {
         XCTAssertEqual(NagiosSettings().getSortColumn(), "7");
     }
+
+    func testSortSettingsUseDefaultsWhenKeysAreMissing() {
+        let settings = Settings()
+        settings.resetKnownSettings()
+
+        XCTAssertEqual(NagiosSettings().getSortOrder(), "1")
+        XCTAssertEqual(NagiosSettings().getSortColumn(), "1")
+    }
+
+    func testCheckMKSortSettingsReturnEmptyQueryFragments() {
+        XCTAssertEqual(CheckMKSettings().getSortOrder(), "")
+        XCTAssertEqual(CheckMKSettings().getSortColumn(), "")
+    }
     
     func testSavePassword() {
         XCTAssertEqual(Settings().savePassword(), false);
+    }
+
+    func testSettersPersistTypedSettingsByKey() {
+        let settings = Settings()
+
+        settings.setBool(true, forKey: "useNotifications")
+        settings.setInteger(42, forKey: "refreshInterval")
+        settings.setString("operator note", forKey: "acknowledgementDefaultComment")
+
+        XCTAssertEqual(Settings().boolForKey("useNotifications"), true)
+        XCTAssertEqual(Settings().integerForKey("refreshInterval"), 42)
+        XCTAssertEqual(Settings().stringForKey("acknowledgementDefaultComment"), "operator note")
     }
 }

@@ -23,6 +23,6 @@ class CheckMKProcessor: MonitoringProcessorBase, MonitoringProcessor {
     }
     
     func command() -> CommandInterface {
-        return NagiosCommands(self.monitoringInstance!)
+        return UnsupportedCommands(self.monitoringInstance!)
     }
 }

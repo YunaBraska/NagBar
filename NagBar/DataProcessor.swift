@@ -77,6 +77,10 @@ class FilterItemsProcessor : SubtractProcessor {
     
     private func removeMonitoringItem(_ monitoringItem: MonitoringItem, filterItem: FilterItem, monitoringItemType: MonitoringItemType, statusMapping: Dictionary<MonitoringItemType, Dictionary<Int, String>>) -> MonitoringItem? {
 
+        if !FilterItem.validate(host: filterItem.host, service: filterItem.service).isValid {
+            return nil
+        }
+
         if(monitoringItem.host.range(of: filterItem.host, options: .regularExpression) == nil) {
             return nil
         }
@@ -161,7 +165,7 @@ class FilterScheduledDowntimeProcessor : SubtractProcessor {
         
         for monitoringItemDowntime in processorRequest.currentItems {
             for monitoringItem in processorRequest.allItems {
-                if monitoringItemDowntime.host == monitoringItem.host {
+                if monitoringItem.monitoringItemType == .service && monitoringItemDowntime.host == monitoringItem.host {
                     statusItemsForRemoval.append(monitoringItem)
                 }
             }

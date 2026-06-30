@@ -19,6 +19,12 @@ class NotificationCenter {
 }
 
 class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefreshAction {
+    private let deliverNotification: (NSUserNotification, NotificationDisplay) -> Void
+
+    init(deliverNotification: @escaping (NSUserNotification, NotificationDisplay) -> Void = NotificationDisplay.deliverThroughUserNotificationCenter) {
+        self.deliverNotification = deliverNotification
+        super.init()
+    }
     
     func process(_ oldResults: Array<MonitoringItem>, newResults: Array<MonitoringItem>) {
         let resultsDiff = self.resultsDiff(oldResults, newResults: newResults)
@@ -29,12 +35,16 @@ class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefr
             notification.title = i.host
             notification.subtitle = i.service + " " + i.status
             notification.informativeText = i.statusInformation
-            
-            NSUserNotificationCenter.default.delegate = self
-            NSUserNotificationCenter.default.deliver(notification)
+
+            deliverNotification(notification, self)
             
             NotificationCenter.sharedInstance = self
         }
+    }
+
+    private static func deliverThroughUserNotificationCenter(_ notification: NSUserNotification, delegate: NotificationDisplay) {
+        NSUserNotificationCenter.default.delegate = delegate
+        NSUserNotificationCenter.default.deliver(notification)
     }
     
     private func resultsDiff(_ oldResults: Array<MonitoringItem>, newResults: Array<MonitoringItem>) -> Array<MonitoringItem> {
@@ -214,6 +224,21 @@ class PlaySoundAlarm : DataRefreshAction {
 }
 
 class AlarmProcessor {
+    static var playDefaultSound: (String) -> Void = { filePath in
+        let systemSound = NSSound.init(contentsOfFile: Bundle.main.path(forSoundResource: filePath)!, byReference: true)
+        if let systemSound = systemSound {
+            systemSound.play()
+        }
+    }
+
+    static var playCustomSound: (String) -> Void = { filePath in
+        let soundfileURL = URL(fileURLWithPath: filePath)
+        let systemSound = NSSound.init(contentsOf: soundfileURL, byReference: true)
+
+        if let systemSound = systemSound {
+            systemSound.play()
+        }
+    }
     
     var alertType: String {
         return ""
@@ -268,25 +293,9 @@ class AlarmProcessor {
     private func selectSound(_ defaultSound: String, soundFile: String) {
         let filePath = Settings().stringForKey(soundFile)
         if filePath == "" {
-            playDefaultSound(defaultSound)
+            AlarmProcessor.playDefaultSound(defaultSound)
         } else {
-            playCustomSound(filePath!)
-        }
-    }
-    
-    private func playDefaultSound(_ filePath: String) {
-        let systemSound = NSSound.init(contentsOfFile: Bundle.main.path(forSoundResource: filePath)!, byReference: true)
-        if let systemSound = systemSound {
-            systemSound.play()
-        }
-    }
-    
-    private func playCustomSound(_ filePath: String) {
-        let soundfileURL = URL(fileURLWithPath: filePath)
-        let systemSound = NSSound.init(contentsOf: soundfileURL, byReference: true)
-        
-        if let systemSound = systemSound {
-            systemSound.play()
+            AlarmProcessor.playCustomSound(filePath!)
         }
     }
 }

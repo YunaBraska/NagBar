@@ -39,9 +39,9 @@ class StatusPanel : NSObject {
         var xCoords = (self.panelBounds.origin.x + self.panelBounds.size.width - (allColumnsWidth))
         
         // We always want to start from the leftmost part of the display, including the dock if its position is on the left side.
-        let visibleScreenRect = NSScreen.main?.visibleFrame
-        if (xCoords < visibleScreenRect!.origin.x) {
-            xCoords = visibleScreenRect!.origin.x
+        let visibleScreenRect = NSScreen.main?.visibleFrame ?? self.panelBounds
+        if (xCoords < visibleScreenRect.origin.x) {
+            xCoords = visibleScreenRect.origin.x
         }
         
         // The height of the panel is the number of rows * 26 (the height of a single row).
@@ -62,6 +62,8 @@ class StatusPanel : NSObject {
         
         panel = StatusNSPanel(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         panel!.hasShadow = true
+        panel!.setAccessibilityIdentifier(StatusItemAccessibility.statusPanelIdentifier)
+        panel!.contentView?.setAccessibilityIdentifier(StatusItemAccessibility.statusPanelIdentifier + ".content")
         panel!.makeKeyAndOrderFront(nil)
         
         let scrollView: NSScrollView

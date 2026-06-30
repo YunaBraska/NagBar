@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import PromiseKit
 
 class NagiosHTTPClient : MonitoringProcessorBase, HTTPClient {
     
@@ -15,18 +14,18 @@ class NagiosHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(url).authenticate(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password).response { response in
-                
-                if response.error == nil {
+            ConnectionManager.sharedInstance.request(url, username: self.monitoringInstance!.username, password: self.monitoringInstance!.password, validateStatus: true) { result in
+                switch result {
+                case .success(let response):
                     // if the response is 401, then we have basic auth
                     // otherwise we have cookie auth enabled
-                    if response.response!.statusCode == 401 {
+                    if response.response.statusCode == 401 {
                         seal.reject(NSError(domain: "", code: -999, userInfo: nil))
                     } else {
-                        seal.fulfill(response.data!)
+                        seal.fulfill(response.data)
                     }
-                } else {
-                    seal.reject(response.error!)
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
@@ -36,17 +35,17 @@ class NagiosHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(self.monitoringInstance!.url, method: .head).authenticate(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password).response { response in
-                
-                if response.error == nil {
+            ConnectionManager.sharedInstance.request(self.monitoringInstance!.url, method: "HEAD", username: self.monitoringInstance!.username, password: self.monitoringInstance!.password, validateStatus: true) { result in
+                switch result {
+                case .success(let response):
                     // if the response is 401, then we have basic auth
                     // otherwise we have cookie auth enabled
-                    if response.response!.statusCode == 401 {
+                    if response.response.statusCode == 401 {
                         seal.fulfill(false)
                     } else {
                         seal.fulfill(true)
                     }
-                } else {
+                case .failure:
                     seal.fulfill(false)
                 }
             }
@@ -57,18 +56,21 @@ class NagiosHTTPClient : MonitoringProcessorBase, HTTPClient {
         
         return Promise{ seal in
             
-            ConnectionManager.sharedInstance.manager!.request(url, method: .post, parameters: postData).authenticate(user: self.monitoringInstance!.username, password: self.monitoringInstance!.password).response { response in
-                
-                if response.error == nil {
+            let body = ConnectionManager.sharedInstance.formBody(postData)
+            let headers = ["Content-Type": "application/x-www-form-urlencoded; charset=utf-8"]
+
+            ConnectionManager.sharedInstance.request(url, method: "POST", headers: headers, body: body, username: self.monitoringInstance!.username, password: self.monitoringInstance!.password, validateStatus: true) { result in
+                switch result {
+                case .success(let response):
                     // if the response is 401, then we have basic auth
                     // otherwise we have cookie auth enabled
-                    if response.response!.statusCode == 401 {
+                    if response.response.statusCode == 401 {
                         seal.reject(NSError(domain: "", code: -999, userInfo: nil))
                     } else {
-                        seal.fulfill(response.data!)
+                        seal.fulfill(response.data)
                     }
-                } else {
-                    seal.reject(response.error!)
+                case .failure(let error):
+                    seal.reject(error)
                 }
             }
         }
