@@ -12,44 +12,8 @@ that authorship trail.
 
 ![](screenshot.png)
 
-## Screenshots
-
-First-run local fake-Icinga menu-bar entrypoint:
-
-![NagBar local fake Icinga status item menu](screenshots/readme/nagbar-local-fake-icinga-menu-crop.png)
-
-First-run status panel populated through the local fake Icinga HTTP server:
-
-![NagBar first-run local fake Icinga status panel](screenshots/readme/nagbar-first-run-local-fake-icinga-status-panel-crop.png)
-
 The first-run view is backed by a loopback fake Icinga HTTP server and the
 normal Icinga URL/client/parser path. It is not a hardcoded `Demo Mode` branch.
-
-Settings-owned About surface opened from the menu-bar entrypoint:
-
-![NagBar About settings opened from status item](screenshots/readme/nagbar-preferences-about-from-status-item-crop.png)
-
-Live status-item smoke proof opens the status panel through the menu-bar item:
-
-![NagBar live status item smoke status panel](screenshots/readme/nagbar-status-item-live-smoke-crop.png)
-
-Settings path for replacing the local fake Icinga fallback with a real remote:
-
-![NagBar Monitoring Instances settings path](screenshots/readme/nagbar-monitoring-instances-settings-live-smoke-crop.png)
-
-Backend selector lists every supported backend, including Check_MK:
-
-![NagBar backend selector with Check_MK](screenshots/readme/nagbar-monitoring-backend-selector-checkmk-crop.png)
-
-<p>
-  <img src="docs/assets/screenshots/preferences-general.png" alt="NagBar general preferences" width="48%">
-  <img src="docs/assets/screenshots/preferences-panel.png" alt="NagBar panel preferences" width="48%">
-</p>
-
-<p>
-  <img src="docs/assets/screenshots/preferences-filters.png" alt="NagBar filter preferences" width="48%">
-  <img src="docs/assets/screenshots/monitoring-instances.png" alt="NagBar monitoring instances editor" width="48%">
-</p>
 
 ## Project Status
 
@@ -57,7 +21,7 @@ Status: In progress revival spike.
 
 Current evidence:
 
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 254 tests.
+- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 274 tests.
 - `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes.
 - `./script/build_and_run.sh --acceptance` passes full tests, Release build, and live runtime smoke through one local helper.
 - `./script/build_and_run.sh --package` creates a local/private Release zip, SHA-256 checksum, and manifest under `dist/`.
@@ -66,7 +30,7 @@ Current evidence:
   default, and switches to Developer ID signing plus notarization when the
   required secrets are present.
 - Release runtime smoke passes on the maintainer machine; `script/status_item_smoke.sh` runs with isolated app storage/defaults, verifies the status-item menu, Show Status panel/table, keyboard menu activation, Refresh, Apple-menu product-action removal, Settings-to-Monitoring-Instances reachability, Monitoring Instances add-row persistence, and Quit.
-- Screenshots are captured under `screenshots/readme/`.
+- Public docs keep only app-owned image assets. Smoke screenshots are opt-in local artifacts because full-screen captures can expose private desktop data.
 - Removed dependencies: `SAMKeychain`, `SwiftyJSON`, `Alamofire`, `PromiseKit`, `hpple`, `RealmSwift`, and CocoaPods.
 - Remaining CocoaPods: none. Active scalar settings are on `UserDefaults`;
   filters, server login preferences, and monitoring instances are stored as JSON.
@@ -90,7 +54,7 @@ Not production-distribution ready yet:
   `./script/sign_release.sh`, `./script/notarize_release.sh`, and
   `./script/package_release.sh --developer-id` provide the explicit public
   release path for maintainers with a Developer ID Application certificate.
-- Coverage is currently 74.97% for `NagBar.app` from Xcode result metrics; the production target
+- Coverage is currently 76.32% for `NagBar.app` from Xcode result metrics; the production target
   remains about 95%.
 - Users upgrading directly from a Realm-only build need release-note guidance to
   reconfigure or migrate through an earlier bridge build.

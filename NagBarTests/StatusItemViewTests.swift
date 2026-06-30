@@ -176,6 +176,64 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(title, "Total Count: 2")
     }
 
+    func testStatusBarAnimationTriggerIgnoresMissingOldResults() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: nil, newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+
+        XCTAssertEqual(trigger, .none)
+    }
+
+    func testStatusBarAnimationTriggerIgnoresMissingNewResults() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: nil)
+
+        XCTAssertEqual(trigger, .none)
+    }
+
+    func testStatusBarAnimationTriggerAlarmsWhenProblemCountIncreases() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL"),
+            host("db-01", status: "DOWN")
+        ])
+
+        XCTAssertEqual(trigger, .alarm)
+    }
+
+    func testStatusBarAnimationTriggerRecoversWhenProblemCountDecreases() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL"),
+            host("db-01", status: "DOWN")
+        ], newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+
+        XCTAssertEqual(trigger, .recovery)
+    }
+
+    func testStatusBarAnimationTriggerAlarmsWhenProblemIdentityChanges() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: [
+            service("web-01", service: "Disk", status: "CRITICAL")
+        ])
+
+        XCTAssertEqual(trigger, .alarm)
+    }
+
+    func testStatusBarAnimationTriggerDoesNotAnimateUnchangedProblems() {
+        let trigger = StatusBarAnimationTrigger.evaluate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+
+        XCTAssertEqual(trigger, .none)
+    }
+
     func testApplicationMenuPolicyRemovesAboutAndPreferencesEntrypoints() {
         let mainMenu = NSMenu(title: "Main")
         let appMenuItem = NSMenuItem(title: "NagBar", action: nil, keyEquivalent: "")

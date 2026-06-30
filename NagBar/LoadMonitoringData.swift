@@ -20,9 +20,7 @@ class LoadMonitoringData {
         }
     }
 
-    init(loadStatusBar: @escaping (Array<MonitoringItem>, FailedMonitoringInstances) -> Void = { results, failedMonitoringInstances in
-        StatusBar.get().load(results, failedMonitoringInstances: failedMonitoringInstances)
-    }) {
+    init(loadStatusBar: @escaping (Array<MonitoringItem>, FailedMonitoringInstances) -> Void) {
         self.core = LoadMonitoringDataCore(loadStatusBar: loadStatusBar)
     }
 

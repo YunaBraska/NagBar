@@ -9,10 +9,10 @@ public production release until the blocked gates below are closed.
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Full test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 254 tests |
-| Coverage gate | Partial | Current Xcode result reports 74.97% coverage for `NagBar.app`; requested production gate is about 95% |
+| Full test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 274 tests |
+| Coverage gate | Partial | Current Xcode result reports 76.32% coverage for `NagBar.app`; requested production gate is about 95% |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
-| Runtime smoke | Done | `script/status_item_smoke.sh` runs with isolated app storage/defaults and verifies live status-item menu shape, Show Status panel/table, keyboard menu activation, Refresh, Apple-menu product-action removal, status-item Settings reachability to Monitoring Instances, Monitoring Instances add-row persistence, Quit, and captures screenshot evidence |
+| Runtime smoke | Done | `script/status_item_smoke.sh` runs with isolated app storage/defaults and verifies live status-item menu shape, Show Status panel/table, keyboard menu activation, Refresh, Apple-menu product-action removal, status-item Settings reachability to Monitoring Instances, Monitoring Instances add-row persistence, and Quit |
 | Local developer acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke through the canonical helper |
 | Removed stale dependencies | Done | No `SAMKeychain`, `SwiftyJSON`, `Alamofire`, `PromiseKit`, `hpple`, `RealmSwift`, or CocoaPods references in app/test/project files |
 | Fake-server HTTP test | Partial | Nagios/Icinga GET/auth/non-2xx behavior, first-run local fake Icinga fallback over loopback HTTP, Nagios/Icinga and Icinga2 command POST contracts, and Check_MK login/session behavior covered |

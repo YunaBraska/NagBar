@@ -27,7 +27,7 @@ open NagBar.xcworkspace
 ./script/build_and_run.sh --verify
 ```
 
-The Codex desktop Run action points at the same command through
+The configured local run action points at the same command through
 `.codex/environments/environment.toml`.
 
 ## Test
@@ -103,13 +103,13 @@ The live smoke requires Accessibility permission for the invoking terminal or
 runner process. It builds and launches the Release app with isolated storage
 and defaults, verifies the menu-bar status item through System Events, opens
 the status panel, reaches the Monitoring Instances editor from status-item
-Settings, proves add-row persistence in disposable JSON storage, captures
-screenshots, and quits through the status-item menu.
+Settings, proves add-row persistence in disposable JSON storage, and quits
+through the status-item menu.
 
 Automated smoke opens the menu extra with Accessibility `AXPress`, then verifies
 keyboard navigation inside the opened menu. Full global keyboard focus into
 macOS menu extras is controlled by system keyboard settings and belongs in
 manual accessibility QA.
 
-Do not publish screenshots without checking for private desktop contents; crop
-screenshots before using them in README material.
+Screenshots are opt-in maintainer artifacts. Do not publish full-screen captures
+without checking for private desktop contents.
