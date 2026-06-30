@@ -68,8 +68,8 @@ jobs:
       - name: Commit release metadata
         run: |
           set -eu
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add CHANGELOG.md NagBar.xcodeproj/project.pbxproj
           if git diff --cached --quiet; then
             echo "Release metadata already current."

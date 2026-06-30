@@ -176,7 +176,7 @@ After building and packaging:
 2. Confirm the app appears in the menu bar.
 3. Confirm preferences open.
 4. Add a test monitoring instance against a fake or disposable backend.
-5. Capture logs and screenshot evidence for maintainer records.
+5. Capture log evidence for maintainer records.
 
 Do not publish screenshots that expose private infrastructure or desktop data.
 

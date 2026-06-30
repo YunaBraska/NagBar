@@ -102,6 +102,30 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertTrue(requests.contains { $0.authorization != nil })
     }
 
+    func testLoadMonitoringDataWrapperPublishesFakeServerRefreshThroughInjectedStatusBarLoader() throws {
+        let server = try makeServer()
+        _ = storeEnabledMonitoringInstance(server: server, type: .Icinga)
+        let refreshed = expectation(description: "Wrapper refresh publishes status data")
+        var publishedResults: [MonitoringItem] = []
+        var publishedFailures: FailedMonitoringInstances = [:]
+        let loader = LoadMonitoringData(loadStatusBar: { results, failedMonitoringInstances in
+            publishedResults = results
+            publishedFailures = failedMonitoringInstances
+        })
+
+        loader.refreshStatusData { _, _ in
+            refreshed.fulfill()
+        }
+
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(publishedFailures.isEmpty)
+        XCTAssertGreaterThan(publishedResults.count, 0)
+        XCTAssertTrue(publishedResults.contains { $0.monitoringInstance?.name == "fake-Icinga" && $0.host == "hplj2605dn" && $0.status == "DOWN" })
+        XCTAssertTrue(publishedResults.contains { $0.monitoringInstance?.name == "fake-Icinga" && $0.host == "localhost" && $0.service == "Total Processes" && $0.status == "WARNING" })
+        XCTAssertEqual(OldStatusData.sharedInstance.statusData?.count, publishedResults.count)
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization != nil })
+    }
+
     func testRefreshStatusDataReportsWrongCredentialsForFailedIcingaRemote() throws {
         let server = try makeServer()
         _ = storeEnabledMonitoringInstance(server: server, type: .Icinga, password: "wrongpass")
