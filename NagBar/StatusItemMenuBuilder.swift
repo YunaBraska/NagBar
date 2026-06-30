@@ -63,7 +63,6 @@ struct StatusItemMenuActions {
 struct StatusItemMenuBuilder {
     static func build(target: AnyObject, actions: StatusItemMenuActions) -> NSMenu {
         let menu = NSMenu(title: "")
-
         menu.addItem(menuItem(title: "Show Status", identifier: StatusItemAccessibility.showStatusIdentifier, action: actions.status, target: target))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(menuItem(title: "About NagBar", identifier: StatusItemAccessibility.aboutIdentifier, action: actions.about, target: target))
@@ -85,6 +84,26 @@ struct StatusItemMenuBuilder {
         item.target = target
         item.setAccessibilityIdentifier(identifier)
         return item
+    }
+}
+
+struct StatusPanelDismissalPolicy {
+    static func shouldDismiss(frontmostBundleIdentifier: String, bundleIdentifier: String) -> Bool {
+        if frontmostBundleIdentifier == bundleIdentifier {
+            return false
+        }
+
+        if frontmostBundleIdentifier == "com.apple.systemevents" {
+            return false
+        }
+
+        return true
+    }
+}
+
+struct StatusPanelFallbackFrame {
+    static func statusItemFrame(visibleFrame: NSRect) -> NSRect {
+        return NSRect(x: visibleFrame.maxX - 1, y: visibleFrame.maxY, width: 1, height: 1)
     }
 }
 

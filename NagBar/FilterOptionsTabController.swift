@@ -13,6 +13,9 @@ class FilterOptionsTabController: NSWindowController {
     @IBOutlet weak var filterItemsTable: NSTableView!
     
     var filterItemWindow: FilterItemWindowController?
+    var filterItemWindowFactory: () -> FilterItemWindowController = {
+        FilterItemWindowController(windowNibName: "FilterItemWindow")
+    }
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -35,7 +38,7 @@ class FilterOptionsTabController: NSWindowController {
         
         switch selectedSegment! {
         case .add:
-            filterItemWindow = FilterItemWindowController(windowNibName: "FilterItemWindow")
+            filterItemWindow = filterItemWindowFactory()
             filterItemWindow!.showWindow(self)
         case .delete:
             if filterItemsTable.selectedRow != -1 {
@@ -44,7 +47,7 @@ class FilterOptionsTabController: NSWindowController {
             }
         case .edit:
             if filterItemsTable.selectedRow != -1 {
-                filterItemWindow = FilterItemWindowController(windowNibName: "FilterItemWindow")
+                filterItemWindow = filterItemWindowFactory()
                 filterItemWindow!.filterItemKey = FilterItems.generateKey(FilterItems().getById(filterItemsTable.selectedRow).host, service: FilterItems().getById(filterItemsTable.selectedRow).service)
                 filterItemWindow!.showWindow(self)
             }

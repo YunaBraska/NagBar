@@ -26,14 +26,16 @@ final class FakeIcingaServer {
     private var receivedRequests: [Request] = []
     private let hostStatus: Data
     private let serviceStatus: Data
+    private let icinga2Status: Data
     private let expectedAuthorization: String
     private var stopped = false
 
     private(set) var port: UInt16 = 0
 
-    init(hostStatus: Data, serviceStatus: Data, username: String, password: String) throws {
+    init(hostStatus: Data, serviceStatus: Data, username: String, password: String, icinga2Status: Data = FakeIcingaServer.defaultIcinga2Status()) throws {
         self.hostStatus = hostStatus
         self.serviceStatus = serviceStatus
+        self.icinga2Status = icinga2Status
         self.expectedAuthorization = "Basic " + Data("\(username):\(password)".utf8).base64EncodedString()
         self.listener = try NWListener(using: .tcp, on: .any)
 
@@ -123,6 +125,8 @@ final class FakeIcingaServer {
         let response: Data
         if authorization != expectedAuthorization {
             response = httpResponse(status: "401 Unauthorized", headers: ["WWW-Authenticate": "Basic realm=\"Icinga\""], body: Data())
+        } else if parsed.path.hasSuffix("/status") && method == "GET" {
+            response = httpResponse(status: "200 OK", headers: ["Content-Type": "application/json"], body: icinga2Status)
         } else if parsed.path.hasSuffix("/cmd.cgi") && method == "GET" {
             response = httpResponse(status: "200 OK", headers: [:], body: commandTimePage())
         } else if parsed.path.hasSuffix("/cmd.cgi") && method == "POST" {
@@ -195,6 +199,12 @@ final class FakeIcingaServer {
             <input name="end_time" value="30-06-2026 13:00:00">
           </body>
         </html>
+        """.utf8)
+    }
+
+    static func defaultIcinga2Status(programStart: Double = 1_782_800_000, uptime: Double = 3_600) -> Data {
+        return Data("""
+        {"results":[{"status":{"uptime":\(uptime),"icingaapplication":{"app":{"program_start":\(programStart)}}}}]}
         """.utf8)
     }
 }

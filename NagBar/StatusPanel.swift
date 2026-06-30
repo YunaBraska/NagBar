@@ -62,6 +62,8 @@ class StatusPanel : NSObject {
         
         panel = StatusNSPanel(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         panel!.hasShadow = true
+        panel!.setAccessibilityElement(true)
+        panel!.setAccessibilityRole(.window)
         panel!.setAccessibilityIdentifier(StatusItemAccessibility.statusPanelIdentifier)
         panel!.contentView?.setAccessibilityIdentifier(StatusItemAccessibility.statusPanelIdentifier + ".content")
         panel!.makeKeyAndOrderFront(nil)

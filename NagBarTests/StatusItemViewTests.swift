@@ -38,26 +38,26 @@ final class StatusItemViewTests: XCTestCase {
         let menu = StatusItemMenuBuilder.build(
             target: target,
             actions: StatusItemMenuActions(
-                status: #selector(StatusItemMenuTarget.showStatus),
-                about: #selector(StatusItemMenuTarget.showAbout),
-                preferences: #selector(StatusItemMenuTarget.openPreferences),
-                refresh: #selector(StatusItemMenuTarget.refresh)
+                status: #selector(StatusItemMenuTarget.showStatus(_:)),
+                about: #selector(StatusItemMenuTarget.showAbout(_:)),
+                preferences: #selector(StatusItemMenuTarget.openPreferences(_:)),
+                refresh: #selector(StatusItemMenuTarget.refresh(_:))
             )
         )
 
         XCTAssertEqual(menu.items.map { $0.title }, ["Show Status", "", "About NagBar", "Preferences", "", "Refresh", "", "Quit"])
-        XCTAssertEqual(menu.items[0].action, #selector(StatusItemMenuTarget.showStatus))
+        XCTAssertEqual(menu.items[0].action, #selector(StatusItemMenuTarget.showStatus(_:)))
         XCTAssertTrue(menu.items[0].target === target)
         XCTAssertEqual(menu.items[0].accessibilityIdentifier(), StatusItemAccessibility.showStatusIdentifier)
         XCTAssertTrue(menu.items[1].isSeparatorItem)
-        XCTAssertEqual(menu.items[2].action, #selector(StatusItemMenuTarget.showAbout))
+        XCTAssertEqual(menu.items[2].action, #selector(StatusItemMenuTarget.showAbout(_:)))
         XCTAssertTrue(menu.items[2].target === target)
         XCTAssertEqual(menu.items[2].accessibilityIdentifier(), StatusItemAccessibility.aboutIdentifier)
-        XCTAssertEqual(menu.items[3].action, #selector(StatusItemMenuTarget.openPreferences))
+        XCTAssertEqual(menu.items[3].action, #selector(StatusItemMenuTarget.openPreferences(_:)))
         XCTAssertTrue(menu.items[3].target === target)
         XCTAssertEqual(menu.items[3].accessibilityIdentifier(), StatusItemAccessibility.preferencesIdentifier)
         XCTAssertTrue(menu.items[4].isSeparatorItem)
-        XCTAssertEqual(menu.items[5].action, #selector(StatusItemMenuTarget.refresh))
+        XCTAssertEqual(menu.items[5].action, #selector(StatusItemMenuTarget.refresh(_:)))
         XCTAssertTrue(menu.items[5].target === target)
         XCTAssertEqual(menu.items[5].accessibilityIdentifier(), StatusItemAccessibility.refreshIdentifier)
         XCTAssertTrue(menu.items[6].isSeparatorItem)
@@ -74,10 +74,10 @@ final class StatusItemViewTests: XCTestCase {
         let menu = StatusItemMenuBuilder.build(
             target: target,
             actions: StatusItemMenuActions(
-                status: #selector(StatusItemMenuTarget.showStatus),
-                about: #selector(StatusItemMenuTarget.showAbout),
-                preferences: #selector(StatusItemMenuTarget.openPreferences),
-                refresh: #selector(StatusItemMenuTarget.refresh)
+                status: #selector(StatusItemMenuTarget.showStatus(_:)),
+                about: #selector(StatusItemMenuTarget.showAbout(_:)),
+                preferences: #selector(StatusItemMenuTarget.openPreferences(_:)),
+                refresh: #selector(StatusItemMenuTarget.refresh(_:))
             )
         )
 
@@ -143,6 +143,32 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertTrue(opened)
         XCTAssertEqual(refreshCount, 0)
         XCTAssertEqual(presentCount, 1)
+    }
+
+    func testStatusPanelDismissalPolicyIgnoresOwnAppAndSystemEventsAutomation() {
+        XCTAssertFalse(StatusPanelDismissalPolicy.shouldDismiss(
+            frontmostBundleIdentifier: "com.volendavidov.NagBar",
+            bundleIdentifier: "com.volendavidov.NagBar"
+        ))
+        XCTAssertFalse(StatusPanelDismissalPolicy.shouldDismiss(
+            frontmostBundleIdentifier: "com.apple.systemevents",
+            bundleIdentifier: "com.volendavidov.NagBar"
+        ))
+        XCTAssertTrue(StatusPanelDismissalPolicy.shouldDismiss(
+            frontmostBundleIdentifier: "com.apple.Terminal",
+            bundleIdentifier: "com.volendavidov.NagBar"
+        ))
+    }
+
+    func testStatusPanelFallbackFrameUsesTopRightVisibleScreenEdge() {
+        let frame = StatusPanelFallbackFrame.statusItemFrame(
+            visibleFrame: NSRect(x: 20, y: 40, width: 1200, height: 800)
+        )
+
+        XCTAssertEqual(frame.origin.x, 1219)
+        XCTAssertEqual(frame.origin.y, 840)
+        XCTAssertEqual(frame.width, 1)
+        XCTAssertEqual(frame.height, 1)
     }
 
     func testStatusItemRefreshActionUsesInjectedRefreshEntrypoint() {
@@ -366,6 +392,42 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(textValue(in: column.createViewForRow(1)), "🕒")
         XCTAssertEqual(textValue(in: column.createViewForRow(2)), "✓🕒")
         XCTAssertEqual(textValue(in: column.createViewForRow(3)), "")
+    }
+
+    func testStatusPanelOptionalColumnsRenderConfiguredValues() {
+        let instance = monitoringInstance(name: "primary")
+        let row = service("web-01", service: "HTTP", status: "CRITICAL", monitoringInstance: instance)
+        row.duration = "12m"
+        row.lastCheck = "30-06-2026 19:00:00"
+        row.attempt = "2/3"
+        row.statusInformation = "HTTP CRITICAL - connection refused"
+        let rows = [row]
+
+        XCTAssertEqual(textValue(in: SPMonitoringInstanceTableColumn(results: rows).createViewForRow(0)), "primary")
+        XCTAssertEqual(textValue(in: SPDurationTableColumn(results: rows).createViewForRow(0)), "12m")
+        XCTAssertEqual(textValue(in: SPLastCheckTableColumn(results: rows).createViewForRow(0)), "30-06-2026 19:00:00")
+        XCTAssertEqual(textValue(in: SPAttemptTableColumn(results: rows).createViewForRow(0)), "2/3")
+        XCTAssertEqual(textValue(in: SPStatusInformationTableColumn(results: rows).createViewForRow(0)), "HTTP CRITICAL - connection refused")
+    }
+
+    func testStatusPanelStatusInformationColumnCapsLongOutputWidth() {
+        Settings().setString("200", forKey: "statusInformationLength")
+        let short = service("web-01", service: "HTTP", status: "WARNING")
+        short.statusInformation = "short"
+        let long = service("web-01", service: "Disk", status: "CRITICAL")
+        long.statusInformation = String(repeating: "long-output-", count: 20)
+
+        let column = SPStatusInformationTableColumn(results: [short, long])
+
+        XCTAssertLessThan(column.columnWidth(short, font: statusPanelFont()), CGFloat(200))
+        XCTAssertEqual(column.columnWidth(long, font: statusPanelFont()), CGFloat(200))
+    }
+
+    func testStatusPanelUnknownStatusUsesWhiteCellBackground() throws {
+        let row = service("web-01", service: "HTTP", status: "CUSTOM")
+        let view = try XCTUnwrap(SPStatusTableColumn(results: [row]).createViewForRow(0) as? TableViewCellBackground)
+
+        XCTAssertEqual(view.color, NSColor(calibratedRed: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
     }
 
     func testStatusPanelContextMenuBuildsIcingaCommandMenuForSingleSelection() throws {
@@ -606,6 +668,10 @@ final class StatusItemViewTests: XCTestCase {
         return ""
     }
 
+    private func statusPanelFont() -> Dictionary<NSAttributedString.Key, NSFont> {
+        return [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 16.0)]
+    }
+
     private func disableOptionalStatusPanelColumns() {
         let settings = Settings()
         [
@@ -626,15 +692,15 @@ final class StatusItemViewTests: XCTestCase {
 }
 
 private final class StatusItemMenuTarget: NSObject {
-    @objc func showStatus() {
+    @objc func showStatus(_ sender: AnyObject) {
     }
 
-    @objc func showAbout() {
+    @objc func showAbout(_ sender: AnyObject) {
     }
 
-    @objc func openPreferences() {
+    @objc func openPreferences(_ sender: AnyObject) {
     }
 
-    @objc func refresh() {
+    @objc func refresh(_ sender: AnyObject) {
     }
 }

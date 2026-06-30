@@ -648,6 +648,47 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertNotNil(json["end_time"])
     }
 
+    func testIcinga2CommandCapabilitiesExposeSupportedStatusPanelActions() throws {
+        let server = try makeServer()
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
+
+        let capabilities = monitoringInstance.monitoringProcessor().command().capabilities()
+
+        XCTAssertEqual(capabilities.count, 4)
+        XCTAssertTrue(capabilities.contains { if case .acknowledge = $0 { return true } else { return false } })
+        XCTAssertTrue(capabilities.contains { if case .openInBrowser = $0 { return true } else { return false } })
+        XCTAssertTrue(capabilities.contains { if case .scheduleDowntime = $0 { return true } else { return false } })
+        XCTAssertTrue(capabilities.contains { if case .recheck = $0 { return true } else { return false } })
+    }
+
+    func testIcinga2GetTimeLoadsStatusThroughFakeServer() throws {
+        let programStart: Double = 1_782_800_000
+        let uptime: Double = 3_600
+        let server = try makeServer(icinga2Status: FakeIcingaServer.defaultIcinga2Status(programStart: programStart, uptime: uptime))
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
+        let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
+
+        let result = waitForTimeResult(monitoringInstance.monitoringProcessor().command().getTime([host]))
+
+        XCTAssertEqual(result.start, formattedIcinga2CommandTime(programStart + uptime))
+        XCTAssertEqual(result.end, formattedIcinga2CommandTime(programStart + uptime + 3_600))
+        XCTAssertNil(result.error)
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.path.hasSuffix("/status") && $0.authorization != nil })
+    }
+
+    func testIcinga2GetTimeRejectsInvalidStatusJSON() throws {
+        let server = try makeServer(icinga2Status: Data("not-json".utf8))
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
+        let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
+
+        let result = waitForTimeResult(monitoringInstance.monitoringProcessor().command().getTime([host]))
+
+        XCTAssertNil(result.start)
+        XCTAssertNil(result.end)
+        XCTAssertEqual(result.error?.localizedDescription, "Invalid JSON")
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.path.hasSuffix("/status") && $0.authorization != nil })
+    }
+
     func testUnsupportedBackendCommandRejectsWithUserVisibleError() {
         let monitoringInstance = MonitoringInstance().initDefault(
             name: "checkmk",
@@ -804,6 +845,25 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return (data, error)
     }
 
+    private func waitForTimeResult(_ promise: Promise<(String, String)>) -> (start: String?, end: String?, error: Error?) {
+        let expectation = self.expectation(description: "Time promise")
+        var startTime: String?
+        var endTime: String?
+        var error: Error?
+
+        promise.done { start, end in
+            startTime = start
+            endTime = end
+            expectation.fulfill()
+        }.catch { loadedError in
+            error = loadedError
+            expectation.fulfill()
+        }
+
+        waitForExpectations(timeout: 5)
+        return (startTime, endTime, error)
+    }
+
     private func waitForRejectedPromise<T>(_ promise: Promise<T>) -> Error? {
         let expectation = self.expectation(description: "Rejected promise")
         var rejectedError: Error?
@@ -819,10 +879,10 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return rejectedError
     }
 
-    private func makeServer() throws -> FakeIcingaServer {
+    private func makeServer(icinga2Status: Data = FakeIcingaServer.defaultIcinga2Status()) throws -> FakeIcingaServer {
         let hostStatus = try fixtureData(name: "IcingaHostStatus", type: "htm")
         let serviceStatus = try fixtureData(name: "IcingaServiceStatus", type: "htm")
-        let server = try FakeIcingaServer(hostStatus: hostStatus, serviceStatus: serviceStatus, username: "testuser", password: "testpass")
+        let server = try FakeIcingaServer(hostStatus: hostStatus, serviceStatus: serviceStatus, username: "testuser", password: "testpass", icinga2Status: icinga2Status)
         self.server = server
         return server
     }
@@ -948,6 +1008,12 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let data = Data(body.utf8)
         let object = try JSONSerialization.jsonObject(with: data, options: [])
         return try XCTUnwrap(object as? [String: String])
+    }
+
+    private func formattedIcinga2CommandTime(_ timeInterval: TimeInterval) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.YYYY, HH:mm:ss"
+        return formatter.string(from: Date(timeIntervalSince1970: timeInterval))
     }
 
     private func seedSettings() {

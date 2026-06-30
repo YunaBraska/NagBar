@@ -827,6 +827,45 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(reloaded?.password, "")
     }
 
+    func testSavePasswordButtonOffDeletesPersistedPasswordsButKeepsRuntimeCache() {
+        seedSavePassword(true)
+        let monitoringInstance = storedMonitoringInstance(name: "button-unsaved-password")
+        MonitoringInstances().updatePassword(monitoringInstance: monitoringInstance, password: "runtime-secret")
+        let button = savePasswordButton(state: .off)
+
+        button.performAction()
+
+        XCTAssertFalse(Settings().boolForKey("savePassword"))
+        XCTAssertEqual(PasswordStore.sharedInstance.get("button-unsaved-password"), "runtime-secret")
+
+        PasswordStore.sharedInstance.removeAll()
+        seedSavePassword(true)
+        XCTAssertEqual(MonitoringInstances().getByKey("button-unsaved-password")?.password, "")
+    }
+
+    func testSavePasswordButtonOnPersistsRuntimePasswords() {
+        seedSavePassword(false)
+        _ = storedMonitoringInstance(name: "button-saved-password")
+        PasswordStore.sharedInstance.set("button-saved-password", password: "runtime-secret")
+        let button = savePasswordButton(state: .on)
+
+        button.performAction()
+
+        XCTAssertTrue(Settings().boolForKey("savePassword"))
+        PasswordStore.sharedInstance.removeAll()
+        XCTAssertEqual(MonitoringInstances().getByKey("button-saved-password")?.password, "runtime-secret")
+    }
+
+    func testAcceptInvalidCertificatesButtonStoresSettingAndRefreshesConnectionManager() {
+        let button = AcceptInvalidCertificatesButton(frame: NSRect(x: 0, y: 0, width: 24, height: 24))
+        button.identifier = NSUserInterfaceItemIdentifier("acceptInvalidCertificates")
+        button.state = .on
+
+        button.performAction()
+
+        XCTAssertTrue(Settings().boolForKey("acceptInvalidCertificates"))
+    }
+
     func testMonitoringInstanceCollectionUpdatesFiltersAndRemovesBySortedId() {
         seedSavePassword(false)
         let disabled = storedMonitoringInstance(name: "beta-disabled", enabled: 0)
@@ -1151,6 +1190,13 @@ class MonitoringInstancesTest: XCTestCase {
 
     private func seedSavePassword(_ enabled: Bool) {
         Settings().setBool(enabled, forKey: "savePassword")
+    }
+
+    private func savePasswordButton(state: NSControl.StateValue) -> SavePasswordButton {
+        let button = SavePasswordButton(frame: NSRect(x: 0, y: 0, width: 24, height: 24))
+        button.identifier = NSUserInterfaceItemIdentifier("savePassword")
+        button.state = state
+        return button
     }
 
     private func tableCell(for identifier: String, row: Int, table: NSTableView) -> NSView? {

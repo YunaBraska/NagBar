@@ -54,5 +54,5 @@ xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Rel
 ```
 
 Result: focused monitoring-instance fallback suite passes 22 tests after the local fake-Icinga conversion;
-full suite passes 274 tests, coverage reports 76.32% for `NagBar.app`, Release build
-succeeds, and `script/status_item_smoke.sh` proves isolated status-item Settings reachability plus Monitoring Instances add-row persistence without publishing desktop screenshots.
+full suite passes 324 tests, coverage reports 83.17% for `NagBar.app`, Release build
+succeeds, and `script/status_item_smoke.sh` proves isolated status-item Preferences reachability without publishing desktop screenshots.

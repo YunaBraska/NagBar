@@ -122,4 +122,11 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertTrue(event.message.contains("errorDomain=\"NSURLErrorDomain\""))
         XCTAssertFalse(event.message.contains("secret"))
     }
+
+    func testStatusItemEventKeepsMessageInDedicatedCategory() {
+        let event = NagBarDiagnostics.statusItemEvent(message: "showStatusOpeningPanel items=6")
+
+        XCTAssertEqual(event.category, .statusItem)
+        XCTAssertEqual(event.message, "showStatusOpeningPanel items=6")
+    }
 }

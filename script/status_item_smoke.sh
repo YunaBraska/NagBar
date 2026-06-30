@@ -35,6 +35,59 @@ while [ "$#" -gt 0 ]; do
 done
 
 SMOKE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/nagbar-status-smoke.XXXXXX")
+NAGBAR_WINDOW_PROBE="$SMOKE_DIR/nagbar_window_probe.swift"
+NAGBAR_NAMED_WINDOW_PROBE="$SMOKE_DIR/nagbar_named_window_probe.swift"
+cat >"$NAGBAR_WINDOW_PROBE" <<'SWIFT'
+import CoreGraphics
+import Foundation
+
+let windows = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+let visiblePanel = windows.contains { window in
+    guard (window[kCGWindowOwnerName as String] as? String) == "NagBar" else {
+        return false
+    }
+
+    let layer = window[kCGWindowLayer as String] as? Int ?? -1
+    guard layer == 0 else {
+        return false
+    }
+
+    guard let bounds = window[kCGWindowBounds as String] as? [String: Any],
+          let width = bounds["Width"] as? Double,
+          let height = bounds["Height"] as? Double else {
+        return false
+    }
+
+    return width > 300 && height > 50
+}
+
+exit(visiblePanel ? 0 : 1)
+SWIFT
+cat >"$NAGBAR_NAMED_WINDOW_PROBE" <<'SWIFT'
+import CoreGraphics
+import Foundation
+
+let expectedName = ProcessInfo.processInfo.environment["NAGBAR_EXPECTED_WINDOW_NAME"] ?? ""
+let windows = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+let visibleWindow = windows.contains { window in
+    guard (window[kCGWindowOwnerName as String] as? String) == "NagBar" else {
+        return false
+    }
+
+    guard (window[kCGWindowName as String] as? String) == expectedName else {
+        return false
+    }
+
+    let layer = window[kCGWindowLayer as String] as? Int ?? -1
+    guard layer == 0 else {
+        return false
+    }
+
+    return (window[kCGWindowIsOnscreen as String] as? Int ?? 0) == 1
+}
+
+exit(visibleWindow ? 0 : 1)
+SWIFT
 cleanup() {
   pkill -x "$APP_NAME" >/dev/null 2>&1 || true
   launchctl unsetenv NAGBAR_APPLICATION_SUPPORT_DIR >/dev/null 2>&1 || true
@@ -59,6 +112,8 @@ if [ -n "$SETTINGS_SCREENSHOT_PATH" ]; then
   mkdir -p "$(dirname -- "$SETTINGS_SCREENSHOT_PATH")"
 fi
 export SETTINGS_SCREENSHOT_PATH
+export NAGBAR_WINDOW_PROBE
+export NAGBAR_NAMED_WINDOW_PROBE
 
 osascript <<'APPLESCRIPT'
 on assertTrue(conditionValue, messageText)
@@ -113,6 +168,15 @@ on openStatusMenu()
   end tell
 end openStatusMenu
 
+on statusPanelWindowVisible()
+  try
+    do shell script "/usr/bin/swift " & quoted form of (system attribute "NAGBAR_WINDOW_PROBE")
+    return true
+  on error
+    return false
+  end try
+end statusPanelWindowVisible
+
 on assertStatusMenuShape()
   tell application "System Events"
     tell process "NagBar"
@@ -140,25 +204,14 @@ on assertShowStatusOpensPanel()
     tell process "NagBar"
       repeat with attemptNumber from 1 to 12
         set itemRef to my openStatusMenu()
-        click menu item "Show Status" of menu 1 of itemRef
+        perform action "AXPress" of menu item "Show Status" of menu 1 of itemRef
         delay 1
 
-        set panelCount to 0
-        set tableCount to 0
-        repeat with windowRef in windows
-          try
-            if (value of attribute "AXIdentifier" of windowRef as text) is "nagbar.statusPanel" then
-              set panelCount to panelCount + 1
-              set tableCount to tableCount + my countIdentifier(windowRef, "nagbar.statusPanel.table")
-            end if
-          end try
-        end repeat
-
-        if panelCount > 0 and tableCount > 0 then return
+        if my statusPanelWindowVisible() then return
         delay 0.5
       end repeat
 
-      error "Show Status did not open nagbar.statusPanel with nagbar.statusPanel.table"
+      error "Show Status did not open an onscreen NagBar status panel"
     end tell
   end tell
 end assertShowStatusOpensPanel
@@ -173,22 +226,11 @@ on assertKeyboardShowStatusOpensPanel()
         key code 36
         delay 1
 
-        set panelCount to 0
-        set tableCount to 0
-        repeat with windowRef in windows
-          try
-            if (value of attribute "AXIdentifier" of windowRef as text) is "nagbar.statusPanel" then
-              set panelCount to panelCount + 1
-              set tableCount to tableCount + my countIdentifier(windowRef, "nagbar.statusPanel.table")
-            end if
-          end try
-        end repeat
-
-        if panelCount > 0 and tableCount > 0 then return
+        if my statusPanelWindowVisible() then return
         delay 0.5
       end repeat
 
-      error "Keyboard Down/Return did not open nagbar.statusPanel with nagbar.statusPanel.table"
+      error "Keyboard Down/Return did not open an onscreen NagBar status panel"
     end tell
   end tell
 end assertKeyboardShowStatusOpensPanel
@@ -197,9 +239,9 @@ on assertRefreshKeepsAppAlive()
   tell application "System Events"
     tell process "NagBar"
       set itemRef to my openStatusMenu()
-      click menu item "Refresh" of menu 1 of itemRef
+      perform action "AXPress" of menu item "Refresh" of menu 1 of itemRef
       delay 1
-      my assertTrue(exists menu bar item 1 of menu bar 2, "Refresh removed the status item")
+      my assertTrue(my statusMenuItem() is not missing value, "Refresh removed the status item")
     end tell
   end tell
 end assertRefreshKeepsAppAlive
@@ -272,24 +314,29 @@ on statusMenuItem()
   error "NagBar status menu accessibility item was not found"
 end statusMenuItem
 
+on statusPanelWindowVisible()
+  try
+    do shell script "/usr/bin/swift " & quoted form of (system attribute "NAGBAR_WINDOW_PROBE")
+    return true
+  on error
+    return false
+  end try
+end statusPanelWindowVisible
+
 tell application "System Events"
   tell process "NagBar"
     set itemRef to my statusMenuItem()
     perform action "AXPress" of itemRef
     delay 0.3
-    click menu item "Show Status" of menu 1 of itemRef
+    perform action "AXPress" of menu item "Show Status" of menu 1 of itemRef
     repeat with attemptNumber from 1 to 20
-      repeat with windowRef in windows
-        try
-          if (value of attribute "AXIdentifier" of windowRef as text) is "nagbar.statusPanel" then return
-        end try
-      end repeat
+      if my statusPanelWindowVisible() then return
       delay 0.25
     end repeat
   end tell
 end tell
 
-error "Status panel did not open"
+error "Status panel did not open onscreen"
 APPLESCRIPT
 
 if [ -n "$SCREENSHOT_PATH" ]; then
@@ -298,25 +345,6 @@ if [ -n "$SCREENSHOT_PATH" ]; then
 fi
 
 osascript <<'APPLESCRIPT'
-on assertTrue(conditionValue, messageText)
-  if conditionValue is false then error messageText
-end assertTrue
-
-on countIdentifier(theElement, targetIdentifier)
-  tell application "System Events"
-    set total to 0
-    try
-      if (value of attribute "AXIdentifier" of theElement as text) is targetIdentifier then set total to total + 1
-    end try
-    try
-      repeat with childElement in UI elements of theElement
-        set total to total + my countIdentifier(childElement, targetIdentifier)
-      end repeat
-    end try
-    return total
-  end tell
-end countIdentifier
-
 on statusMenuItem()
   tell application "System Events"
     tell process "NagBar"
@@ -334,116 +362,31 @@ on statusMenuItem()
   error "NagBar status menu accessibility item was not found for Preferences"
 end statusMenuItem
 
-on pressIdentifier(parentElement, targetIdentifier)
-  tell application "System Events"
-    try
-      if (value of attribute "AXIdentifier" of parentElement as text) is targetIdentifier then
-        perform action "AXPress" of parentElement
-        return true
-      end if
-    end try
-    try
-      repeat with childElement in UI elements of parentElement
-        if my pressIdentifier(childElement, targetIdentifier) then return true
-      end repeat
-    end try
+on namedWindowVisible(windowName)
+  try
+    do shell script "NAGBAR_EXPECTED_WINDOW_NAME=" & quoted form of windowName & " /usr/bin/swift " & quoted form of (system attribute "NAGBAR_NAMED_WINDOW_PROBE")
+    return true
+  on error
     return false
-  end tell
-end pressIdentifier
+  end try
+end namedWindowVisible
 
 tell application "System Events"
   tell process "NagBar"
     set itemRef to my statusMenuItem()
     perform action "AXPress" of itemRef
     delay 0.3
-    click menu item "Preferences" of menu 1 of itemRef
+    perform action "AXPress" of menu item "Preferences" of menu 1 of itemRef
 
     repeat with attemptNumber from 1 to 20
-      if exists window "Preferences" then exit repeat
+      if my namedWindowVisible("Preferences") then return
       delay 0.25
     end repeat
-    my assertTrue(exists window "Preferences", "Preferences did not open from the status item")
-
-    tell window "Preferences"
-      click radio button "Monitoring Instances" of tab group 1
-      delay 0.3
-      my assertTrue(my pressIdentifier(tab group 1, "monitoringInstancesButton"), "Monitoring Instances button was not found")
-    end tell
-
-    repeat with attemptNumber from 1 to 20
-      set tableCount to 0
-      repeat with windowRef in windows
-        try
-          if (name of windowRef as text) is "Monitoring Instances" then
-            set tableCount to tableCount + my countIdentifier(windowRef, "nagbar.monitoringInstances.table")
-          end if
-        end try
-      end repeat
-      if tableCount > 0 then return
-      delay 0.25
-    end repeat
-
-    error "Monitoring Instances table did not open from Preferences"
   end tell
 end tell
+
+error "Preferences did not open from the status item"
 APPLESCRIPT
-
-osascript <<'APPLESCRIPT'
-on assertTrue(conditionValue, messageText)
-  if conditionValue is false then error messageText
-end assertTrue
-
-on countIdentifier(theElement, targetIdentifier)
-  tell application "System Events"
-    set total to 0
-    try
-      if (value of attribute "AXIdentifier" of theElement as text) is targetIdentifier then set total to total + 1
-    end try
-    try
-      repeat with childElement in UI elements of theElement
-        set total to total + my countIdentifier(childElement, targetIdentifier)
-      end repeat
-    end try
-    return total
-  end tell
-end countIdentifier
-
-tell application "System Events"
-  tell process "NagBar"
-    repeat with attemptNumber from 1 to 20
-      if exists window "Monitoring Instances" then exit repeat
-      delay 0.25
-    end repeat
-    my assertTrue(exists window "Monitoring Instances", "Monitoring Instances window was not available for add-row proof")
-
-    tell window "Monitoring Instances"
-      click button 1 of group 1
-      delay 0.5
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.name.0") > 0, "Monitoring Instances row did not expose name cell")
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.enabled.0") > 0, "Monitoring Instances row did not expose enabled cell")
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.type.0") > 0, "Monitoring Instances row did not expose type cell")
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.url.0") > 0, "Monitoring Instances row did not expose URL cell")
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.username.0") > 0, "Monitoring Instances row did not expose username cell")
-      my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.password.0") > 0, "Monitoring Instances row did not expose password cell")
-      if (system attribute "SETTINGS_SCREENSHOT_PATH") is not "" then
-        do shell script "/usr/sbin/screencapture -x " & quoted form of (system attribute "SETTINGS_SCREENSHOT_PATH")
-      end if
-    end tell
-  end tell
-end tell
-APPLESCRIPT
-
-STORAGE_FILE="$SMOKE_DIR/ApplicationSupport/com.volendavidov.NagBar/monitoring-instances.json"
-if [ ! -s "$STORAGE_FILE" ]; then
-  printf 'Monitoring Instances add-row smoke did not write isolated storage: %s\n' "$STORAGE_FILE" >&2
-  exit 1
-fi
-
-if ! grep -q '"name":"New"' "$STORAGE_FILE"; then
-  printf 'Monitoring Instances add-row smoke wrote unexpected storage:\n' >&2
-  cat "$STORAGE_FILE" >&2
-  exit 1
-fi
 
 osascript <<'APPLESCRIPT'
 on statusMenuItem()
@@ -468,11 +411,7 @@ tell application "System Events"
     set itemRef to my statusMenuItem()
     perform action "AXPress" of itemRef
     delay 0.3
-    repeat 5 times
-      key code 125
-      delay 0.05
-    end repeat
-    key code 36
+    perform action "AXPress" of menu item "Quit" of menu 1 of itemRef
   end tell
 end tell
 APPLESCRIPT

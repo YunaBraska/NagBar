@@ -55,6 +55,7 @@
 		5E3C97312340900000CE55B9 /* MenuAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04FB1F49EA4E00F90135 /* MenuAction.swift */; };
 		5E3C97322340910000CE55B9 /* AcknowledgeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05101F49EC3800F90135 /* AcknowledgeWindow.swift */; };
 		5E3C97332340920000CE55B9 /* ScheduleDowntimeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05151F49EC6100F90135 /* ScheduleDowntimeWindow.swift */; };
+		5E3C973E23409C0000CE55B9 /* PasswordPromptController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B050B1F49EB6D00F90135 /* PasswordPromptController.swift */; };
 		5E3C970B233F907A00CE55B9 /* URLProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C970C233F907A00CE55B9 /* URLProviderTests.swift */; };
 		5E3C970D233FA12800CE55B9 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C970F233FA12800CE55B9 /* JSONValue.swift */; };
 		5E3C970E233FA12800CE55B9 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C970F233FA12800CE55B9 /* JSONValue.swift */; };
@@ -80,10 +81,17 @@
 			5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */; };
 			5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */; };
 			5E3C97492341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */; };
-			5E3C974B2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */; };
-			5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05011F49EAD000F90135 /* LoadMonitoringData.swift */; };
-			5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05221F49EE4500F90135 /* CheckNewVersion.swift */; };
-			5E3C97282340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
+				5E3C974B2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */; };
+				5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05011F49EAD000F90135 /* LoadMonitoringData.swift */; };
+				5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05221F49EE4500F90135 /* CheckNewVersion.swift */; };
+				5E3C97502341500000CE55B9 /* InterfaceAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05471F49F50500F90135 /* InterfaceAction.swift */; };
+				5E3C97512341600000CE55B9 /* MonitoringInstancesTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05491F49F57500F90135 /* MonitoringInstancesTabController.swift */; };
+				5E3C97522341700000CE55B9 /* AudibleAlarmsTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B054B1F49F5B300F90135 /* AudibleAlarmsTabController.swift */; };
+				5E3C97532341800000CE55B9 /* CommandsTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B054D1F49F5C000F90135 /* CommandsTabController.swift */; };
+				5E3C97542341900000CE55B9 /* PasswordPromptFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97562341900000CE55B9 /* PasswordPromptFlow.swift */; };
+				5E3C97552341900000CE55B9 /* PasswordPromptFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97562341900000CE55B9 /* PasswordPromptFlow.swift */; };
+				5E3C97582341950000CE55B9 /* PasswordPromptFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97572341950000CE55B9 /* PasswordPromptFlowTests.swift */; };
+				5E3C97282340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
 		5E3C97292340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
 		5E3C972B2340400000CE55B9 /* MonitoringInstancesTableDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EBBEC881F49FE6100A00BCC /* MonitoringInstancesTableDelegate.swift */; };
 		5E3C972C2340500000CE55B9 /* NagBarAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05241F49EEC800F90135 /* NagBarAlert.swift */; };
@@ -93,13 +101,17 @@
 		5E3C97302340800000CE55B9 /* SegmentControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97312340800000CE55B9 /* SegmentControl.swift */; };
 		5E3C97342340930000CE55B9 /* AcknowledgeWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5E9B05121F49EC3D00F90135 /* AcknowledgeWindow.xib */; };
 		5E3C97352340940000CE55B9 /* ScheduleDowntimeWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5E9B05161F49EC6100F90135 /* ScheduleDowntimeWindow.xib */; };
+		5E3C975C2341C00000CE55B9 /* PasswordPrompt.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5E9B053D1F49F38E00F90135 /* PasswordPrompt.xib */; };
 		5E3C97362340950000CE55B9 /* CommandWindowAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97372340950000CE55B9 /* CommandWindowAccessibilityTests.swift */; };
 			5E3C97382340960000CE55B9 /* StatusPanelTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04F21F49E99600F90135 /* StatusPanelTable.swift */; };
 		5E3C97392340970000CE55B9 /* StatusPanelTableDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04F61F49E9A200F90135 /* StatusPanelTableDelegate.swift */; };
 		5E3C973A2340980000CE55B9 /* StatusPanelTableViewDatasource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04F81F49E9F800F90135 /* StatusPanelTableViewDatasource.swift */; };
 		5E3C973B2340990000CE55B9 /* OpenInBrowserAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B050D1F49EBC200F90135 /* OpenInBrowserAction.swift */; };
-		5E3C973C23409A0000CE55B9 /* StatusPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04F11F49E99600F90135 /* StatusPanel.swift */; };
-		5E3C973D23409B0000CE55B9 /* FilterItemWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B052B1F49EF3A00F90135 /* FilterItemWindowController.swift */; };
+				5E3C973C23409A0000CE55B9 /* StatusPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04F11F49E99600F90135 /* StatusPanel.swift */; };
+				5E3C973D23409B0000CE55B9 /* FilterItemWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B052B1F49EF3A00F90135 /* FilterItemWindowController.swift */; };
+				5E3C97592341A00000CE55B9 /* FilterOptionsTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B052C1F49EF3A00F90135 /* FilterOptionsTabController.swift */; };
+				5E3C975A2341B00000CE55B9 /* FilterTableViewDatasource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B052D1F49EF3A00F90135 /* FilterTableViewDatasource.swift */; };
+				5E3C975B2341B10000CE55B9 /* FilterTableViewDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B052E1F49EF3A00F90135 /* FilterTableViewDelegate.swift */; };
 		5E7719631F51B47A0058029E /* Check_MKHostStatus in Resources */ = {isa = PBXBuildFile; fileRef = 5E77194B1F51B47A0058029E /* Check_MKHostStatus */; };
 		5E7719641F51B47A0058029E /* Check_MKServiceStatus in Resources */ = {isa = PBXBuildFile; fileRef = 5E77194C1F51B47A0058029E /* Check_MKServiceStatus */; };
 		5E7719651F51B47A0058029E /* CheckMKParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E77194D1F51B47A0058029E /* CheckMKParserTests.swift */; };
@@ -292,6 +304,8 @@
 		5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadMonitoringDataCore.swift; sourceTree = "<group>"; };
 		5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarAnimationTrigger.swift; sourceTree = "<group>"; };
 		5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadMonitoringDataStatusBar.swift; sourceTree = "<group>"; };
+		5E3C97562341900000CE55B9 /* PasswordPromptFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordPromptFlow.swift; sourceTree = "<group>"; };
+		5E3C97572341950000CE55B9 /* PasswordPromptFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordPromptFlowTests.swift; sourceTree = "<group>"; };
 		5E3C97312340800000CE55B9 /* SegmentControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SegmentControl.swift; sourceTree = "<group>"; };
 		5E3C97372340950000CE55B9 /* CommandWindowAccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandWindowAccessibilityTests.swift; sourceTree = "<group>"; };
 		5E77194B1F51B47A0058029E /* Check_MKHostStatus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Check_MKHostStatus; sourceTree = "<group>"; };
@@ -542,6 +556,7 @@
 				5E77194A1F51B1450058029E /* StatusBar */,
 				5E7719491F51AF7B0058029E /* StatusPanel */,
 				5E9B053D1F49F38E00F90135 /* PasswordPrompt.xib */,
+				5E3C97562341900000CE55B9 /* PasswordPromptFlow.swift */,
 				5E9B051C1F49ED1D00F90135 /* MonitoringItemSorter.swift */,
 				5E9B05031F49EAED00F90135 /* DataRefreshAction.swift */,
 				5E9B051E1F49EE0600F90135 /* UserDefaults.swift */,
@@ -572,6 +587,7 @@
 				5E7719571F51B47A0058029E /* MonitoringInstancesTest.swift */,
 				5E77195D1F51B47A0058029E /* NagiosParserTests.swift */,
 				5E3C971B233FD20000CE55B9 /* PromiseTests.swift */,
+				5E3C97572341950000CE55B9 /* PasswordPromptFlowTests.swift */,
 				5E3C97212340000000CE55B9 /* StatusItemViewTests.swift */,
 				5E3C97372340950000CE55B9 /* CommandWindowAccessibilityTests.swift */,
 				5E77195F1F51B47A0058029E /* SettingsTests.swift */,
@@ -824,6 +840,7 @@
 				68FB32B14FEA37C9E4B99567 /* PreferencesWindow.xib in Resources */,
 				5E3C97342340930000CE55B9 /* AcknowledgeWindow.xib in Resources */,
 				5E3C97352340940000CE55B9 /* ScheduleDowntimeWindow.xib in Resources */,
+				5E3C975C2341C00000CE55B9 /* PasswordPrompt.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -887,6 +904,7 @@
 				5E9B052F1F49EF3A00F90135 /* FilterItem.swift in Sources */,
 				5E9B05341F49EF3A00F90135 /* FilterTableViewDelegate.swift in Sources */,
 				5E9B050C1F49EB6D00F90135 /* PasswordPromptController.swift in Sources */,
+				5E3C97542341900000CE55B9 /* PasswordPromptFlow.swift in Sources */,
 				5E9B04F41F49E99600F90135 /* StatusPanel.swift in Sources */,
 				5E9B051F1F49EE0600F90135 /* UserDefaults.swift in Sources */,
 				5E9B05111F49EC3800F90135 /* AcknowledgeWindow.swift in Sources */,
@@ -949,10 +967,15 @@
 				5E9494C21F51BB290027FE0E /* Settings.swift in Sources */,
 					5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */,
 					5E9494C41F51F9620027FE0E /* DataRefreshAction.swift in Sources */,
-					5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
-					5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */,
-					5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
-				5E7719901F51B5E20058029E /* Icinga2URLProvider.swift in Sources */,
+						5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
+						5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */,
+						5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
+						5E3C97502341500000CE55B9 /* InterfaceAction.swift in Sources */,
+						5E3C97512341600000CE55B9 /* MonitoringInstancesTabController.swift in Sources */,
+						5E3C97522341700000CE55B9 /* AudibleAlarmsTabController.swift in Sources */,
+						5E3C97532341800000CE55B9 /* CommandsTabController.swift in Sources */,
+						5E3C97552341900000CE55B9 /* PasswordPromptFlow.swift in Sources */,
+					5E7719901F51B5E20058029E /* Icinga2URLProvider.swift in Sources */,
 				5E7719991F51B5F30058029E /* NagiosURLProvider.swift in Sources */,
 				5E77197E1F51B5CF0058029E /* CommandInterface.swift in Sources */,
 				5E9494CA1F51FAA00027FE0E /* MonitoringInstances.swift in Sources */,
@@ -985,6 +1008,7 @@
 				5E3C97312340900000CE55B9 /* MenuAction.swift in Sources */,
 				5E3C97322340910000CE55B9 /* AcknowledgeWindow.swift in Sources */,
 				5E3C97332340920000CE55B9 /* ScheduleDowntimeWindow.swift in Sources */,
+				5E3C973E23409C0000CE55B9 /* PasswordPromptController.swift in Sources */,
 				5E3C97362340950000CE55B9 /* CommandWindowAccessibilityTests.swift in Sources */,
 					5E3C97382340960000CE55B9 /* StatusPanelTable.swift in Sources */,
 					5E3C97392340970000CE55B9 /* StatusPanelTableDelegate.swift in Sources */,
@@ -993,9 +1017,13 @@
 					5E3C973C23409A0000CE55B9 /* StatusPanel.swift in Sources */,
 					5E3C97202340000000CE55B9 /* StatusItemViewTests.swift in Sources */,
 					5E3C973D23409B0000CE55B9 /* FilterItemWindowController.swift in Sources */,
+					5E3C97592341A00000CE55B9 /* FilterOptionsTabController.swift in Sources */,
+					5E3C975A2341B00000CE55B9 /* FilterTableViewDatasource.swift in Sources */,
+					5E3C975B2341B10000CE55B9 /* FilterTableViewDelegate.swift in Sources */,
 				5E7719731F51B47A0058029E /* NagiosParserTests.swift in Sources */,
 				5E77196F1F51B47A0058029E /* MonitoringInstancesTest.swift in Sources */,
 				5E3C971A233FD20000CE55B9 /* PromiseTests.swift in Sources */,
+				5E3C97582341950000CE55B9 /* PasswordPromptFlowTests.swift in Sources */,
 				5E3C971C233FE20000CE55B9 /* ServerLogin.swift in Sources */,
 				5E3C972D2340600000CE55B9 /* MonitoringInstancesWindowController.swift in Sources */,
 				5E3C972E2340700000CE55B9 /* MonitoringInstancesTableDatasource.swift in Sources */,

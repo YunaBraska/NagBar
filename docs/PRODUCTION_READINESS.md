@@ -9,17 +9,17 @@ public production release until the blocked gates below are closed.
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| Full test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 274 tests |
-| Coverage gate | Partial | Current Xcode result reports 76.32% coverage for `NagBar.app`; requested production gate is about 95% |
+| Full test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 324 tests |
+| Coverage gate | Partial | Current Xcode result reports 83.17% coverage for `NagBar.app`; requested production gate is about 95% |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
-| Runtime smoke | Done | `script/status_item_smoke.sh` runs with isolated app storage/defaults and verifies live status-item menu shape, Show Status panel/table, keyboard menu activation, Refresh, Apple-menu product-action removal, status-item Settings reachability to Monitoring Instances, Monitoring Instances add-row persistence, and Quit |
+| Runtime smoke | Done | `script/status_item_smoke.sh` runs with isolated app storage/defaults and verifies live status-item menu shape, Show Status onscreen panel, keyboard menu activation, Refresh, Apple-menu product-action removal, onscreen status-item Preferences, and Quit |
 | Local developer acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke through the canonical helper |
 | Removed stale dependencies | Done | No `SAMKeychain`, `SwiftyJSON`, `Alamofire`, `PromiseKit`, `hpple`, `RealmSwift`, or CocoaPods references in app/test/project files |
 | Fake-server HTTP test | Partial | Nagios/Icinga GET/auth/non-2xx behavior, first-run local fake Icinga fallback over loopback HTTP, Nagios/Icinga and Icinga2 command POST contracts, and Check_MK login/session behavior covered |
 | Parser malformed-data and status fixtures | Done | Nagios, Icinga, Icinga2, Thruk, and Check_MK parser fixtures cover happy paths, malformed ingress, and supported status variants |
 | CI workflow | Done | `.github/workflows/ci.yml` checks Xcode version, rejects CocoaPods files/references, validates helper shell syntax, runs `./script/build_and_run.sh --test`, and builds Release with `./script/build_and_run.sh --release-build`; live GitHub runner result still needs remote branch push |
 | Release workflow | Partial | `.github/workflows/release.yml` generates Sentrio-style date versions, updates Xcode version and `CHANGELOG.md`, tests, builds, packages, and publishes GitHub Release assets; real Developer ID/notarization path still needs secrets and a live run |
-| Local/private package | Done | `./script/build_and_run.sh --package` builds Release, verifies local/private signing, creates `dist/NagBar-1.3.7-macOS.zip`, validates the zip, writes `dist/NagBar-1.3.7-macOS.zip.sha256`, and the extracted app passes local signing verification |
+| Local/private package | Done | `./script/build_and_run.sh --package` builds Release, verifies local/private signing, creates `dist/NagBar-2026.06.1811748-macOS.zip`, validates the zip, writes `dist/NagBar-2026.06.1811748-macOS.zip.sha256`, and the extracted app passes local signing verification |
 
 ## Release Blockers
 
