@@ -664,6 +664,44 @@ class FilterItemsProcessorTests: XCTestCase {
         XCTAssertEqual(FilterItems().count(), 1)
     }
 
+    func testAddToFilterCreatesServiceFilterForCriticalSelection() {
+        AddToFilterAction().addToFilter([service("web-01", service: "HTTP", status: "CRITICAL")])
+
+        let saved = FilterItems().getByKey("web-01HTTP")
+
+        XCTAssertEqual(saved?.host, "web-01")
+        XCTAssertEqual(saved?.service, "HTTP")
+        XCTAssertEqual(saved?.status, 16)
+    }
+
+    func testAddToFilterMergesServiceStatusIntoExistingFilter() {
+        let existing = FilterItem().initDefault(host: "web-01", service: "HTTP", status: 4)
+        FilterItems().insert(key: "web-01HTTP", value: existing)
+
+        AddToFilterAction().addToFilter([service("web-01", service: "HTTP", status: "CRITICAL")])
+
+        XCTAssertEqual(FilterItems().getByKey("web-01HTTP")?.status, 20)
+    }
+
+    func testAddToFilterCreatesHostFilterForDownSelection() {
+        AddToFilterAction().addToFilter([host("router-01", status: "DOWN")])
+
+        let saved = FilterItems().getByKey("router-01")
+
+        XCTAssertEqual(saved?.host, "router-01")
+        XCTAssertEqual(saved?.service, "")
+        XCTAssertEqual(saved?.status, 4)
+    }
+
+    func testAddToFilterMergesHostStatusIntoExistingFilter() {
+        let existing = FilterItem().initDefault(host: "router-01", service: "", status: 1)
+        FilterItems().insert(key: "router-01", value: existing)
+
+        AddToFilterAction().addToFilter([host("router-01", status: "UNREACHABLE")])
+
+        XCTAssertEqual(FilterItems().getByKey("router-01")?.status, 9)
+    }
+
     func testProcessIgnoresPersistedFilterWithInvalidRegex() {
         let invalidFilter = FilterItem().initDefault(host: "[", service: "", status: 4)
         FilterItems().insert(key: FilterItems.generateKey(invalidFilter.host, service: invalidFilter.service), value: invalidFilter)
@@ -685,6 +723,21 @@ class FilterItemsProcessorTests: XCTestCase {
 
         XCTAssertEqual(results.count, 1)
         XCTAssertTrue(results[0] === hostMonitoringItem)
+    }
+
+    private func host(_ name: String, status: String) -> HostMonitoringItem {
+        let item = HostMonitoringItem()
+        item.host = name
+        item.status = status
+        return item
+    }
+
+    private func service(_ host: String, service: String, status: String) -> ServiceMonitoringItem {
+        let item = ServiceMonitoringItem()
+        item.host = host
+        item.service = service
+        item.status = status
+        return item
     }
 }
 

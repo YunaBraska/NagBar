@@ -211,8 +211,16 @@ final class LocalIcingaFakeServer {
             <td>DOWN</td><td>30-06-2026 12:00:00</td><td>0d 1h 14m 0s</td><td>3/3</td><td>CRITICAL - Host unreachable (10.0.0.11)</td>
           </tr>
           <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=app-01">app-01</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
+            <td>UNREACHABLE</td><td>30-06-2026 12:03:00</td><td>0d 0h 51m 0s</td><td>2/3</td><td>CRITICAL - Route to application node is flapping</td>
+          </tr>
+          <tr>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=db-01">db-01</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
             <td>PENDING</td><td>30-06-2026 12:05:00</td><td>0d 0h 10m 0s</td><td>1/3</td><td>Service checks are waiting for the first host check result</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=cache-01">cache-01</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:06:00</td><td>0d 3h 22m 0s</td><td>3/3</td><td>CRITICAL - Redis node is not responding</td>
           </tr>
         </table></div></form></body></html>
         """.utf8)
@@ -227,9 +235,29 @@ final class LocalIcingaFakeServer {
             <td>CRITICAL</td><td>30-06-2026 12:01:00</td><td>0d 0h 44m 0s</td><td>3/3</td><td>HTTP CRITICAL: HTTP/1.1 503 Service Unavailable</td>
           </tr>
           <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-01">web-01</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=web-01&amp;service=TLS%20Certificate">TLS Certificate</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
+            <td>WARNING</td><td>30-06-2026 12:01:30</td><td>0d 4h 12m 0s</td><td>1/3</td><td>Certificate expires in 9 days</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=app-01">app-01</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=app-01&amp;service=Queue%20Depth">Queue Depth</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>UNKNOWN</td><td>30-06-2026 12:01:45</td><td>0d 0h 31m 0s</td><td>2/3</td><td>UNKNOWN - metrics endpoint timed out</td>
+          </tr>
+          <tr>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=db-01">db-01</a></td></tr></table></td></tr></table></td>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=db-01&amp;service=Disk%20%2Fvar">Disk /var</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
             <td>WARNING</td><td>30-06-2026 12:02:00</td><td>0d 2h 3m 0s</td><td>1/3</td><td>DISK WARNING: /var is 87% full</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=cache-01">cache-01</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=cache-01&amp;service=Redis">Redis</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:02:30</td><td>0d 3h 22m 0s</td><td>3/3</td><td>CRITICAL - Redis refused connections on port 6379</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=backup-01">backup-01</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=backup-01&amp;service=Nightly%20Backup">Nightly Backup</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>PENDING</td><td>30-06-2026 12:04:00</td><td>0d 0h 5m 0s</td><td>1/3</td><td>Backup check waiting for first result</td>
           </tr>
         </table></div></form></body></html>
         """.utf8)

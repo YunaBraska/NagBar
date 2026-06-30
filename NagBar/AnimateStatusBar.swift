@@ -18,12 +18,6 @@ class AnimateStatusBarBase : AnimateStatusBar {
     private var oldResults:  Array<MonitoringItem>?
     private var newResults:  Array<MonitoringItem>?
     
-    enum TriggerType {
-        case recovery
-        case alarm
-        case none
-    }
-    
     func animate(oldResults: Array<MonitoringItem>?, newResults: Array<MonitoringItem>?) {
         
         self.oldResults = oldResults
@@ -41,36 +35,8 @@ class AnimateStatusBarBase : AnimateStatusBar {
         }
     }
     
-    fileprivate func trigger() -> TriggerType {
-        
-        guard let newResults = self.newResults else {
-            return .none
-        }
-        
-        guard let oldResults = self.oldResults else {
-            return .none
-        }
-        
-        if oldResults.count < newResults.count {
-            return .alarm
-        }
-        
-        if oldResults.count > newResults.count {
-            return .recovery
-        }
-        
-        if oldResults.count == newResults.count {
-            for (index,_) in oldResults.enumerated() {
-                let currentMonitoringItem = oldResults[index]
-                let oldMonitoringItem = newResults[index]
-                
-                if currentMonitoringItem.uniqueIdentifier() != oldMonitoringItem.uniqueIdentifier() {
-                    return .alarm
-                }
-            }
-        }
-        
-        return .none
+    private func trigger() -> StatusBarAnimationTrigger {
+        return StatusBarAnimationTrigger.evaluate(oldResults: self.oldResults, newResults: self.newResults)
     }
     
     fileprivate func alarmAnimation() {

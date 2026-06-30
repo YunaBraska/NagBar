@@ -3,8 +3,8 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 APP_NAME=NagBar
-SCREENSHOT_PATH="$ROOT_DIR/screenshots/readme/nagbar-status-item-live-smoke.png"
-SETTINGS_SCREENSHOT_PATH="$ROOT_DIR/screenshots/readme/nagbar-monitoring-instances-settings-live-smoke.png"
+SCREENSHOT_PATH=
+SETTINGS_SCREENSHOT_PATH=
 SMOKE_DIR=
 DEFAULTS_SUITE="com.volendavidov.NagBar.status-smoke.$$"
 
@@ -55,7 +55,9 @@ launchctl setenv TESTS_RUNNING YES
 
 "$ROOT_DIR/script/build_and_run.sh" --release --verify >/tmp/nagbar-status-item-build.log
 
-mkdir -p "$(dirname -- "$SETTINGS_SCREENSHOT_PATH")"
+if [ -n "$SETTINGS_SCREENSHOT_PATH" ]; then
+  mkdir -p "$(dirname -- "$SETTINGS_SCREENSHOT_PATH")"
+fi
 export SETTINGS_SCREENSHOT_PATH
 
 osascript <<'APPLESCRIPT'
@@ -267,7 +269,7 @@ on statusMenuItem()
       end repeat
     end tell
   end tell
-  error "NagBar status menu accessibility item was not found for status-panel screenshot"
+  error "NagBar status menu accessibility item was not found"
 end statusMenuItem
 
 tell application "System Events"
@@ -287,11 +289,13 @@ tell application "System Events"
   end tell
 end tell
 
-error "Status panel did not open for screenshot"
+error "Status panel did not open"
 APPLESCRIPT
 
-mkdir -p "$(dirname -- "$SCREENSHOT_PATH")"
-screencapture -x "$SCREENSHOT_PATH"
+if [ -n "$SCREENSHOT_PATH" ]; then
+  mkdir -p "$(dirname -- "$SCREENSHOT_PATH")"
+  screencapture -x "$SCREENSHOT_PATH"
+fi
 
 osascript <<'APPLESCRIPT'
 on assertTrue(conditionValue, messageText)
@@ -421,7 +425,9 @@ tell application "System Events"
       my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.url.0") > 0, "Monitoring Instances row did not expose URL cell")
       my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.username.0") > 0, "Monitoring Instances row did not expose username cell")
       my assertTrue(my countIdentifier(it, "nagbar.monitoringInstances.cell.password.0") > 0, "Monitoring Instances row did not expose password cell")
-      do shell script "/usr/sbin/screencapture -x " & quoted form of (system attribute "SETTINGS_SCREENSHOT_PATH")
+      if (system attribute "SETTINGS_SCREENSHOT_PATH") is not "" then
+        do shell script "/usr/sbin/screencapture -x " & quoted form of (system attribute "SETTINGS_SCREENSHOT_PATH")
+      end if
     end tell
   end tell
 end tell
@@ -474,7 +480,7 @@ APPLESCRIPT
 i=0
 while [ "$i" -lt 20 ]; do
   if ! pgrep -x "$APP_NAME" >/dev/null 2>&1; then
-    printf 'Status item smoke passed; screenshot: %s\n' "$SCREENSHOT_PATH"
+    printf 'Status item smoke passed\n'
     exit 0
   fi
   i=$((i + 1))

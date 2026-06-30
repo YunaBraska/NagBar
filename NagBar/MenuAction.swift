@@ -70,7 +70,7 @@ class AddToFilterAction : NSObject, MenuAction {
         }
     }
     
-    private func addToFilter(_ monitoringItems: Array<MonitoringItem>) {
+    func addToFilter(_ monitoringItems: Array<MonitoringItem>) {
         
         let filterItemServiceStatus = ["CRITICAL": 16, "UNKNOWN": 8, "WARNING": 4, "PENDING" : 1]
         let filterItemHostStatus = ["UNREACHABLE": 8, "DOWN": 4, "PENDING" : 1]

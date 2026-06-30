@@ -76,9 +76,14 @@
 		5E3C97402341000000CE55B9 /* NagBarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97422341000000CE55B9 /* NagBarDiagnostics.swift */; };
 		5E3C97412341000000CE55B9 /* NagBarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97422341000000CE55B9 /* NagBarDiagnostics.swift */; };
 		5E3C97432341050000CE55B9 /* NagBarDiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97442341050000CE55B9 /* NagBarDiagnosticsTests.swift */; };
-		5E3C97452341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */; };
-		5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */; };
-		5E3C97282340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
+			5E3C97452341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */; };
+			5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */; };
+			5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */; };
+			5E3C97492341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */; };
+			5E3C974B2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */; };
+			5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05011F49EAD000F90135 /* LoadMonitoringData.swift */; };
+			5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05221F49EE4500F90135 /* CheckNewVersion.swift */; };
+			5E3C97282340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
 		5E3C97292340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C972A2340300000CE55B9 /* MonitoringInstancesAccessibility.swift */; };
 		5E3C972B2340400000CE55B9 /* MonitoringInstancesTableDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EBBEC881F49FE6100A00BCC /* MonitoringInstancesTableDelegate.swift */; };
 		5E3C972C2340500000CE55B9 /* NagBarAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B05241F49EEC800F90135 /* NagBarAlert.swift */; };
@@ -285,6 +290,8 @@
 		5E3C97422341000000CE55B9 /* NagBarDiagnostics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NagBarDiagnostics.swift; sourceTree = "<group>"; };
 		5E3C97442341050000CE55B9 /* NagBarDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NagBarDiagnosticsTests.swift; sourceTree = "<group>"; };
 		5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadMonitoringDataCore.swift; sourceTree = "<group>"; };
+		5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarAnimationTrigger.swift; sourceTree = "<group>"; };
+		5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadMonitoringDataStatusBar.swift; sourceTree = "<group>"; };
 		5E3C97312340800000CE55B9 /* SegmentControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SegmentControl.swift; sourceTree = "<group>"; };
 		5E3C97372340950000CE55B9 /* CommandWindowAccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandWindowAccessibilityTests.swift; sourceTree = "<group>"; };
 		5E77194B1F51B47A0058029E /* Check_MKHostStatus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Check_MKHostStatus; sourceTree = "<group>"; };
@@ -516,9 +523,10 @@
 				5E246A451F49E0B60015CA71 /* AppDelegate.swift */,
 				5E9B05391F49F30200F90135 /* Images.xcassets */,
 				5E9B05451F49F4A200F90135 /* en.lproj */,
-				5E9B04FD1F49EA5A00F90135 /* InitConfig.swift */,
-				5E9B05011F49EAD000F90135 /* LoadMonitoringData.swift */,
-				5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */,
+					5E9B04FD1F49EA5A00F90135 /* InitConfig.swift */,
+					5E9B05011F49EAD000F90135 /* LoadMonitoringData.swift */,
+					5E3C974C2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift */,
+					5E3C97472341100000CE55B9 /* LoadMonitoringDataCore.swift */,
 				5E3C971F233FF00000CE55B9 /* LocalIcingaFallback.swift */,
 				5E246A511F49E2D90015CA71 /* MonitoringInstance.swift */,
 				5E246A521F49E2D90015CA71 /* MonitoringInstances.swift */,
@@ -596,6 +604,7 @@
 				5E3C97242340100000CE55B9 /* StatusItemMenuBuilder.swift */,
 				5E9B04F01F49E99600F90135 /* StatusItemView.swift */,
 				5E9B05261F49EEF200F90135 /* AnimateStatusBar.swift */,
+				5E3C974A2341200000CE55B9 /* StatusBarAnimationTrigger.swift */,
 			);
 			name = StatusBar;
 			sourceTree = "<group>";
@@ -850,6 +859,7 @@
 				5E246A1F1F49DFBC0015CA71 /* CheckMKSettings.swift in Sources */,
 				5E9B04EF1F49E98800F90135 /* StatusBar.swift in Sources */,
 				5E9B05231F49EE4500F90135 /* CheckNewVersion.swift in Sources */,
+				5E3C97492341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
 				5E246A501F49E29D0015CA71 /* Icinga2Parser.swift in Sources */,
 				5E246A4E1F49E2770015CA71 /* ParserInterface.swift in Sources */,
 				5E3C9718233FD00000CE55B9 /* Promise.swift in Sources */,
@@ -893,9 +903,10 @@
 				5E246A3D1F49E0350015CA71 /* NagiosHTTPClient.swift in Sources */,
 				5E246A3C1F49E0350015CA71 /* NagiosCommands.swift in Sources */,
 				5E246A2B1F49DFE40015CA71 /* Icinga2Commands.swift in Sources */,
-				5E246A3F1F49E0350015CA71 /* NagiosProcessor.swift in Sources */,
-				5E9B05021F49EAD000F90135 /* LoadMonitoringData.swift in Sources */,
-				5E3C97452341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
+					5E246A3F1F49E0350015CA71 /* NagiosProcessor.swift in Sources */,
+					5E9B05021F49EAD000F90135 /* LoadMonitoringData.swift in Sources */,
+					5E3C974B2341300000CE55B9 /* LoadMonitoringDataStatusBar.swift in Sources */,
+					5E3C97452341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
 				5E246A241F49DFD00015CA71 /* ThrukParser.swift in Sources */,
 				5EBBEC891F49FE6100A00BCC /* MonitoringInstancesTableDatasource.swift in Sources */,
 				5E246A481F49E20D0015CA71 /* URLProvider.swift in Sources */,
@@ -936,8 +947,11 @@
 				5E9494C11F51BB0C0027FE0E /* MonitoringInstance.swift in Sources */,
 				5E7719841F51B5D60058029E /* ThrukProcessor.swift in Sources */,
 				5E9494C21F51BB290027FE0E /* Settings.swift in Sources */,
-				5E9494C41F51F9620027FE0E /* DataRefreshAction.swift in Sources */,
-				5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
+					5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */,
+					5E9494C41F51F9620027FE0E /* DataRefreshAction.swift in Sources */,
+					5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
+					5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */,
+					5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
 				5E7719901F51B5E20058029E /* Icinga2URLProvider.swift in Sources */,
 				5E7719991F51B5F30058029E /* NagiosURLProvider.swift in Sources */,
 				5E77197E1F51B5CF0058029E /* CommandInterface.swift in Sources */,

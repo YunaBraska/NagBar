@@ -121,17 +121,22 @@ final class URLProviderTests: XCTestCase {
         let hosts = processor.parser().parse(urlType: .hosts, data: hostData).compactMap { $0 as? HostMonitoringItem }
         let services = processor.parser().parse(urlType: .services, data: serviceData).compactMap { $0 as? ServiceMonitoringItem }
 
-        XCTAssertEqual(hosts.count, 2)
+        XCTAssertEqual(hosts.count, 4)
         XCTAssertEqual(hosts[0].monitoringInstance?.name, LocalIcingaFallback.instanceName)
         XCTAssertEqual(hosts[0].host, "web-01")
         XCTAssertEqual(hosts[0].status, "DOWN")
         XCTAssertEqual(hosts[0].statusInformation, "CRITICAL - Host unreachable (10.0.0.11)")
-        XCTAssertEqual(services.count, 2)
+        XCTAssertTrue(hosts.contains { $0.host == "app-01" && $0.status == "UNREACHABLE" && $0.downtime })
+        XCTAssertTrue(hosts.contains { $0.host == "cache-01" && $0.status == "DOWN" && $0.acknowledged })
+        XCTAssertEqual(services.count, 6)
         XCTAssertEqual(services[0].host, "web-01")
         XCTAssertEqual(services[0].service, "HTTP")
         XCTAssertEqual(services[0].status, "CRITICAL")
-        XCTAssertEqual(services[1].service, "Disk /var")
-        XCTAssertTrue(services[1].acknowledged)
+        XCTAssertTrue(services.contains { $0.host == "web-01" && $0.service == "TLS Certificate" && $0.acknowledged })
+        XCTAssertTrue(services.contains { $0.host == "app-01" && $0.service == "Queue Depth" && $0.status == "UNKNOWN" })
+        XCTAssertTrue(services.contains { $0.host == "db-01" && $0.service == "Disk /var" && $0.acknowledged })
+        XCTAssertTrue(services.contains { $0.host == "cache-01" && $0.service == "Redis" && $0.downtime })
+        XCTAssertTrue(services.contains { $0.host == "backup-01" && $0.service == "Nightly Backup" && $0.status == "PENDING" })
     }
 
     func testLocalIcingaFallbackDoesNotUseProductionDemoModeBranches() throws {
@@ -139,8 +144,14 @@ final class URLProviderTests: XCTestCase {
         let forbiddenTerms = ["Demo Mode", "demo mode"]
         let appSideSampleTerms = [
             "CRITICAL - Host unreachable (10.0.0.11)",
+            "CRITICAL - Route to application node is flapping",
+            "CRITICAL - Redis node is not responding",
             "HTTP CRITICAL: HTTP/1.1 503 Service Unavailable",
+            "Certificate expires in 9 days",
+            "UNKNOWN - metrics endpoint timed out",
             "DISK WARNING: /var is 87% full",
+            "CRITICAL - Redis refused connections on port 6379",
+            "Backup check waiting for first result",
         ]
 
         for file in files {
