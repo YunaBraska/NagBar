@@ -55,14 +55,18 @@ class StatusItemView: NSStatusBarButton {
 
     func statusItemMenu() -> NSMenu {
         return StatusItemMenuBuilder.build(
-            target: self,
+            target: statusItemMenuTarget(),
             actions: StatusItemMenuActions(
-                status: #selector(StatusItemView.showStatus),
-                about: #selector(StatusItemView.showAbout),
-                preferences: #selector(StatusItemView.openPreferences),
-                refresh: #selector(StatusItemView.refresh)
+                status: #selector(AppDelegate.showStatusFromStatusItem),
+                about: #selector(AppDelegate.showAboutFromStatusItem),
+                preferences: #selector(AppDelegate.openPreferencesFromStatusItem),
+                refresh: #selector(AppDelegate.refreshFromStatusItem)
             )
         )
+    }
+
+    private func statusItemMenuTarget() -> AnyObject {
+        return (NSApplication.shared.delegate as AnyObject?) ?? self
     }
     
     override func mouseDown(with theEvent: NSEvent) {
@@ -74,19 +78,19 @@ class StatusItemView: NSStatusBarButton {
         return true
     }
 
-    @objc func showStatus() {
+    @objc func showStatus(_ sender: AnyObject) {
         StatusBar.get().onClick()
     }
     
-    @objc func refresh() {
+    @objc func refresh(_ sender: AnyObject) {
         LoadMonitoringData().refreshStatusData()
     }
 
-    @objc func showAbout() {
+    @objc func showAbout(_ sender: AnyObject) {
         (NSApplication.shared.delegate as? AppDelegate)?.openAbout(self)
     }
 
-    @objc func openPreferences() {
+    @objc func openPreferences(_ sender: AnyObject) {
         (NSApplication.shared.delegate as? AppDelegate)?.openPreferences(self)
     }
 

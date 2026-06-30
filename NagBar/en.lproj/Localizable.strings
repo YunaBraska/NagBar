@@ -25,6 +25,7 @@
 "newVersionMessageText" = "New version available";
 "newVersionInformativeText" = "Version %@ of NagBar is available with the following features:\n%@\n\nDownload at https://github.com/volendavidov/NagBar/releases";
 "pleaseEnterPassword" = "Please enter the password for monitoring instance\n%@";
+"noMonitoringInstancesRequirePassword" = "No monitoring instances require a password.";
 "no" = "No";
 "yes" = "Yes";
 "connectionFailed" = "Connection failed";

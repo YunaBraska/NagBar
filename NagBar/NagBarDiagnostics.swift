@@ -14,6 +14,7 @@ enum NagBarDiagnosticsCategory: String {
     case storage
     case refresh
     case localServer
+    case statusItem
 }
 
 enum FailReason {
@@ -97,6 +98,10 @@ enum NagBarDiagnostics {
         return NagBarDiagnosticEvent(category: .localServer, message: message)
     }
 
+    static func statusItemEvent(message: String) -> NagBarDiagnosticEvent {
+        return NagBarDiagnosticEvent(category: .statusItem, message: message)
+    }
+
     static func logStartup(_ snapshot: NagBarRuntimeSnapshot = NagBarRuntimeSnapshot.capture()) {
         log(startupEvent(snapshot), type: .info)
     }
@@ -127,6 +132,10 @@ enum NagBarDiagnostics {
 
     static func logLocalServerEvent(message: String) {
         log(localServerEvent(message: message), type: .error)
+    }
+
+    static func logStatusItemEvent(message: String) {
+        log(statusItemEvent(message: message), type: .info)
     }
 
     static func logStorageError(_ message: String, error: Error) {

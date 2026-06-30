@@ -93,28 +93,30 @@ class StatusBar : NSObject {
     
     func onClick() {
         NSApp.activate(ignoringOtherApps: true)
+        NagBarDiagnostics.logStatusItemEvent(message: "showStatusRequested")
         _ = self.showStatusPanel()
     }
 
-    @objc func showStatus() {
+    @objc func showStatus(_ sender: AnyObject) {
         onClick()
     }
 
-    @objc func refresh() {
+    @objc func refresh(_ sender: AnyObject) {
         StatusItemRefreshAction.perform(refresh: refreshStatusData)
     }
 
-    @objc func showAbout() {
+    @objc func showAbout(_ sender: AnyObject) {
         (NSApplication.shared.delegate as? AppDelegate)?.openAbout(self)
     }
 
-    @objc func openPreferences() {
+    @objc func openPreferences(_ sender: AnyObject) {
         (NSApplication.shared.delegate as? AppDelegate)?.openPreferences(self)
     }
 
     @discardableResult
     func showStatusPanel() -> Bool {
         guard let results = self.results else {
+            NagBarDiagnostics.logStatusItemEvent(message: "showStatusDeferredUntilRefresh")
             return StatusPanelEntrypoint.requestPresentation(
                 hasResults: false,
                 refresh: refreshStatusData,
@@ -123,9 +125,11 @@ class StatusBar : NSObject {
         }
 
         guard let frameOrigin = self.statusItemFrame() else {
+            NagBarDiagnostics.logStatusItemEvent(message: "showStatusMissingStatusItemFrame")
             return false
         }
 
+        NagBarDiagnostics.logStatusItemEvent(message: "showStatusOpeningPanel items=\(results.count)")
         return StatusPanelEntrypoint.requestPresentation(
             hasResults: true,
             refresh: {},
@@ -165,7 +169,7 @@ class StatusBar : NSObject {
                 return
             }
 
-            if frontmostBundleIdentifier != bundleIdentifier {
+            if StatusPanelDismissalPolicy.shouldDismiss(frontmostBundleIdentifier: frontmostBundleIdentifier, bundleIdentifier: bundleIdentifier) {
                 self.statusPanel?.panel?.close()
                 self.statusPanel = nil
                 if let observer = self.observer as? NSObjectProtocol {
@@ -188,19 +192,27 @@ class StatusBar : NSObject {
             return window.frame
         }
 
-        return NSScreen.main?.visibleFrame
+        guard let visibleFrame = NSScreen.main?.visibleFrame else {
+            return nil
+        }
+
+        return StatusPanelFallbackFrame.statusItemFrame(visibleFrame: visibleFrame)
     }
 
     private func statusItemMenu() -> NSMenu {
         return StatusItemMenuBuilder.build(
-            target: self,
+            target: statusItemMenuTarget(),
             actions: StatusItemMenuActions(
-                status: #selector(StatusBar.showStatus),
-                about: #selector(StatusBar.showAbout),
-                preferences: #selector(StatusBar.openPreferences),
-                refresh: #selector(StatusBar.refresh)
+                status: #selector(AppDelegate.showStatusFromStatusItem),
+                about: #selector(AppDelegate.showAboutFromStatusItem),
+                preferences: #selector(AppDelegate.openPreferencesFromStatusItem),
+                refresh: #selector(AppDelegate.refreshFromStatusItem)
             )
         )
+    }
+
+    private func statusItemMenuTarget() -> AnyObject {
+        return (NSApplication.shared.delegate as AnyObject?) ?? self
     }
 
     private func statusItemTitle(for results: Array<MonitoringItem>) -> String {

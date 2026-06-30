@@ -17,11 +17,36 @@ class PasswordPromptController : NSWindowController {
     @IBOutlet weak fileprivate var textField: NSTextField!
 
     private var currentMonitoringInstance: MonitoringInstance?
+
+    var enabledInstancesProvider: () -> Dictionary<String, MonitoringInstance> = {
+        return MonitoringInstances().getAllEnabled()
+    }
+    var requestConnection: (MonitoringInstance, String, @escaping (Result<HTTPResponse, Error>) -> Void) -> Void = { monitoringInstance, password, completion in
+        ConnectionManager.sharedInstance.request(monitoringInstance.url, method: "HEAD", username: monitoringInstance.username, password: password, validateStatus: true, completion: completion)
+    }
+    var storePassword: (String, String) -> Void = { name, password in
+        PasswordStore.sharedInstance.set(name, password: password)
+    }
+    var refreshStatusData: () -> Void = {}
+    var retryAfterFailure: (NSError) -> Bool = { error in
+        let informativeText = String(format:NSLocalizedString("skipMonitoringInstance", comment: ""), PasswordPromptFlow.errorText(forCode: error.code))
+        let alert = NSAlert()
+        alert.addButton(withTitle: NSLocalizedString("no", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("yes", comment: ""))
+        alert.messageText = NSLocalizedString("connectionFailed", comment: "")
+        alert.informativeText = informativeText
+        alert.alertStyle = .warning
+
+        return alert.runModal() == NSApplication.ModalResponse.alertSecondButtonReturn
+    }
     
     override func awakeFromNib() {
-        _ = self.nextMonitoringInstance()
-        
-        self.textField.stringValue = String(format:NSLocalizedString("pleaseEnterPassword", comment: ""), self.currentMonitoringInstance!.name)
+        if self.nextMonitoringInstance() {
+            self.textField.stringValue = PasswordPromptFlow.promptMessage(for: self.currentMonitoringInstance!)
+        } else {
+            self.textField.stringValue = PasswordPromptFlow.emptyPromptMessage()
+            self.okButton.isEnabled = false
+        }
     }
     
     /**
@@ -29,24 +54,12 @@ class PasswordPromptController : NSWindowController {
      */
     private func nextMonitoringInstance() -> Bool {
         
-        let enabledMonitoringInstances = MonitoringInstances().getAllEnabled()
-        let monitoringInstances = Array(enabledMonitoringInstances.keys.sorted())
+        guard let monitoringInstance = PasswordPromptFlow.next(currentName: self.currentMonitoringInstance?.name, enabledInstances: self.enabledInstancesProvider()) else {
+            return false
+        }
 
-        if self.currentMonitoringInstance == nil {
-            if monitoringInstances.count > 0 {
-                self.currentMonitoringInstance = enabledMonitoringInstances[monitoringInstances[0]]
-                return true
-            }
-        }
-        
-        for (index, monitoringInstance) in monitoringInstances.enumerated() {
-            if self.currentMonitoringInstance!.name == monitoringInstance && index + 1 < monitoringInstances.count {
-                self.currentMonitoringInstance = enabledMonitoringInstances[monitoringInstances[index + 1]]
-                return true
-            }
-        }
-        
-        return false
+        self.currentMonitoringInstance = monitoringInstance
+        return true
     }
     
     private func startChecking() {
@@ -60,27 +73,31 @@ class PasswordPromptController : NSWindowController {
     }
     
     @IBAction func checkConnection(_ sender: NSButton) {
+        guard let currentMonitoringInstance = self.currentMonitoringInstance else {
+            return
+        }
+
         // disable the button and start the progress indicator
         self.startChecking()
         
         // make the request
-        ConnectionManager.sharedInstance.request(self.currentMonitoringInstance!.url, method: "HEAD", username: self.currentMonitoringInstance!.username, password: self.passwordField.stringValue, validateStatus: true) { result in
+        self.requestConnection(currentMonitoringInstance, self.passwordField.stringValue) { result in
             DispatchQueue.main.async {
                 if case .failure(let error) = result {
                     self.stopChecking()
                     self.retryModal(error as NSError)
                 } else {
                     // on success - set the password for the course of the app's life
-                    PasswordStore.sharedInstance.set(self.currentMonitoringInstance!.name, password: self.passwordField.stringValue)
+                    self.storePassword(self.currentMonitoringInstance!.name, self.passwordField.stringValue)
 
                     // if the passwords for all monitoring instances are set, and there is no next one
                     // then close the window and refresh
                     if !self.nextMonitoringInstance() {
                         self.window!.close()
-                        LoadMonitoringData().refreshStatusData()
+                        self.refreshStatusData()
                     } else {
                         self.stopChecking()
-                        self.textField.stringValue = String(format:NSLocalizedString("pleaseEnterPassword", comment: ""), self.currentMonitoringInstance!.name)
+                        self.textField.stringValue = PasswordPromptFlow.promptMessage(for: self.currentMonitoringInstance!)
                     }
                 }
             }
@@ -88,33 +105,13 @@ class PasswordPromptController : NSWindowController {
     }
     
     private func retryModal(_ error: NSError) {
-        let informativeText = String(format:NSLocalizedString("skipMonitoringInstance", comment: ""), self.errorCodeToText(error.code))
-        let alert = NSAlert()
-        alert.addButton(withTitle: NSLocalizedString("no", comment: ""))
-        alert.addButton(withTitle: NSLocalizedString("yes", comment: ""))
-        alert.messageText = NSLocalizedString("connectionFailed", comment: "")
-        alert.informativeText = informativeText
-        alert.alertStyle = .warning
-        
-        if alert.runModal() == NSApplication.ModalResponse.alertSecondButtonReturn {
+        if self.retryAfterFailure(error) {
             if self.nextMonitoringInstance() {
-                self.textField.stringValue = String(format:NSLocalizedString("pleaseEnterPassword", comment: ""), self.currentMonitoringInstance!.name)
+                self.textField.stringValue = PasswordPromptFlow.promptMessage(for: self.currentMonitoringInstance!)
             } else {
                 self.window!.close()
             }
         }
     }
     
-    private func errorCodeToText(_ code: Int) -> String {
-        switch code {
-        case -999:
-            return NSLocalizedString("incorrectPassword", comment: "")
-        case -1001:
-            return NSLocalizedString("connectionTimedOut", comment: "")
-        case -1004:
-            return NSLocalizedString("couldNotConnect", comment: "")
-        default:
-            return NSLocalizedString("unknownError", comment: "")
-        }
-    }
 }
