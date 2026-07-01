@@ -1,6 +1,6 @@
 # Project Status
 
-Status: In progress.
+Status: Reactivation milestone complete; production-hardening work remains.
 
 This is the canonical status, scope, and verification document for NagBar.
 Keep ADRs for decisions, `CHANGELOG.md` for release notes, and this file for the
@@ -23,7 +23,7 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 433 tests |
+| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 439 tests |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
@@ -88,6 +88,21 @@ Release-only helpers:
 - Public Release evidence is still incomplete without a real Developer ID-signed, notarized, stapled artifact.
 - Signed artifact launch on a clean macOS account still needs recorded evidence.
 - Some global accessibility checks remain manual because macOS menu-extra focus depends on system settings.
+
+## Remaining Work
+
+These items are intentionally parked here so the long reactivation run can stop
+without losing the next useful slices.
+
+| Area | Priority | Remaining work |
+| --- | --- | --- |
+| Public release proof | High | Run and record a Developer ID-signed, notarized, stapled release when Apple signing secrets are available. |
+| Clean-account smoke | High | Install the packaged app in a fresh macOS user account and record launch, status-item, Preferences, fake Icinga fallback, and Quit evidence. |
+| Backend compatibility | High | Add real-version smoke evidence for Nagios HTML CGI, Icinga HTML CGI, Icinga 2 API, Thruk JSON API, and Check_MK. Fake-server coverage exists, but real-version compatibility is still broader than the local stub can prove. |
+| Status-panel command hardening | Medium | Add public-entrypoint regression tests for malformed or empty menu action input, nil monitoring instances, command windows loaded before item assignment, and login submenu actions. Then replace reachable force-casts, first-item indexing, and force-unwraps in the menu/action/window path. |
+| Update indicator | Medium | Add a weekly release-check indicator that informs the user when a newer GitHub release exists. |
+| UI/UX/DX redesign | Medium | Redesign Preferences, status details, and empty/error states with verified light and dark mode screenshots. |
+| Accessibility evidence | Medium | Replace remaining manual menu-extra accessibility checks with repeatable evidence where macOS automation allows it. |
 
 ## Documentation Map
 
