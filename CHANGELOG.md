@@ -10,102 +10,55 @@ security, upgrade notes, and verification evidence.
 
 ## [2026.07.1820815] - 2026-07-01
 
-### Changed
-
-- Replaced deprecated macOS notification and sound-file picker APIs with
-  `UserNotifications` and `allowedContentTypes`.
-- Updated project status evidence to the current 433-test, 95.01%-coverage
-  verification run.
-- Enriched the first-run fake Icinga sample data and README screenshot so the
-  demo looks closer to the original NagBar status panel.
-
-### Fixed
-
-- Preserved notification click-through URL behavior with deterministic tests for
-  authorization, delivery errors, missing URLs, malformed URLs, and valid URLs.
-- Display custom audible alarm filenames with unescaped file names.
-
-
-## [2026.07.1820737] - 2026-07-01
+This is the first stable release of the revived fork. It consolidates the
+reactivation work since the fork into one release; earlier test releases and
+tags were removed.
 
 ### Changed
 
-- Replaced leaked screenshot history with a sanitized fake-Icinga demo image.
-
-### Fixed
-
-- Raised app coverage above the 95% release gate with focused fake-server,
-  settings, status item, diagnostics, command, and server-login coverage.
-- Added safe test seams for alerts, browser opening, file picking, status-item
-  refresh/menu entrypoints, and login launchers so tests do not open external
-  apps or modal UI.
-
-### Verification
-
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'`
-- NagBar.app coverage: 95.09% (7894/8302)
-
-
-## [2026.07.1820632] - 2026-07-01
-
-### Changed
-
-- Release 2026.07.1820632.
-
-## [2026.07.1820613] - 2026-07-01
-
-### Changed
-
-- Release 2026.07.1820613.
-
-## [2026.07.1820540] - 2026-07-01
-
-### Changed
-
-- Consolidated roadmap, spec, and readiness notes into `docs/PROJECT_STATUS.md`.
-- Moved release helper scripts under `script/cicd/`.
-
-### Fixed
-
-- Kept local packaging and release helper paths working after the `script/cicd/`
-  move, with CI coverage for the nested release-note helper path.
-- Added fake-server and storage regression coverage for mixed Icinga refresh
-  failures, Thruk command posts, multi-item Nagios rechecks, fixed Icinga 2
-  service downtime, and malformed filter storage recovery.
-
-
-## [2026.06.1812002] - 2026-06-30
-
-### Changed
-
-- Release 2026.06.1812002.
-
-## [2026.06.1811748] - 2026-06-30
-
-### Changed
-
-- Revived the macOS build and test workflow for current Xcode.
+- Revived the macOS app for current Xcode and restored the build, test, smoke,
+  package, and release workflows.
 - Removed CocoaPods and legacy third-party runtime dependencies.
 - Replaced active Realm storage with `UserDefaults`, JSON files under
   Application Support, and Keychain-backed password storage.
 - Added a first-run local loopback fake Icinga server when no real monitoring
-  remote is configured.
-- Moved About and Settings into the status-item entrypoint.
-- Added local/private release packaging with ad-hoc signing and hardened
-  runtime verification.
-- Added a GitHub Actions release workflow with Sentrio-style date versions,
-  automatic changelog/version metadata updates, local/private signing by
-  default, and Developer ID notarization when secrets are configured.
+  remote is configured, using the normal Icinga stack instead of hardcoded app
+  demo branches.
+- Moved About, Settings, status, refresh, and quit access into the status-item
+  entrypoint.
+- Added local/private release packaging with ad-hoc signing, hardened runtime
+  verification, zip/checksum/manifest output, and Developer ID notarization when
+  Apple signing secrets are configured.
+- Added Sentrio-style date versions and automated changelog/version metadata in
+  the GitHub Actions release flow.
+- Consolidated roadmap, specs, support status, and production-readiness notes
+  into `docs/PROJECT_STATUS.md`.
+- Moved release helper scripts under `script/cicd/`.
+- Replaced deprecated macOS notification and sound-file picker APIs with
+  `UserNotifications` and `allowedContentTypes`.
+- Enriched the first-run fake Icinga sample data and README screenshot so the
+  demo looks closer to the original NagBar status panel.
+- Updated project status evidence to the current 450-test, 95.01%-coverage
+  verification run.
 
 ### Fixed
 
-- Added fake-server coverage for Nagios/Icinga, Icinga 2, and Check_MK HTTP
-  behavior.
+- Added fake-server coverage for Nagios/Icinga, Icinga 2, Thruk, and Check_MK
+  HTTP behavior, including auth, refresh, command, downtime, and session paths.
 - Added explicit command-result feedback instead of log-only command failures.
 - Added structured diagnostics for startup, storage, refresh, and local
   fake-server events.
-- Hardened several AppKit callback, status-panel, and URLSession lifecycle
-  edges found during runtime review.
+- Hardened AppKit callback, status-panel, URLSession lifecycle, storage, and
+  malformed-input edges found during runtime review.
+- Replaced leaked screenshot history with a sanitized fake-Icinga demo image.
+- Raised app coverage above the 95% release gate with focused fake-server,
+  settings, status item, diagnostics, command, and server-login coverage.
+- Added safe test seams for alerts, browser opening, file picking, status-item
+  refresh/menu entrypoints, and login launchers so tests do not open external
+  apps or modal UI during automation.
+- Preserved notification click-through URL behavior with deterministic tests for
+  authorization, delivery errors, missing URLs, malformed URLs, and valid URLs.
+- Display custom audible alarm filenames with unescaped file names.
 
 ### Upgrade Notes
 
@@ -121,10 +74,11 @@ security, upgrade notes, and verification evidence.
 - Release build: `./script/build_and_run.sh --release-build`
 - Local/private package: `./script/build_and_run.sh --package`
 - Runtime smoke: `./script/build_and_run.sh --smoke`
+- GitHub Actions CI and release workflow completed for the stable release.
 
 ### Known Limits
 
 - Public distribution still requires Developer ID signing and notarization.
 - Local/private ad-hoc builds are not public release artifacts.
-- Coverage remains below the production target documented in
-  `docs/PROJECT_STATUS.md`.
+- Broader real-version backend compatibility and clean-account public release
+  evidence remain tracked in `docs/PROJECT_STATUS.md`.
