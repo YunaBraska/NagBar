@@ -50,6 +50,6 @@ Negative:
 ## Evidence
 
 - Fake-server Nagios/Icinga load/auth tests pass.
-- Full test suite passed when this ADR was accepted; the current suite is tracked in `TEST_MAP.md`.
+- Full test suite passed when this ADR was accepted; the current suite is tracked in `docs/PROJECT_STATUS.md`.
 - Release build passes without Alamofire.
 - Dependency search finds no Alamofire references in app/test/project files.

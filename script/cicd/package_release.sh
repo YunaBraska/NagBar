@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 APP_NAME=NagBar
 APP_PATH="$ROOT_DIR/build/Release/$APP_NAME.app"
 DIST_DIR="$ROOT_DIR/dist"
@@ -61,9 +61,9 @@ fi
 verify_app() {
   app_path=$1
   if [ "$SIGNING_MODE" = "developer-id" ]; then
-    "$ROOT_DIR/script/verify_release_signing.sh" --developer-id --require-stapled "$app_path"
+    "$ROOT_DIR/script/cicd/verify_release_signing.sh" --developer-id --require-stapled "$app_path"
   else
-    "$ROOT_DIR/script/verify_release_signing.sh" --local "$app_path"
+    "$ROOT_DIR/script/cicd/verify_release_signing.sh" --local "$app_path"
   fi
 }
 

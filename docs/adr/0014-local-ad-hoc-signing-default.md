@@ -34,9 +34,9 @@ extracts the zip, and verifies the extracted app again.
 Real Developer ID signing remains explicit and opt-in:
 
 ```sh
-./script/sign_release.sh --developer-id "Developer ID Application: Example (TEAMID)"
-./script/notarize_release.sh --keychain-profile NagBarNotary
-./script/package_release.sh --developer-id --skip-build
+./script/cicd/sign_release.sh --developer-id "Developer ID Application: Example (TEAMID)"
+./script/cicd/notarize_release.sh --keychain-profile NagBarNotary
+./script/cicd/package_release.sh --developer-id --skip-build
 ```
 
 ## Consequences

@@ -48,19 +48,19 @@ jobs:
         id: version
         run: |
           set -eu
-          version="$(./script/release_version.sh "${{ inputs.version }}")"
+          version="$(./script/cicd/release_version.sh "${{ inputs.version }}")"
           printf 'tag=%s\n' "$version" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release metadata
         run: |
           set -eu
-          ./script/set_release_version.sh "${{ steps.version.outputs.tag }}"
-          ./script/prepare_changelog_release.sh "${{ steps.version.outputs.tag }}"
+          ./script/cicd/set_release_version.sh "${{ steps.version.outputs.tag }}"
+          ./script/cicd/prepare_changelog_release.sh "${{ steps.version.outputs.tag }}"
 
-      - name: Check helper syntax
+      - name: Check shell helper syntax
         run: |
           set -eu
-          sh -n script/*.sh
+          find script -name '*.sh' -exec sh -n {} +
 
       - name: Test
         run: ./script/build_and_run.sh --test
@@ -114,13 +114,13 @@ jobs:
         if: steps.signing.outputs.mode == 'developer-id'
         run: |
           set -eu
-          ./script/sign_release.sh --developer-id "$MACOS_DEVELOPER_ID_IDENTITY"
-          ./script/notarize_release.sh --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password-env APPLE_APP_SPECIFIC_PASSWORD
-          ./script/package_release.sh --developer-id --skip-build
+          ./script/cicd/sign_release.sh --developer-id "$MACOS_DEVELOPER_ID_IDENTITY"
+          ./script/cicd/notarize_release.sh --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password-env APPLE_APP_SPECIFIC_PASSWORD
+          ./script/cicd/package_release.sh --developer-id --skip-build
 
       - name: Package local/private artifact
         if: steps.signing.outputs.mode == 'local'
-        run: ./script/package_release.sh --local --skip-build
+        run: ./script/cicd/package_release.sh --local --skip-build
 
       - name: Collect release artifacts
         id: artifacts
@@ -137,7 +137,7 @@ jobs:
           printf 'manifest=%s\n' "$manifest_path" >> "$GITHUB_OUTPUT"
 
       - name: Extract release notes
-        run: ./script/extract_changelog_release_notes.sh "${{ steps.version.outputs.tag }}" > release-notes.md
+        run: ./script/cicd/extract_changelog_release_notes.sh "${{ steps.version.outputs.tag }}" > release-notes.md
 
       - name: Tag release commit
         run: |

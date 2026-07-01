@@ -48,7 +48,7 @@ Negative:
 ## Verification
 
 - Focused async/fake-server suite passes with 25 tests.
-- Full suite passed when this ADR was accepted; the current suite is tracked in `TEST_MAP.md`.
+- Full suite passed when this ADR was accepted; the current suite is tracked in `docs/PROJECT_STATUS.md`.
 - Release build passes.
 - `rg "PromiseKit"` returns no matches in app, tests, project, Podfile, lockfile,
   or CocoaPods support files.
