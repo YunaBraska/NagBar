@@ -23,23 +23,23 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 324 tests |
+| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 329 tests |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
 | Local/private packaging | Done | `./script/build_and_run.sh --package` creates a zip, checksum, and manifest under `dist/`, then verifies the packaged app signature |
 | CI workflow | Done | `.github/workflows/ci.yml` runs helper syntax checks, release helper path smoke, tests, Release build, and CocoaPods guardrails |
 | GitHub release automation | Partial | `.github/workflows/release.yml` updates metadata and packages artifacts, but real Developer ID and notarization evidence still depend on secrets and a live run |
-| Coverage gate | Partial | Xcode result metrics report 83.17% coverage for `NagBar.app`; the target remains about 95% |
+| Coverage gate | Partial | Xcode result metrics report 83.18% coverage for `NagBar.app` and 94.08% for `NagBarTests.xctest`; the target remains about 95% |
 
 ## Supported Backends
 
 | Backend | Status | Current evidence | Current gap |
 | --- | --- | --- | --- |
-| Nagios HTML CGI | Partial | Parser coverage, URL provider coverage, fake-server HTTP auth and command POST tests | Broader real-version compatibility smoke |
-| Icinga HTML CGI | Partial | Parser coverage, fake-server load/auth/command tests, first-run local fallback path | Broader real-version compatibility smoke |
-| Icinga 2 API | Partial | URL provider, JSON parser, and JSON command POST coverage | Broader API error and real-server compatibility smoke |
-| Thruk JSON API | Partial | URL provider, JSON parser, and HTTP behavior coverage | Broader command and real-server compatibility smoke |
+| Nagios HTML CGI | Partial | Parser coverage, URL provider coverage, fake-server HTTP auth, mixed host/service recheck, and command POST tests | Broader real-version compatibility smoke |
+| Icinga HTML CGI | Partial | Parser coverage, fake-server load/auth/command tests, mixed successful/failed refresh path, first-run local fallback path | Broader real-version compatibility smoke |
+| Icinga 2 API | Partial | URL provider, JSON parser, JSON command POST coverage, flexible host downtime, and fixed service downtime | Broader API error and real-server compatibility smoke |
+| Thruk JSON API | Partial | URL provider, JSON parser, HTTP behavior coverage, and inherited command POST coverage through Thruk HTTP semantics | Broader command and real-server compatibility smoke |
 | Check_MK | Partial | URL provider, parser, cookie-login, Basic auth, and session coverage | Real-server compatibility smoke and unsupported command expansion only if intentionally added |
 
 ## Simplification Status
@@ -86,6 +86,9 @@ Release-only helpers:
 ## Remaining Gates
 
 - Coverage is still materially below the target.
+- Coverage accounting needs cleanup: many app source files are also compiled into
+  `NagBarTests.xctest`, so some useful component coverage is attributed to the
+  test bundle instead of `NagBar.app`.
 - Public Release evidence is still incomplete without a real Developer ID-signed, notarized, stapled artifact.
 - Signed artifact launch on a clean macOS account still needs recorded evidence.
 - Some global accessibility checks remain manual because macOS menu-extra focus depends on system settings.
