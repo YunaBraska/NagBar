@@ -37,6 +37,9 @@ done
 SMOKE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/nagbar-status-smoke.XXXXXX")
 NAGBAR_WINDOW_PROBE="$SMOKE_DIR/nagbar_window_probe.swift"
 NAGBAR_NAMED_WINDOW_PROBE="$SMOKE_DIR/nagbar_named_window_probe.swift"
+NAGBAR_WINDOW_CAPTURE="$SMOKE_DIR/nagbar_window_capture.swift"
+NAGBAR_SCREENSHOT_BACKDROP="$SMOKE_DIR/nagbar_screenshot_backdrop.swift"
+NAGBAR_IMAGE_MATTE="$SMOKE_DIR/nagbar_image_matte.swift"
 cat >"$NAGBAR_WINDOW_PROBE" <<'SWIFT'
 import CoreGraphics
 import Foundation
@@ -88,7 +91,126 @@ let visibleWindow = windows.contains { window in
 
 exit(visibleWindow ? 0 : 1)
 SWIFT
+cat >"$NAGBAR_WINDOW_CAPTURE" <<'SWIFT'
+import CoreGraphics
+import Foundation
+
+let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+let candidates = windows.compactMap { window -> (id: Int, area: Double)? in
+    guard (window[kCGWindowOwnerName as String] as? String) == "NagBar" else {
+        return nil
+    }
+
+    let layer = window[kCGWindowLayer as String] as? Int ?? -1
+    guard layer == 0 else {
+        return nil
+    }
+
+    guard let bounds = window[kCGWindowBounds as String] as? [String: Any],
+          let width = bounds["Width"] as? Double,
+          let height = bounds["Height"] as? Double,
+          let windowID = window[kCGWindowNumber as String] as? Int,
+          width > 300,
+          height > 50 else {
+        return nil
+    }
+
+    return (id: windowID, area: width * height)
+}
+
+guard let window = candidates.max(by: { $0.area < $1.area }) else {
+    fputs("No NagBar window was available for screenshot capture\n", stderr)
+    exit(1)
+}
+
+print(window.id)
+SWIFT
+cat >"$NAGBAR_SCREENSHOT_BACKDROP" <<'SWIFT'
+import Cocoa
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let screens = NSScreen.screens.isEmpty ? [NSScreen.main].compactMap { $0 } : NSScreen.screens
+        let windows = screens.map { screen in
+            let window = NSWindow(
+                contentRect: screen.frame,
+                styleMask: [.borderless],
+                backing: .buffered,
+                defer: false
+            )
+            window.backgroundColor = .white
+            window.isOpaque = true
+            window.level = .normal
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.ignoresMouseEvents = true
+            window.orderFrontRegardless()
+            return window
+        }
+        self.windows = windows
+    }
+
+    private var windows: [NSWindow] = []
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.setActivationPolicy(.accessory)
+app.run()
+SWIFT
+cat >"$NAGBAR_IMAGE_MATTE" <<'SWIFT'
+import CoreGraphics
+import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+let arguments = CommandLine.arguments
+guard arguments.count == 2 else {
+    fputs("Usage: nagbar_image_matte <png-path>\n", stderr)
+    exit(2)
+}
+
+let url = URL(fileURLWithPath: arguments[1])
+guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+      let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+    fputs("Could not read screenshot for matting\n", stderr)
+    exit(1)
+}
+
+let colorSpace = CGColorSpaceCreateDeviceRGB()
+guard let context = CGContext(
+    data: nil,
+    width: image.width,
+    height: image.height,
+    bitsPerComponent: 8,
+    bytesPerRow: 0,
+    space: colorSpace,
+    bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+) else {
+    fputs("Could not create matte context\n", stderr)
+    exit(1)
+}
+
+context.setFillColor(CGColor(gray: 1, alpha: 1))
+context.fill(CGRect(x: 0, y: 0, width: image.width, height: image.height))
+context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+
+guard let mattedImage = context.makeImage(),
+      let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+    fputs("Could not create matte output\n", stderr)
+    exit(1)
+}
+
+CGImageDestinationAddImage(destination, mattedImage, nil)
+guard CGImageDestinationFinalize(destination) else {
+    fputs("Could not write matted screenshot\n", stderr)
+    exit(1)
+}
+SWIFT
 cleanup() {
+  if [ -n "${BACKDROP_PID:-}" ]; then
+    kill "$BACKDROP_PID" >/dev/null 2>&1 || true
+  fi
   pkill -x "$APP_NAME" >/dev/null 2>&1 || true
   launchctl unsetenv NAGBAR_APPLICATION_SUPPORT_DIR >/dev/null 2>&1 || true
   launchctl unsetenv NAGBAR_USER_DEFAULTS_SUITE >/dev/null 2>&1 || true
@@ -114,6 +236,13 @@ fi
 export SETTINGS_SCREENSHOT_PATH
 export NAGBAR_WINDOW_PROBE
 export NAGBAR_NAMED_WINDOW_PROBE
+export NAGBAR_WINDOW_CAPTURE
+
+if [ -n "$SCREENSHOT_PATH" ]; then
+  /usr/bin/swift "$NAGBAR_SCREENSHOT_BACKDROP" &
+  BACKDROP_PID=$!
+  sleep 1
+fi
 
 osascript <<'APPLESCRIPT'
 on assertTrue(conditionValue, messageText)
@@ -341,7 +470,9 @@ APPLESCRIPT
 
 if [ -n "$SCREENSHOT_PATH" ]; then
   mkdir -p "$(dirname -- "$SCREENSHOT_PATH")"
-  screencapture -x "$SCREENSHOT_PATH"
+  SCREENSHOT_WINDOW_ID=$(/usr/bin/swift "$NAGBAR_WINDOW_CAPTURE")
+  screencapture -x -l "$SCREENSHOT_WINDOW_ID" "$SCREENSHOT_PATH"
+  /usr/bin/swift "$NAGBAR_IMAGE_MATTE" "$SCREENSHOT_PATH"
 fi
 
 osascript <<'APPLESCRIPT'
