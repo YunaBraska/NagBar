@@ -8,6 +8,8 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+## [2026.07.1820737] - 2026-07-01
+
 ### Changed
 
 - Replaced leaked screenshot history with a sanitized fake-Icinga demo image.
@@ -24,6 +26,7 @@ security, upgrade notes, and verification evidence.
 
 - `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'`
 - NagBar.app coverage: 95.09% (7894/8302)
+
 
 ## [2026.07.1820632] - 2026-07-01
 
