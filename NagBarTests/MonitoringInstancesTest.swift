@@ -1455,6 +1455,25 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
     }
 
+    func testServerLoginActionsIgnoreMissingRepresentedObject() {
+        let sshRecorder = RecordingServerLoginMethod()
+        let iTermRecorder = RecordingServerLoginMethod()
+        let rdpRecorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.sshLoginMethodFactory = { sshRecorder }
+        serverLogin.sshITermLoginMethodFactory = { iTermRecorder }
+        serverLogin.rdpLoginMethodFactory = { rdpRecorder }
+
+        serverLogin.sshLogin(NSMenuItem())
+        serverLogin.sshITermLogin(NSMenuItem())
+        serverLogin.rdpLogin(NSMenuItem())
+        serverLogin.removeLoginSettings(NSMenuItem())
+
+        XCTAssertTrue(sshRecorder.hosts.isEmpty)
+        XCTAssertTrue(iTermRecorder.hosts.isEmpty)
+        XCTAssertTrue(rdpRecorder.hosts.isEmpty)
+    }
+
     func testServerLoginImportLegacyItemsSeedsEmptyStorage() {
         let monitoringItem = HostMonitoringItem()
         monitoringItem.host = "web-01.example"

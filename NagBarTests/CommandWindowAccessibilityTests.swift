@@ -64,6 +64,19 @@ final class CommandWindowAccessibilityTests: XCTestCase {
         XCTAssertEqual(cancel.accessibilityLabel(), "Cancel downtime")
     }
 
+    func testScheduleDowntimeWindowLoadsBeforeMonitoringItemsAreAssigned() throws {
+        let controller = ScheduleDowntimeWindow(windowNibName: "ScheduleDowntimeWindow")
+        let window = try XCTUnwrap(controller.window)
+        defer { window.close() }
+
+        controller.applyAccessibilityMetadata()
+
+        XCTAssertEqual(window.accessibilityIdentifier(), CommandWindowAccessibility.scheduleDowntimeWindowIdentifier)
+        XCTAssertNotNil(textField(withIdentifier: CommandWindowAccessibility.scheduleDowntimeCommentIdentifier, in: window.contentView))
+        XCTAssertNotNil(textField(withIdentifier: CommandWindowAccessibility.scheduleDowntimeStartTimeIdentifier, in: window.contentView))
+        XCTAssertNotNil(textField(withIdentifier: CommandWindowAccessibility.scheduleDowntimeEndTimeIdentifier, in: window.contentView))
+    }
+
     func testHourFormatterAcceptsEmptyAndTwoDigitsAndRejectsInvalidInput() {
         let formatter = HourNumberFormatter()
 
