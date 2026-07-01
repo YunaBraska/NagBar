@@ -8,6 +8,8 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+## [2026.07.1820815] - 2026-07-01
+
 ### Changed
 
 - Replaced deprecated macOS notification and sound-file picker APIs with
@@ -22,6 +24,7 @@ security, upgrade notes, and verification evidence.
 - Preserved notification click-through URL behavior with deterministic tests for
   authorization, delivery errors, missing URLs, malformed URLs, and valid URLs.
 - Display custom audible alarm filenames with unescaped file names.
+
 
 ## [2026.07.1820737] - 2026-07-01
 
