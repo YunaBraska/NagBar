@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+@testable import NagBar
 
 final class PreferencesWindowControllerTests: XCTestCase {
     override func setUp() {

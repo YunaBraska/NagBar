@@ -7,6 +7,7 @@
 
 import XCTest
 import Cocoa
+@testable import NagBar
 
 final class PasswordPromptFlowTests: XCTestCase {
     override func setUp() {
@@ -46,27 +47,27 @@ final class PasswordPromptFlowTests: XCTestCase {
     func testPasswordPromptFlowBuildsPromptMessageWithInstanceName() {
         let message = PasswordPromptFlow.promptMessage(for: instance("edge"))
 
-        XCTAssertEqual(message, "pleaseEnterPassword")
+        XCTAssertEqual(message, "Please enter the password for monitoring instance\nedge")
     }
 
     func testPasswordPromptFlowBuildsEmptyPromptMessage() {
-        XCTAssertEqual(PasswordPromptFlow.emptyPromptMessage(), "noMonitoringInstancesRequirePassword")
+        XCTAssertEqual(PasswordPromptFlow.emptyPromptMessage(), "No monitoring instances require a password.")
     }
 
     func testPasswordPromptFlowMapsIncorrectPasswordError() {
-        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -999), "incorrectPassword")
+        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -999), "Incorrect password")
     }
 
     func testPasswordPromptFlowMapsTimeoutError() {
-        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -1001), "connectionTimedOut")
+        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -1001), "Connection timed out")
     }
 
     func testPasswordPromptFlowMapsConnectionRefusedError() {
-        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -1004), "couldNotConnect")
+        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: -1004), "Could not connect to the server")
     }
 
     func testPasswordPromptFlowMapsUnknownError() {
-        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: 500), "unknownError")
+        XCTAssertEqual(PasswordPromptFlow.errorText(forCode: 500), "Unknown error")
     }
 
     func testPasswordPromptControllerSuccessStoresPasswordAdvancesAndRefreshesAfterLastInstance() throws {
@@ -95,7 +96,7 @@ final class PasswordPromptFlowTests: XCTestCase {
         waitForExpectations(timeout: 2)
 
         XCTAssertEqual(requestedInstances, ["alpha"])
-        XCTAssertEqual(textField.stringValue, "pleaseEnterPassword")
+        XCTAssertEqual(textField.stringValue, "Please enter the password for monitoring instance\nzeta")
         XCTAssertEqual(storedPasswords.first?.0, "alpha")
         XCTAssertEqual(storedPasswords.first?.1, "alpha-secret")
         XCTAssertEqual(refreshCount, 0)
@@ -141,7 +142,7 @@ final class PasswordPromptFlowTests: XCTestCase {
         XCTAssertEqual(requestedInstances, ["alpha"])
         XCTAssertEqual(retryErrors.first?.code, -999)
         XCTAssertTrue(okButton.isEnabled)
-        XCTAssertEqual(textField.stringValue, "pleaseEnterPassword")
+        XCTAssertEqual(textField.stringValue, "Please enter the password for monitoring instance\nalpha")
         XCTAssertTrue(storedPasswords.isEmpty)
     }
 
@@ -174,7 +175,7 @@ final class PasswordPromptFlowTests: XCTestCase {
         waitUntil { retryCount == 1 } completion: { skipped.fulfill() }
         waitForExpectations(timeout: 2)
 
-        XCTAssertEqual(textField.stringValue, "pleaseEnterPassword")
+        XCTAssertEqual(textField.stringValue, "Please enter the password for monitoring instance\nzeta")
 
         passwordField.stringValue = "zeta-secret"
         let success = expectation(description: "Next instance succeeds")
@@ -224,7 +225,7 @@ final class PasswordPromptFlowTests: XCTestCase {
         controller.checkConnection(okButton)
 
         XCTAssertFalse(okButton.isEnabled)
-        XCTAssertEqual(textField.stringValue, "noMonitoringInstancesRequirePassword")
+        XCTAssertEqual(textField.stringValue, "No monitoring instances require a password.")
         XCTAssertEqual(requestCount, 0)
     }
 

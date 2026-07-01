@@ -7,6 +7,7 @@
 //
 
 import XCTest
+@testable import NagBar
 
 final class NagBarDiagnosticsTests: XCTestCase {
     override func setUp() {
@@ -55,6 +56,43 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertEqual(snapshot.legacyRealmFileCount, 0)
         XCTAssertFalse(snapshot.requiresManualReconfiguration)
         XCTAssertTrue(snapshot.applicationSupportPath.hasSuffix("ApplicationSupport/com.volendavidov.NagBar"))
+    }
+
+    func testApplicationSupportDirectoryUsesTemporaryStorageDuringHostedTests() {
+        NagBarStorage.applicationSupportDirectoryOverride = nil
+        let directory = NagBarStorage.applicationSupportDirectory(
+            environment: ["TESTS_RUNNING": "YES"],
+            defaultDirectory: URL(fileURLWithPath: "/Users/example/Library/Application Support", isDirectory: true),
+            temporaryDirectory: URL(fileURLWithPath: "/tmp/nagbar-tests", isDirectory: true)
+        )
+
+        XCTAssertEqual(directory.path, "/tmp/nagbar-tests/NagBarTests/ApplicationSupport")
+    }
+
+    func testApplicationSupportDirectoryExplicitOverrideWinsDuringHostedTests() {
+        NagBarStorage.applicationSupportDirectoryOverride = nil
+        let directory = NagBarStorage.applicationSupportDirectory(
+            environment: [
+                "TESTS_RUNNING": "YES",
+                "NAGBAR_APPLICATION_SUPPORT_DIR": "/tmp/explicit-support"
+            ],
+            defaultDirectory: URL(fileURLWithPath: "/Users/example/Library/Application Support", isDirectory: true),
+            temporaryDirectory: URL(fileURLWithPath: "/tmp/nagbar-tests", isDirectory: true)
+        )
+
+        XCTAssertEqual(directory.path, "/tmp/explicit-support")
+    }
+
+    func testApplicationSupportDirectoryUsesTemporaryStorageWhenXCTestBundleIsLoaded() {
+        NagBarStorage.applicationSupportDirectoryOverride = nil
+        let directory = NagBarStorage.applicationSupportDirectory(
+            environment: [:],
+            defaultDirectory: URL(fileURLWithPath: "/Users/example/Library/Application Support", isDirectory: true),
+            temporaryDirectory: URL(fileURLWithPath: "/tmp/nagbar-tests", isDirectory: true),
+            loadedBundles: [Bundle(for: NagBarDiagnosticsTests.self)]
+        )
+
+        XCTAssertEqual(directory.path, "/tmp/nagbar-tests/NagBarTests/ApplicationSupport")
     }
 
     func testStartupEventIncludesVersionStorageRemoteAndUpgradeSignals() {

@@ -8,6 +8,7 @@
 
 import XCTest
 import Cocoa
+@testable import NagBar
 
 class AdditionProcessorTests: XCTestCase {
     

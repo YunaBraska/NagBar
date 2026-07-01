@@ -7,6 +7,7 @@
 //
 
 import XCTest
+@testable import NagBar
 
 final class CheckMKHTTPClientFakeServerTests: XCTestCase {
     private var server: FakeCheckMKServer?

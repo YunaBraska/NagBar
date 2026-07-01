@@ -946,109 +946,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5E77197A1F51B5C00058029E /* ServiceMonitoringItem.swift in Sources */,
-				5E3C970E233FA12800CE55B9 /* JSONValue.swift in Sources */,
-				5E3C9711233FB92000CE55B9 /* UnsupportedCommands.swift in Sources */,
-				5E3C971E233FF00000CE55B9 /* LocalIcingaFallback.swift in Sources */,
-				5E3C97412341000000CE55B9 /* NagBarDiagnostics.swift in Sources */,
-				5E3C97232340100000CE55B9 /* StatusItemMenuBuilder.swift in Sources */,
-				5E3C97262340200000CE55B9 /* NagBarStorage.swift in Sources */,
-				5E3C97292340300000CE55B9 /* MonitoringInstancesAccessibility.swift in Sources */,
-				5E3C972B2340400000CE55B9 /* MonitoringInstancesTableDelegate.swift in Sources */,
-				5E3C972C2340500000CE55B9 /* NagBarAlert.swift in Sources */,
-				5E77197F1F51B5CF0058029E /* ParserInterface.swift in Sources */,
-				5E7719821F51B5CF0058029E /* MonitoringInstanceSettings.swift in Sources */,
-				5E7719921F51B5ED0058029E /* IcingaProcessor.swift in Sources */,
-				5E3C9719233FD00000CE55B9 /* Promise.swift in Sources */,
-				5E9494CB1F51FAE00027FE0E /* UserDefaults.swift in Sources */,
-				5E7719891F51B5DC0058029E /* CheckMKSettings.swift in Sources */,
-				5E9494C11F51BB0C0027FE0E /* MonitoringInstance.swift in Sources */,
-				5E7719841F51B5D60058029E /* ThrukProcessor.swift in Sources */,
-				5E9494C21F51BB290027FE0E /* Settings.swift in Sources */,
-					5E3C974E2341400000CE55B9 /* CheckNewVersion.swift in Sources */,
-					5E9494C41F51F9620027FE0E /* DataRefreshAction.swift in Sources */,
-						5E3C97482341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
-						5E3C974D2341300000CE55B9 /* LoadMonitoringData.swift in Sources */,
-						5E3C97462341100000CE55B9 /* LoadMonitoringDataCore.swift in Sources */,
-						5E3C97502341500000CE55B9 /* InterfaceAction.swift in Sources */,
-						5E3C97512341600000CE55B9 /* MonitoringInstancesTabController.swift in Sources */,
-						5E3C97522341700000CE55B9 /* AudibleAlarmsTabController.swift in Sources */,
-						5E3C97532341800000CE55B9 /* CommandsTabController.swift in Sources */,
-						5E3C97552341900000CE55B9 /* PasswordPromptFlow.swift in Sources */,
-					5E7719901F51B5E20058029E /* Icinga2URLProvider.swift in Sources */,
-				5E7719991F51B5F30058029E /* NagiosURLProvider.swift in Sources */,
-				5E77197E1F51B5CF0058029E /* CommandInterface.swift in Sources */,
-				5E9494CA1F51FAA00027FE0E /* MonitoringInstances.swift in Sources */,
-				5E7719871F51B5DC0058029E /* CheckMKParser.swift in Sources */,
-				5E9494CF1F51FB580027FE0E /* FilterItem.swift in Sources */,
-				5E77198F1F51B5E20058029E /* Icinga2Settings.swift in Sources */,
-				5E7719961F51B5F30058029E /* NagiosParser.swift in Sources */,
-				5E77198D1F51B5E20058029E /* Icinga2Parser.swift in Sources */,
-				5E7719831F51B5D60058029E /* ThrukParser.swift in Sources */,
-				5E9494C91F51FA770027FE0E /* DataProcessor.swift in Sources */,
-				5E7719861F51B5DC0058029E /* CheckMKHTTPClient.swift in Sources */,
 				5E377AC01F49DC2F00297FC3 /* NagBarTests.swift in Sources */,
-				5E9494C31F51F9290027FE0E /* MonitoringItemSorter.swift in Sources */,
-				5E77197C1F51B5CF0058029E /* MonitoringProcessor.swift in Sources */,
-				5E7719881F51B5DC0058029E /* CheckMKProcessor.swift in Sources */,
-				5E7719971F51B5F30058029E /* NagiosProcessor.swift in Sources */,
-				5E9494C81F51F9EC0027FE0E /* ConnectionManager.swift in Sources */,
-				5E77198E1F51B5E20058029E /* Icinga2Processor.swift in Sources */,
-				5E7719951F51B5F30058029E /* NagiosHTTPClient.swift in Sources */,
-				5E77197B1F51B5CF0058029E /* HTTPClient.swift in Sources */,
 				5E7719671F51B47A0058029E /* DataRefreshActionTests.swift in Sources */,
-				5E77198A1F51B5DC0058029E /* CheckMKURLProvider.swift in Sources */,
 				5E3C9714233FC10000CE55B9 /* CheckMKHTTPClientFakeServerTests.swift in Sources */,
 				5E7719651F51B47A0058029E /* CheckMKParserTests.swift in Sources */,
 				5E7719661F51B47A0058029E /* DataProcessorTests.swift in Sources */,
 				5E3C9713233FC10000CE55B9 /* FakeCheckMKServer.swift in Sources */,
 				5E3C9707233F857D00CE55B9 /* FakeIcingaServer.swift in Sources */,
-				5E77198C1F51B5E20058029E /* Icinga2HTTPClient.swift in Sources */,
 				5E3C9708233F857D00CE55B9 /* LoadMonitoringDataFakeIcingaTests.swift in Sources */,
-				5E3C97312340900000CE55B9 /* MenuAction.swift in Sources */,
-				5E3C97322340910000CE55B9 /* AcknowledgeWindow.swift in Sources */,
-				5E3C97332340920000CE55B9 /* ScheduleDowntimeWindow.swift in Sources */,
-				5E3C973E23409C0000CE55B9 /* PasswordPromptController.swift in Sources */,
 				5E3C97362340950000CE55B9 /* CommandWindowAccessibilityTests.swift in Sources */,
-					5E3C97382340960000CE55B9 /* StatusPanelTable.swift in Sources */,
-					5E3C97392340970000CE55B9 /* StatusPanelTableDelegate.swift in Sources */,
-					5E3C973A2340980000CE55B9 /* StatusPanelTableViewDatasource.swift in Sources */,
-					5E3C973B2340990000CE55B9 /* OpenInBrowserAction.swift in Sources */,
-					5E3C973C23409A0000CE55B9 /* StatusPanel.swift in Sources */,
 					5E3C97202340000000CE55B9 /* StatusItemViewTests.swift in Sources */,
-					5E3C973D23409B0000CE55B9 /* FilterItemWindowController.swift in Sources */,
-					5E3C97592341A00000CE55B9 /* FilterOptionsTabController.swift in Sources */,
-					5E3C975A2341B00000CE55B9 /* FilterTableViewDatasource.swift in Sources */,
-					5E3C975B2341B10000CE55B9 /* FilterTableViewDelegate.swift in Sources */,
 				5E7719731F51B47A0058029E /* NagiosParserTests.swift in Sources */,
 				5E77196F1F51B47A0058029E /* MonitoringInstancesTest.swift in Sources */,
 				5E3C971A233FD20000CE55B9 /* PromiseTests.swift in Sources */,
 				5E3C97582341950000CE55B9 /* PasswordPromptFlowTests.swift in Sources */,
-				5E3C971C233FE20000CE55B9 /* ServerLogin.swift in Sources */,
-				5E3C972D2340600000CE55B9 /* MonitoringInstancesWindowController.swift in Sources */,
-				5E3C972E2340700000CE55B9 /* MonitoringInstancesTableDatasource.swift in Sources */,
-				5E3C97302340800000CE55B9 /* SegmentControl.swift in Sources */,
 				5E3C970B233F907A00CE55B9 /* URLProviderTests.swift in Sources */,
 				5E77196A1F51B47A0058029E /* Icinga2ParserTests.swift in Sources */,
-				5E7719911F51B5ED0058029E /* IcingaParser.swift in Sources */,
-				5E9494CD1F51FB280027FE0E /* Utilities.swift in Sources */,
-				5E9494CE1F51FB470027FE0E /* FilterItems.swift in Sources */,
-				5E7719981F51B5F30058029E /* NagiosSettings.swift in Sources */,
-				5E77198B1F51B5E20058029E /* Icinga2Commands.swift in Sources */,
 				5E7719771F51B47A0058029E /* ThrukParserTests.swift in Sources */,
 				5E7719751F51B47A0058029E /* SettingsTests.swift in Sources */,
-				5E7719851F51B5D60058029E /* ThrukURLProvider.swift in Sources */,
-				5E3C9706233F74B500CE55B9 /* ThrukHTTPClient.swift in Sources */,
-				5E7719941F51B5F30058029E /* NagiosCommands.swift in Sources */,
-				5E7719801F51B5CF0058029E /* URLProvider.swift in Sources */,
 				5E77196D1F51B47A0058029E /* IcingaParserTests.swift in Sources */,
-				5E77197D1F51B5CF0058029E /* MonitoringProcessorBase.swift in Sources */,
-				5E7719791F51B5BA0058029E /* HostMonitoringItem.swift in Sources */,
-				CFB4218BEA93EB86A6C32604 /* AboutSettingsContent.swift in Sources */,
 				E92B072541CAA349198371B5 /* AboutSettingsContentTests.swift in Sources */,
 				5E3C97432341050000CE55B9 /* NagBarDiagnosticsTests.swift in Sources */,
 				419728511394E7821A0D1FBE /* PreferencesWindowControllerTests.swift in Sources */,
-				28182765FF068A6B437C8AA0 /* PreferencesWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1224,6 +1143,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				INFOPLIST_FILE = NagBarTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
@@ -1231,6 +1151,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NagBar.app/Contents/MacOS/NagBar";
 			};
 			name = Debug;
 		};
@@ -1242,12 +1163,14 @@
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				INFOPLIST_FILE = NagBarTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.volendavidov.NagBarTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NagBar.app/Contents/MacOS/NagBar";
 			};
 			name = Release;
 		};
