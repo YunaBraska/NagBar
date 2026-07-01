@@ -8,6 +8,23 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced leaked screenshot history with a sanitized fake-Icinga demo image.
+
+### Fixed
+
+- Raised app coverage above the 95% release gate with focused fake-server,
+  settings, status item, diagnostics, command, and server-login coverage.
+- Added safe test seams for alerts, browser opening, file picking, status-item
+  refresh/menu entrypoints, and login launchers so tests do not open external
+  apps or modal UI.
+
+### Verification
+
+- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'`
+- NagBar.app coverage: 95.09% (7894/8302)
+
 ## [2026.07.1820632] - 2026-07-01
 
 ### Changed
