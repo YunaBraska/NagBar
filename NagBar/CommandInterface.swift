@@ -58,13 +58,17 @@ final class CommandFeedback {
 }
 
 final class AlertCommandFeedbackPresenter: CommandFeedbackPresenting {
+    static var presentAlert: (NSAlert) -> Void = { alert in
+        alert.runModal()
+    }
+
     func showSuccess(_ result: CommandResult) {
         let alert = NSAlert()
         alert.messageText = "\(result.action.displayName) accepted"
         alert.informativeText = "\(result.itemCount) item(s) submitted to the monitoring backend."
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
-        alert.runModal()
+        Self.presentAlert(alert)
     }
 
     func showFailure(action: CommandAction, error: Error) {
@@ -73,7 +77,7 @@ final class AlertCommandFeedbackPresenter: CommandFeedbackPresenting {
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
-        alert.runModal()
+        Self.presentAlert(alert)
     }
 }
 

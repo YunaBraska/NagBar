@@ -478,6 +478,9 @@ class FilterItemsProcessorTests: XCTestCase {
     override func tearDown() {
         FilterItems().resetStorage()
         FilterItems.storageURLOverride = nil
+        NagBarAlert.presentAlert = { alert in
+            alert.runModal()
+        }
         super.tearDown()
     }
 
@@ -975,6 +978,42 @@ class FilterItemWindowControllerTests: XCTestCase {
         let saved = FilterItems().getByKey("web-02Disk")
         XCTAssertEqual(saved?.status, 12)
         XCTAssertFalse(fixture.window.isVisible)
+    }
+
+    func testSavingInvalidFilterShowsWarningAndKeepsWindowOpen() throws {
+        var capturedAlert: NSAlert?
+        NagBarAlert.presentAlert = { capturedAlert = $0 }
+        let fixture = FilterItemWindowControllerFixture()
+        fixture.host.stringValue = "["
+        fixture.service.stringValue = ""
+
+        fixture.controller.saveButtonClick(fixture.saveButton)
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertEqual(alert.buttons.map { $0.title }, ["OK"])
+        XCTAssertEqual(FilterItems().count(), 0)
+        XCTAssertTrue(fixture.window.isVisible)
+    }
+
+    func testSavingDuplicateServiceFilterShowsWarningAndDoesNotOverwrite() throws {
+        var capturedAlert: NSAlert?
+        NagBarAlert.presentAlert = { capturedAlert = $0 }
+        let existing = FilterItem().initDefault(host: "web-01", service: "HTTP", status: 16)
+        FilterItems().insert(key: "web-01HTTP", value: existing)
+        let fixture = FilterItemWindowControllerFixture()
+        fixture.host.stringValue = "web-01"
+        fixture.service.stringValue = "HTTP"
+        fixture.warning.state = .on
+
+        fixture.controller.saveButtonClick(fixture.saveButton)
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertTrue(alert.informativeText.contains("web-01"))
+        XCTAssertTrue(alert.informativeText.contains("HTTP"))
+        XCTAssertEqual(FilterItems().getByKey("web-01HTTP")?.status, 16)
+        XCTAssertTrue(fixture.window.isVisible)
     }
 }
 

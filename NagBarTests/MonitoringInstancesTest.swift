@@ -45,6 +45,27 @@ class MonitoringInstancesTest: XCTestCase {
         FilterItems.storageURLOverride = nil
         ServerLogin().resetStorage()
         ServerLogin.storageURLOverride = nil
+        SSHLogin.executeScript = { source in
+            let script = NSAppleScript(source: source)
+            var err: NSDictionary? = nil
+            script!.executeAndReturnError(&err)
+            return err
+        }
+        SSHITermLogin.executeScript = { source in
+            let script = NSAppleScript(source: source)
+            var err: NSDictionary? = nil
+            script!.executeAndReturnError(&err)
+            return err
+        }
+        RDPLogin.openURL = { url in
+            let task = Process()
+            task.launchPath = "/usr/bin/open"
+            task.arguments = [url]
+            task.launch()
+        }
+        NagBarAlert.presentAlert = { alert in
+            alert.runModal()
+        }
         if let applicationSupportDirectory = NagBarStorage.applicationSupportDirectoryOverride {
             try? FileManager.default.removeItem(at: applicationSupportDirectory)
         }
@@ -69,6 +90,36 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(monitoringInstance.password, "api-pass")
         XCTAssertEqual(monitoringInstance.enabled, 1)
         XCTAssertTrue(monitoringInstance.monitoringProcessor() is Icinga2Processor)
+    }
+
+    func testNagiosProcessorCreatesConcreteBackendCollaborators() {
+        let instance = MonitoringInstance().initDefault(name: "nagios", url: "https://nagios.example/cgi-bin/", type: .Nagios, username: "user", password: "pass", enabled: 1)
+        let processor = NagiosProcessor(instance)
+
+        XCTAssertTrue(processor.httpClient() is NagiosHTTPClient)
+        XCTAssertTrue(processor.urlProvider() is NagiosURLProvider)
+        XCTAssertTrue(processor.parser() is NagiosParser)
+        XCTAssertTrue(processor.command() is NagiosCommands)
+    }
+
+    func testIcinga2ProcessorCreatesConcreteBackendCollaborators() {
+        let instance = MonitoringInstance().initDefault(name: "icinga2", url: "https://icinga2.example:5665/v1", type: .Icinga2, username: "user", password: "pass", enabled: 1)
+        let processor = Icinga2Processor(instance)
+
+        XCTAssertTrue(processor.httpClient() is Icinga2HTTPClient)
+        XCTAssertTrue(processor.urlProvider() is Icinga2URLProvider)
+        XCTAssertTrue(processor.parser() is Icinga2Parser)
+        XCTAssertTrue(processor.command() is Icinga2Commands)
+    }
+
+    func testCheckMKProcessorCreatesConcreteBackendCollaborators() {
+        let instance = MonitoringInstance().initDefault(name: "checkmk", url: "https://checkmk.example/site/check_mk/", type: .Check_MK, username: "user", password: "pass", enabled: 1)
+        let processor = CheckMKProcessor(instance)
+
+        XCTAssertTrue(processor.httpClient() is CheckMKHTTPClient)
+        XCTAssertTrue(processor.urlProvider() is CheckMKURLProvider)
+        XCTAssertTrue(processor.parser() is CheckMKParser)
+        XCTAssertTrue(processor.command() is UnsupportedCommands)
     }
 
     func testMonitoringInstanceURLValidationRejectsEmptyURL() {
@@ -630,6 +681,129 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(MonitoringInstances().getByKey("enabled-toggle")?.enabled, 0)
     }
 
+    func testMonitoringInstancesEnabledCheckboxRejectsInvalidURLWithWarning() throws {
+        var capturedAlert: NSAlert?
+        NagBarAlert.presentAlert = { capturedAlert = $0 }
+        let monitoringInstance = MonitoringInstance().initDefault(
+            name: "invalid-toggle",
+            url: "",
+            type: .Icinga,
+            username: "toggle-user",
+            password: "",
+            enabled: 0
+        )
+        MonitoringInstances().insert(key: monitoringInstance.name, value: monitoringInstance)
+        let table = NSTableView()
+        let nameColumn = MINameTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
+        let enabledColumn = MIEnabledTableColumn(identifier: NSUserInterfaceItemIdentifier("enabled"))
+        let statusColumn = MIStatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status"))
+        table.addTableColumn(nameColumn)
+        table.addTableColumn(enabledColumn)
+        table.addTableColumn(statusColumn)
+        let statusView = statusColumn.createViewForRow(0)
+        table.addSubview(statusView)
+        let button = try XCTUnwrap(enabledColumn.createViewForRow(0) as? NSButton)
+
+        button.state = .on
+        enabledColumn.checkButtonClick(button)
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertEqual(button.state, .off)
+        XCTAssertEqual(MonitoringInstances().getByKey("invalid-toggle")?.enabled, 0)
+    }
+
+    func testMonitoringInstancesURLFieldRejectsInvalidEditWithWarningAndRestoresPreviousURL() throws {
+        var capturedAlert: NSAlert?
+        NagBarAlert.presentAlert = { capturedAlert = $0 }
+        let monitoringInstance = MonitoringInstance().initDefault(
+            name: "url-edit",
+            url: "https://valid.example/icinga/cgi-bin/",
+            type: .Icinga,
+            username: "user",
+            password: "",
+            enabled: 0
+        )
+        MonitoringInstances().insert(key: monitoringInstance.name, value: monitoringInstance)
+        let field = MIURLTextField()
+        field.tag = 0
+        field.stringValue = "notaurl"
+
+        field.textDidEndEditing(Notification(name: NSText.didEndEditingNotification, object: field))
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertEqual(field.stringValue, "https://valid.example/icinga/cgi-bin/")
+        XCTAssertEqual(MonitoringInstances().getByKey("url-edit")?.url, "https://valid.example/icinga/cgi-bin/")
+    }
+
+    func testMonitoringInstancesNameFieldRejectsDuplicateAndEmptyNamesWithWarning() throws {
+        MonitoringInstances().insert(key: "alpha", value: MonitoringInstance().initDefault(name: "alpha", url: "https://alpha.example", type: .Nagios, username: "", password: "", enabled: 0))
+        MonitoringInstances().insert(key: "beta", value: MonitoringInstance().initDefault(name: "beta", url: "https://beta.example", type: .Nagios, username: "", password: "", enabled: 0))
+        var capturedAlerts: [NSAlert] = []
+        NagBarAlert.presentAlert = { capturedAlerts.append($0) }
+        let duplicateField = MINameTextField()
+        duplicateField.stringValue = "alpha"
+        duplicateField.textDidBeginEditing(Notification(name: NSText.didBeginEditingNotification, object: duplicateField))
+        duplicateField.stringValue = "beta"
+
+        duplicateField.textDidEndEditing(Notification(name: NSText.didEndEditingNotification, object: duplicateField))
+
+        let emptyField = MINameTextField()
+        emptyField.stringValue = "alpha"
+        emptyField.textDidBeginEditing(Notification(name: NSText.didBeginEditingNotification, object: emptyField))
+        emptyField.stringValue = ""
+
+        emptyField.textDidEndEditing(Notification(name: NSText.didEndEditingNotification, object: emptyField))
+
+        XCTAssertEqual(capturedAlerts.count, 2)
+        XCTAssertEqual(duplicateField.stringValue, "alpha")
+        XCTAssertEqual(emptyField.stringValue, "alpha")
+        XCTAssertNotNil(MonitoringInstances().getByKey("alpha"))
+        XCTAssertNotNil(MonitoringInstances().getByKey("beta"))
+    }
+
+    func testMonitoringInstancesEnabledCheckboxPersistsEnabledStateForReachableLocalIcinga() throws {
+        seedSavePassword(false)
+        let monitoringInstance = LocalIcingaFallback.instance()
+        monitoringInstance.enabled = 0
+        MonitoringInstances().insert(key: monitoringInstance.name, value: monitoringInstance)
+        MonitoringInstances().updatePassword(monitoringInstance: monitoringInstance, password: monitoringInstance.password)
+        let column = MIEnabledTableColumn(identifier: NSUserInterfaceItemIdentifier("enabled"))
+        let button = try XCTUnwrap(column.createViewForRow(0) as? NSButton)
+
+        button.state = .on
+        column.checkButtonClick(button)
+
+        XCTAssertEqual(MonitoringInstances().getByKey(LocalIcingaFallback.instanceName)?.enabled, 1)
+    }
+
+    func testMonitoringInstancesEnabledColumnMarksStatusUnknownWhenDisabled() throws {
+        let monitoringInstance = MonitoringInstance().initDefault(
+            name: "status-toggle",
+            url: "https://toggle.example/icinga/cgi-bin/",
+            type: .Icinga,
+            username: "toggle-user",
+            password: "",
+            enabled: 1
+        )
+        MonitoringInstances().insert(key: monitoringInstance.name, value: monitoringInstance)
+        let table = NSTableView(frame: NSRect(x: 0, y: 0, width: 480, height: 120))
+        table.addTableColumn(MINameTableColumn(identifier: NSUserInterfaceItemIdentifier("name")))
+        table.addTableColumn(MIEnabledTableColumn(identifier: NSUserInterfaceItemIdentifier("enabled")))
+        table.addTableColumn(MIStatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")))
+        let statusView = MIStatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")).createViewForRow(0)
+        table.addSubview(statusView)
+        let column = try XCTUnwrap(table.tableColumns[1] as? MIEnabledTableColumn)
+        let button = try XCTUnwrap(column.createViewForRow(0) as? NSButton)
+
+        button.state = .off
+        column.connectionStateUnknown(0)
+        column.checkButtonClick(button)
+
+        XCTAssertEqual(MonitoringInstances().getByKey("status-toggle")?.enabled, 0)
+    }
+
     func testMonitoringInstancesWindowXIBAddRowAndPersistAuthFieldsThroughTableControls() throws {
         seedSavePassword(false)
         let controller = MonitoringInstancesWindowController(windowNibName: "MonitoringInstancesWindow")
@@ -688,6 +862,64 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(stored.username, "xib-user")
         XCTAssertEqual(stored.password, "xib-pass")
         XCTAssertEqual(stored.enabled, 0)
+    }
+
+    func testMonitoringInstancesWindowDeleteSegmentRemovesSelectedRow() throws {
+        let first = MonitoringInstance().initDefault(
+            name: "delete-a",
+            url: "https://a.example",
+            type: .Nagios,
+            username: "user-a",
+            password: "",
+            enabled: 1
+        )
+        let second = MonitoringInstance().initDefault(
+            name: "delete-b",
+            url: "https://b.example",
+            type: .Icinga,
+            username: "user-b",
+            password: "",
+            enabled: 1
+        )
+        MonitoringInstances().insert(key: first.name, value: first)
+        MonitoringInstances().insert(key: second.name, value: second)
+        let controller = MonitoringInstancesWindowController(windowNibName: "MonitoringInstancesWindow")
+        _ = try XCTUnwrap(controller.window)
+        let table = try XCTUnwrap(controller.monitoringInstancesTable)
+        table.reloadData()
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        let deletedName = try XCTUnwrap((table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NSTextField)?.stringValue)
+        let deleteControl = NSSegmentedControl(labels: ["+", "-"], trackingMode: .selectOne, target: nil, action: nil)
+        deleteControl.selectedSegment = 1
+
+        controller.segControlClicked(deleteControl)
+
+        XCTAssertNil(MonitoringInstances().getByKey(deletedName))
+        XCTAssertEqual(MonitoringInstances().count(), 1)
+    }
+
+    func testMonitoringInstancesWindowDeleteSegmentIgnoresMissingSelection() throws {
+        let first = MonitoringInstance().initDefault(
+            name: "keep-a",
+            url: "https://a.example",
+            type: .Nagios,
+            username: "user-a",
+            password: "",
+            enabled: 1
+        )
+        MonitoringInstances().insert(key: first.name, value: first)
+        let controller = MonitoringInstancesWindowController(windowNibName: "MonitoringInstancesWindow")
+        _ = try XCTUnwrap(controller.window)
+        let table = try XCTUnwrap(controller.monitoringInstancesTable)
+        table.reloadData()
+        table.deselectAll(nil)
+        let deleteControl = NSSegmentedControl(labels: ["+", "-"], trackingMode: .selectOne, target: nil, action: nil)
+        deleteControl.selectedSegment = 1
+
+        controller.segControlClicked(deleteControl)
+
+        XCTAssertNotNil(MonitoringInstances().getByKey("keep-a"))
+        XCTAssertEqual(MonitoringInstances().count(), 1)
     }
 
     func testMonitoringInstancesTypeControlListsEverySupportedBackend() throws {
@@ -1124,6 +1356,105 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertNil(ServerLogin().getLoginType(monitoringItem))
     }
 
+    func testServerLoginDefaultFactoriesCreateConcreteLoginMethods() {
+        let serverLogin = ServerLogin()
+
+        XCTAssertTrue(serverLogin.sshLoginMethodFactory() is SSHLogin)
+        XCTAssertTrue(serverLogin.sshITermLoginMethodFactory() is SSHITermLogin)
+        XCTAssertTrue(serverLogin.rdpLoginMethodFactory() is RDPLogin)
+    }
+
+    func testServerLoginSSHActionStoresDefaultTypeAndUsesSavedUsername() {
+        let monitoringItem = HostMonitoringItem()
+        monitoringItem.host = "web-ssh.example"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = monitoringItem
+        let recorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.sshLoginMethodFactory = { recorder }
+        serverLogin.setUsername(monitoringItem, username: "deploy")
+
+        serverLogin.sshLogin(menuItem)
+
+        XCTAssertEqual(recorder.hosts, ["web-ssh.example"])
+        XCTAssertEqual(recorder.usernames, ["deploy"])
+        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
+    }
+
+    func testServerLoginSSHActionPromptsAndStoresUsernameWhenMissing() {
+        let monitoringItem = HostMonitoringItem()
+        monitoringItem.host = "web-prompt.example"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = monitoringItem
+        let recorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.sshLoginMethodFactory = { recorder }
+        serverLogin.usernamePrompt = { item in
+            XCTAssertEqual(item.host, "web-prompt.example")
+            return "prompted"
+        }
+
+        serverLogin.sshLogin(menuItem)
+
+        XCTAssertEqual(recorder.hosts, ["web-prompt.example"])
+        XCTAssertEqual(recorder.usernames, ["prompted"])
+        XCTAssertEqual(ServerLogin().getUsername(monitoringItem), "prompted")
+        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
+    }
+
+    func testServerLoginSSHActionCancelPromptStoresTypeButDoesNotLogin() {
+        let monitoringItem = HostMonitoringItem()
+        monitoringItem.host = "web-cancel.example"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = monitoringItem
+        let recorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.sshLoginMethodFactory = { recorder }
+        serverLogin.usernamePrompt = { _ in nil }
+
+        serverLogin.sshLogin(menuItem)
+
+        XCTAssertTrue(recorder.hosts.isEmpty)
+        XCTAssertNil(ServerLogin().getUsername(monitoringItem))
+        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
+    }
+
+    func testServerLoginSSHiTermActionUsesSavedUsernameAndExistingType() {
+        let monitoringItem = HostMonitoringItem()
+        monitoringItem.host = "web-iterm.example"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = monitoringItem
+        let recorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.sshITermLoginMethodFactory = { recorder }
+        serverLogin.setUsername(monitoringItem, username: "deploy")
+        serverLogin.setLoginType(monitoringItem, loginType: .sshiTerm)
+
+        serverLogin.sshITermLogin(menuItem)
+
+        XCTAssertEqual(recorder.hosts, ["web-iterm.example"])
+        XCTAssertEqual(recorder.usernames, ["deploy"])
+        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .sshiTerm)
+    }
+
+    func testServerLoginRDPActionKeepsExistingTypeAndUsesSavedUsername() {
+        let monitoringItem = HostMonitoringItem()
+        monitoringItem.host = "web-rdp.example"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = monitoringItem
+        let recorder = RecordingServerLoginMethod()
+        let serverLogin = ServerLogin()
+        serverLogin.rdpLoginMethodFactory = { recorder }
+        serverLogin.setUsername(monitoringItem, username: "ops")
+        serverLogin.setLoginType(monitoringItem, loginType: .ssh)
+
+        serverLogin.rdpLogin(menuItem)
+
+        XCTAssertEqual(recorder.hosts, ["web-rdp.example"])
+        XCTAssertEqual(recorder.usernames, ["ops"])
+        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
+    }
+
     func testServerLoginImportLegacyItemsSeedsEmptyStorage() {
         let monitoringItem = HostMonitoringItem()
         monitoringItem.host = "web-01.example"
@@ -1167,6 +1498,44 @@ class MonitoringInstancesTest: XCTestCase {
 
         XCTAssertEqual(ServerLogin().getUsername(monitoringItem), "deploy")
         XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .ssh)
+    }
+
+    func testConcreteSSHLoginBuildsTerminalScriptWithoutExecutingAppleScript() throws {
+        var executedSource: String?
+        SSHLogin.executeScript = { source in
+            executedSource = source
+            return nil
+        }
+
+        SSHLogin().login("web-01.example", username: "deploy")
+
+        let source = try XCTUnwrap(executedSource)
+        XCTAssertTrue(source.contains("Terminal"))
+        XCTAssertTrue(source.contains("ssh deploy@web-01.example"))
+        XCTAssertFalse(source.contains("iTerm"))
+    }
+
+    func testConcreteSSHiTermLoginBuildsITermScriptAndReportsAppleScriptError() throws {
+        var executedSource: String?
+        SSHITermLogin.executeScript = { source in
+            executedSource = source
+            return ["message": "synthetic failure"]
+        }
+
+        SSHITermLogin().login("app-01.example", username: "ops")
+
+        let source = try XCTUnwrap(executedSource)
+        XCTAssertTrue(source.contains("iTerm"))
+        XCTAssertTrue(source.contains("ssh ops@app-01.example"))
+    }
+
+    func testConcreteRDPLoginBuildsOpenURLWithoutLaunchingProcess() {
+        var openedURLs: [String] = []
+        RDPLogin.openURL = { openedURLs.append($0) }
+
+        RDPLogin().login("rdp-01.example", username: "operator")
+
+        XCTAssertEqual(openedURLs, ["rdp://full%20address=s:rdp-01.example&username=s:operator"])
     }
 
     private func storedMonitoringInstance(name: String, enabled: Int = 1) -> MonitoringInstance {
@@ -1269,4 +1638,14 @@ class MonitoringInstancesTest: XCTestCase {
 //        monitoringInstancesList = self.monitoringInstances.getMonitoringInstances()
 //        XCTAssertNotEqual(monitoringInstancesList.first?.password, "testpass")
 //    }
+}
+
+private final class RecordingServerLoginMethod: ServerLoginMethod {
+    var hosts: [String] = []
+    var usernames: [String] = []
+
+    func login(_ host: String, username: String) {
+        hosts.append(host)
+        usernames.append(username)
+    }
 }

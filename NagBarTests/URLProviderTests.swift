@@ -95,6 +95,15 @@ final class URLProviderTests: XCTestCase {
         XCTAssertFalse(urls[1].url.contains("is_in_downtime=0&"))
     }
 
+    func testCheckMKURLProviderAcceptsSkipServicesOfHostsWithScheduledDowntimeSetting() {
+        Settings().setBool(true, forKey: "skipServicesOfHostsWithScD")
+        let instance = monitoringInstance(type: .Check_MK, url: "http://checkmk.example/site/check_mk/")
+
+        let urls = CheckMKURLProvider(instance).create()
+
+        XCTAssertEqual(urls.count, 2)
+    }
+
     func testLocalIcingaFallbackURLProviderBuildsIcingaStatusUrlsForLocalServer() {
         Settings().setBool(true, forKey: "skipServicesOfHostsWithScD")
         let instance = LocalIcingaFallback.instance()
@@ -179,6 +188,22 @@ final class URLProviderTests: XCTestCase {
         XCTAssertNotNil(getResult.error)
     }
 
+    func testLocalIcingaFallbackServerHandlesNormalCGIAuthHeadAndCommandRequests() throws {
+        let instance = LocalIcingaFallback.instance()
+        let unauthorized = try rawRequest(url: instance.url + "status.cgi?hostgroup=all", method: "GET", authorization: nil)
+        let head = try rawRequest(url: instance.url + "status.cgi?hostgroup=all", method: "HEAD", authorization: authorizationHeader())
+        let commandTime = try rawRequest(url: instance.url + "cmd.cgi", method: "GET", authorization: authorizationHeader())
+        let commandSubmit = try rawRequest(url: instance.url + "cmd.cgi", method: "POST", authorization: authorizationHeader(), body: Data("cmd_typ=7".utf8))
+
+        XCTAssertEqual(unauthorized.statusCode, 401)
+        XCTAssertEqual(head.statusCode, 200)
+        XCTAssertTrue(head.body.isEmpty)
+        XCTAssertEqual(commandTime.statusCode, 200)
+        XCTAssertTrue(String(decoding: commandTime.body, as: UTF8.self).contains("start_time"))
+        XCTAssertEqual(commandSubmit.statusCode, 200)
+        XCTAssertEqual(String(decoding: commandSubmit.body, as: UTF8.self), "OK")
+    }
+
     private func monitoringInstance(type: MonitoringInstanceType, url: String) -> MonitoringInstance {
         let instance = MonitoringInstance().initDefault(
             name: "test-\(type.rawValue)",
@@ -212,6 +237,36 @@ final class URLProviderTests: XCTestCase {
 
         waitForExpectations(timeout: 2)
         return (resultData, resultError)
+    }
+
+    private func authorizationHeader() -> String {
+        return "Basic " + Data("\(LocalIcingaFallback.username):\(LocalIcingaFallback.password)".utf8).base64EncodedString()
+    }
+
+    private func rawRequest(url: String, method: String, authorization: String?, body: Data? = nil) throws -> (statusCode: Int, body: Data) {
+        let expectation = self.expectation(description: "\(method) \(url)")
+        var request = URLRequest(url: try XCTUnwrap(URL(string: url)))
+        request.httpMethod = method
+        request.httpBody = body
+        if let authorization = authorization {
+            request.setValue(authorization, forHTTPHeaderField: "Authorization")
+        }
+        var statusCode = -1
+        var responseBody = Data()
+        var responseError: Error?
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            responseError = error
+            statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            responseBody = data ?? Data()
+            expectation.fulfill()
+        }.resume()
+
+        waitForExpectations(timeout: 3)
+        if let responseError = responseError {
+            throw responseError
+        }
+        return (statusCode, responseBody)
     }
 
     private func productionSwiftFiles() throws -> [URL] {

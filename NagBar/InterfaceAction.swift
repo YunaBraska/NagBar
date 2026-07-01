@@ -54,6 +54,10 @@ class DefaultButton : NSButton, InterfaceAction {
 }
 
 class DefaultPopUpButton : NSPopUpButton {
+
+    override init(frame buttonFrame: NSRect, pullsDown flag: Bool) {
+        super.init(frame: buttonFrame, pullsDown: flag)
+    }
     
     var popUpButtons: Dictionary <String, Dictionary<Int, String>> {
         return [

@@ -17,6 +17,12 @@ final class PreferencesWindowControllerTests: XCTestCase {
     }
 
     override func tearDown() {
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.preferencesWindow?.close()
+            appDelegate.preferencesWindow = nil
+            appDelegate.passwordWindow?.close()
+            appDelegate.passwordWindow = nil
+        }
         Settings().resetKnownSettings()
         super.tearDown()
     }
@@ -41,6 +47,75 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertTrue(labels.contains(AboutSettingsContent.supportURL))
     }
 
+    func testAppDelegateOpenPreferencesUsesExistingPreferencesWindow() throws {
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
+        appDelegate.preferencesWindow = controller
+
+        appDelegate.openPreferences(NSButton())
+
+        XCTAssertTrue(appDelegate.preferencesWindow === controller)
+        XCTAssertTrue(controller.window?.isVisible ?? false)
+    }
+
+    func testAppDelegateOpenPreferencesFromStatusItemUsesSameWindowEntrypoint() throws {
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
+        appDelegate.preferencesWindow = controller
+
+        appDelegate.openPreferencesFromStatusItem()
+
+        XCTAssertTrue(appDelegate.preferencesWindow === controller)
+        XCTAssertTrue(controller.window?.isVisible ?? false)
+    }
+
+    func testAppDelegateOpenAboutSelectsAboutTabInExistingPreferencesWindow() throws {
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
+        appDelegate.preferencesWindow = controller
+
+        appDelegate.openAbout(NSButton())
+
+        let tabView = try XCTUnwrap(controller.findTabView(in: controller.window?.contentView))
+        let selectedItem = try XCTUnwrap(tabView.selectedTabViewItem)
+        XCTAssertTrue(AboutSettingsTabBuilder.isAboutTab(selectedItem))
+    }
+
+    func testAppDelegateAboutStatusItemEntrypointsReuseAboutSelection() throws {
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
+        appDelegate.preferencesWindow = controller
+
+        appDelegate.showAbout(NSButton())
+        appDelegate.showAboutFromStatusItem()
+
+        let tabView = try XCTUnwrap(controller.findTabView(in: controller.window?.contentView))
+        let selectedItem = try XCTUnwrap(tabView.selectedTabViewItem)
+        XCTAssertTrue(AboutSettingsTabBuilder.isAboutTab(selectedItem))
+    }
+
+    func testAppDelegateRefreshEntrypointsUseRefreshStatusData() {
+        let appDelegate = RecordingAppDelegate()
+
+        appDelegate.refresh(NSButton())
+        appDelegate.refreshFromStatusItem()
+
+        XCTAssertEqual(appDelegate.refreshCount, 2)
+    }
+
+    func testAppDelegateShowPasswordPromptCreatesOneWindowAndRefreshesThroughDelegate() throws {
+        let appDelegate = RecordingAppDelegate()
+
+        appDelegate.showPasswordPrompt()
+        let firstWindow = try XCTUnwrap(appDelegate.passwordWindow)
+        appDelegate.showPasswordPrompt()
+
+        XCTAssertTrue(appDelegate.passwordWindow === firstWindow)
+        firstWindow.refreshStatusData()
+        XCTAssertEqual(appDelegate.refreshCount, 1)
+        firstWindow.close()
+    }
+
     func testOpenDataFeedUsesFactoryAndKeepsMonitoringInstancesWindow() throws {
         let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
         _ = controller.window
@@ -57,6 +132,29 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertTrue(controller.monitoringInstancesWindow === monitoringWindow)
         XCTAssertNotNil(monitoringWindow.window)
         XCTAssertEqual((monitoringWindow.window as NSWindow?)?.accessibilityIdentifier(), MonitoringInstancesAccessibility.windowIdentifier)
+    }
+
+    func testPreferencesControllerNoopsWithoutWindowContentOrFactory() {
+        let controller = PreferencesWindowController()
+
+        controller.selectAboutTab()
+        controller.addAboutTabIfNeeded()
+        controller.openDataFeed(NSButton())
+
+        XCTAssertNil(controller.monitoringInstancesWindow)
+        XCTAssertNil(controller.findTabView(in: nil))
+    }
+
+    func testPreferencesControllerFindsDirectAndNestedTabViews() throws {
+        let controller = PreferencesWindowController()
+        let directTabView = NSTabView()
+        let container = NSView()
+        let nestedTabView = NSTabView()
+        container.addSubview(NSView())
+        container.addSubview(nestedTabView)
+
+        XCTAssertTrue(controller.findTabView(in: directTabView) === directTabView)
+        XCTAssertTrue(controller.findTabView(in: container) === nestedTabView)
     }
 
     func testPreferencesDefaultButtonInitializesFromSettingsAndPersistsToggle() throws {
@@ -76,6 +174,15 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertTrue(Settings().boolForKey("showDockIcon"))
     }
 
+    func testDefaultButtonWithoutIdentifierIgnoresAction() {
+        let button = DefaultButton(frame: NSRect(x: 0, y: 0, width: 20, height: 20))
+        button.state = .on
+
+        button.performAction()
+
+        XCTAssertNil(button.identifier)
+    }
+
     func testPreferencesDefaultPopUpInitializesFromSettingsAndPersistsSelection() throws {
         Settings().setInteger(3, forKey: "flashStatusBarType")
         let controller = PreferencesWindowController(windowNibName: "PreferencesWindow")
@@ -87,6 +194,23 @@ final class PreferencesWindowControllerTests: XCTestCase {
         popup.selectItem(withTitle: "Shake")
         popup.performAction()
         XCTAssertEqual(Settings().integerForKey("flashStatusBarType"), 1)
+    }
+
+    func testDefaultPopUpPersistsEachKnownSelectionAndIgnoresUnknownIdentifier() {
+        let popup = DefaultPopUpButton(frame: NSRect(x: 0, y: 0, width: 120, height: 24), pullsDown: false)
+        popup.identifier = NSUserInterfaceItemIdentifier("sortColumn")
+        popup.addItems(withTitles: ["None", "Host", "Service", "Status", "Last Check", "Attempt", "Duration"])
+        popup.selectItem(withTitle: "Duration")
+
+        popup.performAction()
+
+        XCTAssertEqual(Settings().integerForKey("sortColumn"), 6)
+
+        popup.identifier = NSUserInterfaceItemIdentifier("unknownPopup")
+        popup.selectItem(withTitle: "Host")
+        popup.performAction()
+
+        XCTAssertEqual(Settings().integerForKey("sortColumn"), 6)
     }
 
     func testPreferencesDefaultColorWellPersistsSelectedColor() {
@@ -199,6 +323,37 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), "")
     }
 
+    func testAudibleAlarmsPopupCustomSelectionStoresPickedSoundFile() throws {
+        let controller = AudibleAlarmsTabController()
+        let popup = NSPopUpButton()
+        popup.identifier = NSUserInterfaceItemIdentifier("audibleAlarmsCriticalSoundFile")
+        popup.addItems(withTitles: ["Default", "Custom"])
+        popup.selectItem(withTitle: "Custom")
+        let selectedURL = URL(fileURLWithPath: "/Library/Sounds/Submarine.aiff")
+        controller.soundFilePicker = { [selectedURL] }
+
+        controller.popupButtonFileSelector(popup)
+
+        XCTAssertEqual(popup.itemTitles, ["Default", "Submarine.aiff"])
+        XCTAssertEqual(popup.titleOfSelectedItem, "Submarine.aiff")
+        XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), selectedURL.path)
+    }
+
+    func testAudibleAlarmsPopupCustomSelectionCancelLeavesExistingSoundFile() {
+        Settings().setString("/Library/Sounds/Basso.aiff", forKey: "audibleAlarmsCriticalSoundFile")
+        let controller = AudibleAlarmsTabController()
+        let popup = NSPopUpButton()
+        popup.identifier = NSUserInterfaceItemIdentifier("audibleAlarmsCriticalSoundFile")
+        popup.addItems(withTitles: ["Default", "Basso.aiff"])
+        popup.selectItem(withTitle: "Basso.aiff")
+        controller.soundFilePicker = { [] }
+
+        controller.popupButtonFileSelector(popup)
+
+        XCTAssertEqual(popup.itemTitles, ["Default", "Basso.aiff"])
+        XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), "/Library/Sounds/Basso.aiff")
+    }
+
     private func textFieldStrings(in view: NSView) -> [String] {
         view.subviews.flatMap { subview -> [String] in
             let ownText = (subview as? NSTextField).map { [$0.stringValue] } ?? []
@@ -223,5 +378,13 @@ final class PreferencesWindowControllerTests: XCTestCase {
         }
 
         return nil
+    }
+}
+
+private final class RecordingAppDelegate: AppDelegate {
+    var refreshCount = 0
+
+    override func refreshStatusData() {
+        refreshCount += 1
     }
 }

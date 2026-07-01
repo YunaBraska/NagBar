@@ -20,6 +20,29 @@ enum LoginType : Int {
     static var storageURLOverride: URL?
     private static let storageLock = NSLock()
 
+    var sshLoginMethodFactory: () -> ServerLoginMethod = { SSHLogin() }
+    var sshITermLoginMethodFactory: () -> ServerLoginMethod = { SSHITermLogin() }
+    var rdpLoginMethodFactory: () -> ServerLoginMethod = { RDPLogin() }
+    var usernamePrompt: (MonitoringItem) -> String? = { _ in
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("enterUsername", comment: "")
+        alert.addButton(withTitle: NSLocalizedString("ok", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+
+        let inputTextField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        inputTextField.placeholderString = NSLocalizedString("username", comment: "")
+
+        alert.accessoryView = inputTextField
+
+        let button = alert.runModal()
+
+        if button == NSApplication.ModalResponse.alertFirstButtonReturn {
+            return inputTextField.stringValue
+        }
+
+        return nil
+    }
+
     private var storageURL: URL {
         if let storageURLOverride = ServerLogin.storageURLOverride {
             return storageURLOverride
@@ -34,7 +57,7 @@ enum LoginType : Int {
     @objc
     func sshLogin(_ sender: NSMenuItem) {
         let monitoringItem = sender.representedObject as! MonitoringItem
-        let loginMethod = SSHLogin()
+        let loginMethod = sshLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .ssh)
         }
@@ -45,7 +68,7 @@ enum LoginType : Int {
     @objc
     func sshITermLogin(_ sender: NSMenuItem) {
         let monitoringItem = sender.representedObject as! MonitoringItem
-        let loginMethod = SSHITermLogin()
+        let loginMethod = sshITermLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .sshiTerm)
         }
@@ -56,7 +79,7 @@ enum LoginType : Int {
     @objc
     func rdpLogin(_ sender: NSMenuItem) {
         let monitoringItem = sender.representedObject as! MonitoringItem
-        let loginMethod = RDPLogin()
+        let loginMethod = rdpLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .rdp)
         }
@@ -69,23 +92,9 @@ enum LoginType : Int {
         var username: String?
         if let settingsUsername = self.getUsername(monitoringItem) {
             username = settingsUsername
-        } else {
-            let alert = NSAlert()
-            alert.messageText = NSLocalizedString("enterUsername", comment: "")
-            alert.addButton(withTitle: NSLocalizedString("ok", comment: ""))
-            alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
-            
-            let inputTextField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-            inputTextField.placeholderString = NSLocalizedString("username", comment: "")
-            
-            alert.accessoryView = inputTextField
-            
-            let button = alert.runModal()
-            
-            if button == NSApplication.ModalResponse.alertFirstButtonReturn {
-                username = inputTextField.stringValue
-                self.setUsername(monitoringItem, username: inputTextField.stringValue)
-            }
+        } else if let promptedUsername = usernamePrompt(monitoringItem) {
+            username = promptedUsername
+            self.setUsername(monitoringItem, username: promptedUsername)
         }
         
         if let username = username {
@@ -208,15 +217,18 @@ protocol ServerLoginMethod {
 }
 
 class SSHLogin : ServerLoginMethod {
+    static var executeScript: (String) -> NSDictionary? = { source in
+        let script = NSAppleScript(source: source)
+        var err: NSDictionary? = nil
+        script!.executeAndReturnError(&err)
+        return err
+    }
+
     func login(_ host: String, username: String) {
         // We could just use open ssh://hostname, but it will open a new window of Terminal
         let source = NSString(format: "tell application \"System Events\"\nset processlist to (name of processes)\nif processlist contains \"Terminal\" then\nactivate application \"Terminal\"\ntell application \"System Events\" to keystroke \"t\" using command down\ntell application \"System Events\" to keystroke \"ssh %@@%@\"\ntell application \"System Events\" to keystroke return\nelse\ntell application \"Terminal\"\nreopen\nactivate\ntell application \"System Events\" to keystroke \"ssh %@@%@\"\ntell application \"System Events\" to keystroke return\nend tell\nend if\nend tell", username, host, username, host);
-        
-        let script = NSAppleScript(source: source as String)
-        
-        var err: NSDictionary? = nil
-        script!.executeAndReturnError(&err)
-        
+
+        let err = Self.executeScript(source as String)
         if err != nil {
             NSLog(String(describing: err))
         }
@@ -224,15 +236,18 @@ class SSHLogin : ServerLoginMethod {
 }
 
 class SSHITermLogin : ServerLoginMethod {
+    static var executeScript: (String) -> NSDictionary? = { source in
+        let script = NSAppleScript(source: source)
+        var err: NSDictionary? = nil
+        script!.executeAndReturnError(&err)
+        return err
+    }
+
     func login(_ host: String, username: String) {
         
         let source = NSString(format: "tell application \"System Events\"\nset processlist to (name of processes)\nif processlist contains \"iTerm\" then\nactivate application \"iTerm\"\ntell application \"System Events\" to keystroke \"t\" using command down\ntell application \"System Events\" to keystroke \"ssh %@@%@\"\ntell application \"System Events\" to keystroke return\nelse\ntell application \"iTerm\"\nreopen\nactivate\ntell application \"System Events\" to keystroke \"ssh %@@%@\"\ntell application \"System Events\" to keystroke return\nend tell\nend if\nend tell", username, host, username, host)
-        
-        let script = NSAppleScript(source: source as String)
-        
-        var err: NSDictionary? = nil
-        script!.executeAndReturnError(&err)
-        
+
+        let err = Self.executeScript(source as String)
         if err != nil {
             NSLog(String(describing: err))
         }
@@ -240,13 +255,15 @@ class SSHITermLogin : ServerLoginMethod {
 }
 
 class RDPLogin : ServerLoginMethod {
-    func login(_ host: String, username: String) {
+    static var openURL: (String) -> Void = { url in
         let task = Process()
         task.launchPath = "/usr/bin/open"
-        
-        let url = NSString(format: "rdp://full%%20address=s:%@&username=s:%@", host, username)
-        task.arguments = [url as String]
-        
+        task.arguments = [url]
         task.launch()
+    }
+
+    func login(_ host: String, username: String) {
+        let url = NSString(format: "rdp://full%%20address=s:%@&username=s:%@", host, username)
+        Self.openURL(url as String)
     }
 }

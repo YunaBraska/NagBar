@@ -96,6 +96,32 @@ class NotificationDisplayTests: XCTestCase {
         XCTAssertEqual(deliveredNotifications.map { $0.subtitle }, ["Disk CRITICAL", "DOWN"])
     }
 
+    func testNotificationActivationIgnoresMissingUserInfo() {
+        let notification = NSUserNotification()
+
+        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+
+        XCTAssertNil(notification.userInfo)
+    }
+
+    func testNotificationActivationIgnoresMissingMonitoringItemURL() {
+        let notification = NSUserNotification()
+        notification.userInfo = ["other": "value"]
+
+        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+
+        XCTAssertEqual(notification.userInfo?["other"] as? String, "value")
+    }
+
+    func testNotificationActivationRejectsMalformedMonitoringItemURL() {
+        let notification = NSUserNotification()
+        notification.userInfo = ["monitoringItemUrl": "http://["]
+
+        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+
+        XCTAssertEqual(notification.userInfo?["monitoringItemUrl"] as? String, "http://[")
+    }
+
     private func host(_ name: String, status: String, information: String = "Host problem") -> HostMonitoringItem {
         let item = HostMonitoringItem()
         item.host = name
@@ -191,6 +217,28 @@ class PlaySoundAlarmTests: XCTestCase {
 
         XCTAssertEqual(playedDefaultSounds, ["critical"])
         XCTAssertEqual(playedCustomSounds, [])
+    }
+
+    func testPlaySoundAlarmFallsThroughDisabledDownToUnreachableAlarm() {
+        settings.setBool(false, forKey: "enableAudibleAlarmsDown")
+        let newResults: [MonitoringItem] = [
+            host("web-01", status: "DOWN"),
+            host("edge-01", status: "UNREACHABLE")
+        ]
+
+        PlaySoundAlarm().process([], newResults: newResults)
+
+        XCTAssertEqual(playedDefaultSounds, ["siren-horn"])
+        XCTAssertEqual(playedCustomSounds, [])
+    }
+
+    func testBaseAlarmProcessorExposesEmptyDefaults() {
+        let processor = AlarmProcessor()
+
+        XCTAssertEqual(processor.alertType, "")
+        XCTAssertEqual(processor.alertKeyEnabled, "")
+        XCTAssertEqual(processor.alertKeyFilePath, "")
+        XCTAssertEqual(processor.defaultSound, "")
     }
 
     func testPlaySoundAlarmUsesCustomWarningSoundPathWhenConfigured() {
