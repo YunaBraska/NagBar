@@ -14,6 +14,8 @@ security, upgrade notes, and verification evidence.
   `UserNotifications` and `allowedContentTypes`.
 - Updated project status evidence to the current 433-test, 95.01%-coverage
   verification run.
+- Enriched the first-run fake Icinga sample data and README screenshot so the
+  demo looks closer to the original NagBar status panel.
 
 ### Fixed
 

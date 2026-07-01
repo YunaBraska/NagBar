@@ -10,7 +10,7 @@ import Foundation
 import Network
 
 enum LocalIcingaFallback {
-    static let instanceName = "Local Icinga Fallback"
+    static let instanceName = "icinga"
     static let username = "local-fallback"
     static let password = "local-fallback"
 
@@ -207,20 +207,28 @@ final class LocalIcingaFakeServer {
         return Data("""
         <html><body><form id="tableformhost"><div><table>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-01">web-01</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>DOWN</td><td>30-06-2026 12:00:00</td><td>0d 1h 14m 0s</td><td>3/3</td><td>CRITICAL - Host unreachable (10.0.0.11)</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-de-smtp">web-de-smtp</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:00:00</td><td>35d 6h 48m 25s</td><td>4/4</td><td>Connection refused</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=app-01">app-01</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
-            <td>UNREACHABLE</td><td>30-06-2026 12:03:00</td><td>0d 0h 51m 0s</td><td>2/3</td><td>CRITICAL - Route to application node is flapping</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=gmx-pop">gmx-pop</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:03:00</td><td>133d 3h 59m 3s</td><td>1/10</td><td>CRITICAL - TCP socket timeout after 10 seconds</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=db-01">db-01</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>PENDING</td><td>30-06-2026 12:05:00</td><td>0d 0h 10m 0s</td><td>1/3</td><td>Service checks are waiting for the first host check result</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=gmx-www">gmx-www</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:05:00</td><td>79d 0h 3m 56s</td><td>1/10</td><td>CRITICAL - HTTP request timed out</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=cache-01">cache-01</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
-            <td>DOWN</td><td>30-06-2026 12:06:00</td><td>0d 3h 22m 0s</td><td>3/3</td><td>CRITICAL - Redis node is not responding</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=google-www">google-www</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:06:00</td><td>61d 10h 25m 3s</td><td>1/10</td><td>CRITICAL - packet loss above threshold</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-de-pop">web-de-pop</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:07:00</td><td>5d 16h 7m 52s</td><td>1/10</td><td>CRITICAL - POP3 login failed</td>
+          </tr>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=yahoo-www">yahoo-www</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:08:00</td><td>3d 0h 1m 24s</td><td>4/10</td><td>CRITICAL - DNS lookup returned no records</td>
           </tr>
         </table></div></form></body></html>
         """.utf8)
@@ -230,34 +238,34 @@ final class LocalIcingaFakeServer {
         return Data("""
         <html><body><form id="tableformservice"><div><table>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-01">web-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=web-01&amp;service=HTTP">HTTP</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>CRITICAL</td><td>30-06-2026 12:01:00</td><td>0d 0h 44m 0s</td><td>3/3</td><td>HTTP CRITICAL: HTTP/1.1 503 Service Unavailable</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=secure.nagios.com">secure.nagios.com</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=secure.nagios.com&amp;service=Web%20Page%20Content">Web Page Content</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:01:00</td><td>0d 0h 49m 14s</td><td>5/5</td><td>HTTP CRITICAL: HTTP/1.1 200 OK - string not found</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-01">web-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=web-01&amp;service=TLS%20Certificate">TLS Certificate</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
-            <td>WARNING</td><td>30-06-2026 12:01:30</td><td>0d 4h 12m 0s</td><td>1/3</td><td>Certificate expires in 9 days</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=secure.nagios.com">secure.nagios.com</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=secure.nagios.com&amp;service=SSL%20Certificate">SSL Certificate</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:01:30</td><td>0d 0h 28m 50s</td><td>5/5</td><td>CRITICAL - Certificate 'secure.nagios.com' expired</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=app-01">app-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=app-01&amp;service=Queue%20Depth">Queue Depth</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>UNKNOWN</td><td>30-06-2026 12:01:45</td><td>0d 0h 31m 0s</td><td>2/3</td><td>UNKNOWN - metrics endpoint timed out</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=www.twitter.com">www.twitter.com</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=www.twitter.com&amp;service=DNS%20IP%20Match">DNS IP Match</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:01:45</td><td>0d 0h 1m 41s</td><td>5/5</td><td>DNS CRITICAL - expected '199.59.148.10,199.59.149.230'</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=db-01">db-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=db-01&amp;service=Disk%20%2Fvar">Disk /var</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/ack.gif"></a></td></tr></table></td></tr></table></td>
-            <td>WARNING</td><td>30-06-2026 12:02:00</td><td>0d 2h 3m 0s</td><td>1/3</td><td>DISK WARNING: /var is 87% full</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=NOAA">NOAA</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=NOAA&amp;service=Weather%20Strafford%20New%20Hampshire">Weather Strafford New Hampshire</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
+            <td>WARNING</td><td>30-06-2026 12:02:00</td><td>158d 23h 11m 37s</td><td>3/3</td><td>Weather Warning: Flood Watch, Winter Weather Advisory</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=cache-01">cache-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=cache-01&amp;service=Redis">Redis</a></td></tr></table></td><td><table><tr><td><a><img src="/icinga/images/downtime.gif"></a></td></tr></table></td></tr></table></td>
-            <td>CRITICAL</td><td>30-06-2026 12:02:30</td><td>0d 3h 22m 0s</td><td>3/3</td><td>CRITICAL - Redis refused connections on port 6379</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=localhost">localhost</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=localhost&amp;service=XI%20Software%20Updates">XI Software Updates</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:02:30</td><td>0d 0h 2m 15s</td><td>3/3</td><td>XI Updates CRITICAL: New XI version available</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=backup-01">backup-01</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=backup-01&amp;service=Nightly%20Backup">Nightly Backup</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>PENDING</td><td>30-06-2026 12:04:00</td><td>0d 0h 5m 0s</td><td>1/3</td><td>Backup check waiting for first result</td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=mail.example.net">mail.example.net</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=mail.example.net&amp;service=SMTP">SMTP</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>UNKNOWN</td><td>30-06-2026 12:04:00</td><td>210d 2h 11m 52s</td><td>5/5</td><td>check_smtp: Invalid onredirect option -- usage output follows</td>
           </tr>
         </table></div></form></body></html>
         """.utf8)

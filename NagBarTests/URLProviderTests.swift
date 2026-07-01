@@ -131,37 +131,37 @@ final class URLProviderTests: XCTestCase {
         let hosts = processor.parser().parse(urlType: .hosts, data: hostData).compactMap { $0 as? HostMonitoringItem }
         let services = processor.parser().parse(urlType: .services, data: serviceData).compactMap { $0 as? ServiceMonitoringItem }
 
-        XCTAssertEqual(hosts.count, 4)
+        XCTAssertEqual(hosts.count, 6)
         XCTAssertEqual(hosts[0].monitoringInstance?.name, LocalIcingaFallback.instanceName)
-        XCTAssertEqual(hosts[0].host, "web-01")
+        XCTAssertEqual(hosts[0].host, "web-de-smtp")
         XCTAssertEqual(hosts[0].status, "DOWN")
-        XCTAssertEqual(hosts[0].statusInformation, "CRITICAL - Host unreachable (10.0.0.11)")
-        XCTAssertTrue(hosts.contains { $0.host == "app-01" && $0.status == "UNREACHABLE" && $0.downtime })
-        XCTAssertTrue(hosts.contains { $0.host == "cache-01" && $0.status == "DOWN" && $0.acknowledged })
+        XCTAssertEqual(hosts[0].statusInformation, "Connection refused")
+        XCTAssertTrue(hosts.contains { $0.host == "google-www" && $0.status == "DOWN" && $0.acknowledged })
+        XCTAssertTrue(hosts.contains { $0.host == "web-de-pop" && $0.status == "DOWN" && $0.downtime })
+        XCTAssertTrue(hosts.contains { $0.host == "yahoo-www" && $0.status == "DOWN" && $0.statusInformation == "CRITICAL - DNS lookup returned no records" })
         XCTAssertEqual(services.count, 6)
-        XCTAssertEqual(services[0].host, "web-01")
-        XCTAssertEqual(services[0].service, "HTTP")
+        XCTAssertEqual(services[0].host, "secure.nagios.com")
+        XCTAssertEqual(services[0].service, "Web Page Content")
         XCTAssertEqual(services[0].status, "CRITICAL")
-        XCTAssertTrue(services.contains { $0.host == "web-01" && $0.service == "TLS Certificate" && $0.acknowledged })
-        XCTAssertTrue(services.contains { $0.host == "app-01" && $0.service == "Queue Depth" && $0.status == "UNKNOWN" })
-        XCTAssertTrue(services.contains { $0.host == "db-01" && $0.service == "Disk /var" && $0.acknowledged })
-        XCTAssertTrue(services.contains { $0.host == "cache-01" && $0.service == "Redis" && $0.downtime })
-        XCTAssertTrue(services.contains { $0.host == "backup-01" && $0.service == "Nightly Backup" && $0.status == "PENDING" })
+        XCTAssertTrue(services.contains { $0.host == "secure.nagios.com" && $0.service == "SSL Certificate" && $0.acknowledged })
+        XCTAssertTrue(services.contains { $0.host == "www.twitter.com" && $0.service == "DNS IP Match" && $0.status == "CRITICAL" })
+        XCTAssertTrue(services.contains { $0.host == "NOAA" && $0.service == "Weather Strafford New Hampshire" && $0.downtime })
+        XCTAssertTrue(services.contains { $0.host == "localhost" && $0.service == "XI Software Updates" && $0.attempt == "3/3" })
+        XCTAssertTrue(services.contains { $0.host == "mail.example.net" && $0.service == "SMTP" && $0.status == "UNKNOWN" })
     }
 
     func testLocalIcingaFallbackDoesNotUseProductionDemoModeBranches() throws {
         let files = try productionSwiftFiles()
         let forbiddenTerms = ["Demo Mode", "demo mode"]
         let appSideSampleTerms = [
-            "CRITICAL - Host unreachable (10.0.0.11)",
-            "CRITICAL - Route to application node is flapping",
-            "CRITICAL - Redis node is not responding",
-            "HTTP CRITICAL: HTTP/1.1 503 Service Unavailable",
-            "Certificate expires in 9 days",
-            "UNKNOWN - metrics endpoint timed out",
-            "DISK WARNING: /var is 87% full",
-            "CRITICAL - Redis refused connections on port 6379",
-            "Backup check waiting for first result",
+            "Connection refused",
+            "CRITICAL - TCP socket timeout after 10 seconds",
+            "HTTP CRITICAL: HTTP/1.1 200 OK - string not found",
+            "CRITICAL - Certificate 'secure.nagios.com' expired",
+            "DNS CRITICAL - expected '199.59.148.10,199.59.149.230'",
+            "Weather Warning: Flood Watch, Winter Weather Advisory",
+            "XI Updates CRITICAL: New XI version available",
+            "check_smtp: Invalid onredirect option -- usage output follows",
         ]
 
         for file in files {
