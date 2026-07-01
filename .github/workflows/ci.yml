@@ -6,7 +6,10 @@ on:
     branches:
       - master
       - main
-      - "feature/**"
+
+concurrency:
+  group: ci-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
   build-test:
