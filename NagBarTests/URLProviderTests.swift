@@ -7,6 +7,7 @@
 //
 
 import XCTest
+@testable import NagBar
 
 final class URLProviderTests: XCTestCase {
     override func setUp() {

@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import NagBar
 
 class PromiseTests: XCTestCase {
     func testValueCallsDoneWithImmediateValue() {

@@ -47,7 +47,7 @@ class NagBarTests: XCTestCase {
 
         checker.checkNewVersion()
 
-        XCTAssertEqual(shownAlerts.first?.messageText, "newVersionMessageText")
+        XCTAssertEqual(shownAlerts.first?.messageText, "New version available")
     }
 
     func testCheckNewVersionAlertIncludesVersionAndChangelog() {
@@ -60,7 +60,7 @@ class NagBarTests: XCTestCase {
 
         checker.checkNewVersion()
 
-        XCTAssertEqual(shownAlerts.first?.informativeText, "newVersionInformativeText")
+        XCTAssertEqual(shownAlerts.first?.informativeText, "Version 1.4.0 of NagBar is available with the following features:\nFixed status refresh\n\nDownload at https://github.com/volendavidov/NagBar/releases")
     }
 
     func testCheckNewVersionDoesNotShowAlertWhenVersionMatches() {

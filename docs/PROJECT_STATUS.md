@@ -23,14 +23,14 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 329 tests |
+| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 332 tests |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
 | Local/private packaging | Done | `./script/build_and_run.sh --package` creates a zip, checksum, and manifest under `dist/`, then verifies the packaged app signature |
 | CI workflow | Done | `.github/workflows/ci.yml` runs helper syntax checks, release helper path smoke, tests, Release build, and CocoaPods guardrails |
 | GitHub release automation | Partial | `.github/workflows/release.yml` updates metadata and packages artifacts, but real Developer ID and notarization evidence still depend on secrets and a live run |
-| Coverage gate | Partial | Xcode result metrics report 83.18% coverage for `NagBar.app` and 94.08% for `NagBarTests.xctest`; the target remains about 95% |
+| Coverage gate | Partial | Xcode result metrics report 85.36% coverage for `NagBar.app` and 98.29% for `NagBarTests.xctest`; the target remains about 95% |
 
 ## Supported Backends
 
@@ -85,10 +85,8 @@ Release-only helpers:
 
 ## Remaining Gates
 
-- Coverage is still materially below the target.
-- Coverage accounting needs cleanup: many app source files are also compiled into
-  `NagBarTests.xctest`, so some useful component coverage is attributed to the
-  test bundle instead of `NagBar.app`.
+- Coverage is still materially below the target, but app and test-bundle
+  coverage are now attributed separately.
 - Public Release evidence is still incomplete without a real Developer ID-signed, notarized, stapled artifact.
 - Signed artifact launch on a clean macOS account still needs recorded evidence.
 - Some global accessibility checks remain manual because macOS menu-extra focus depends on system settings.

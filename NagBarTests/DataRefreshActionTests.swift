@@ -8,6 +8,7 @@
 
 import Foundation
 import XCTest
+@testable import NagBar
 
 class NotificationDisplayTests: XCTestCase {
     func testProcess() {

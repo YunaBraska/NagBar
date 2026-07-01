@@ -69,6 +69,16 @@
             value = "YES"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "NAGBAR_APPLICATION_SUPPORT_DIR"
+            value = "$(TEMP_DIR)/NagBarTests/ApplicationSupport"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "NAGBAR_USER_DEFAULTS_SUITE"
+            value = "com.volendavidov.NagBar.xctest"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
       </AdditionalOptions>

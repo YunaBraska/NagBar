@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+@testable import NagBar
 
 final class StatusItemViewTests: XCTestCase {
     override func setUp() {
@@ -439,22 +440,22 @@ final class StatusItemViewTests: XCTestCase {
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
 
         XCTAssertEqual(menu.items.map(\.title), [
-            "login",
+            "Login",
             "",
-            "openInBrowser",
-            "recheck",
-            "scheduleDowntime",
-            "acknowledge",
+            "Open in browser",
+            "Recheck",
+            "Schedule Downtime",
+            "Acknowledge",
             "",
-            "addToFilter"
+            "Add to filter"
         ])
-        XCTAssertNotNil(menu.item(withTitle: "login")?.submenu)
-        XCTAssertTrue(menu.item(withTitle: "openInBrowser")?.isEnabled ?? false)
-        XCTAssertTrue(menu.item(withTitle: "recheck")?.target is RecheckAction)
-        XCTAssertTrue(menu.item(withTitle: "scheduleDowntime")?.target is ScheduleDowntimeAction)
-        XCTAssertTrue(menu.item(withTitle: "acknowledge")?.target is AcknowledgeAction)
-        XCTAssertTrue(menu.item(withTitle: "addToFilter")?.target is AddToFilterAction)
-        XCTAssertEqual(representedItems(menu.item(withTitle: "recheck")).first?.host, "web-01")
+        XCTAssertNotNil(menu.item(withTitle: "Login")?.submenu)
+        XCTAssertTrue(menu.item(withTitle: "Open in browser")?.isEnabled ?? false)
+        XCTAssertTrue(menu.item(withTitle: "Recheck")?.target is RecheckAction)
+        XCTAssertTrue(menu.item(withTitle: "Schedule Downtime")?.target is ScheduleDowntimeAction)
+        XCTAssertTrue(menu.item(withTitle: "Acknowledge")?.target is AcknowledgeAction)
+        XCTAssertTrue(menu.item(withTitle: "Add to filter")?.target is AddToFilterAction)
+        XCTAssertEqual(representedItems(menu.item(withTitle: "Recheck")).first?.host, "web-01")
     }
 
     func testStatusPanelContextMenuDisablesSingleSelectionActionsForMultipleRows() throws {
@@ -466,11 +467,11 @@ final class StatusItemViewTests: XCTestCase {
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
 
-        XCTAssertFalse(menu.item(withTitle: "openInBrowser")?.isEnabled ?? true)
-        XCTAssertTrue(menu.item(withTitle: "recheck")?.isEnabled ?? false)
-        XCTAssertTrue(menu.item(withTitle: "scheduleDowntime")?.isEnabled ?? false)
-        XCTAssertTrue(menu.item(withTitle: "acknowledge")?.isEnabled ?? false)
-        XCTAssertEqual(representedItems(menu.item(withTitle: "acknowledge")).count, 2)
+        XCTAssertFalse(menu.item(withTitle: "Open in browser")?.isEnabled ?? true)
+        XCTAssertTrue(menu.item(withTitle: "Recheck")?.isEnabled ?? false)
+        XCTAssertTrue(menu.item(withTitle: "Schedule Downtime")?.isEnabled ?? false)
+        XCTAssertTrue(menu.item(withTitle: "Acknowledge")?.isEnabled ?? false)
+        XCTAssertEqual(representedItems(menu.item(withTitle: "Acknowledge")).count, 2)
     }
 
     func testStatusPanelContextMenuSuppressesBackendCommandsForMixedInstances() throws {
@@ -484,14 +485,14 @@ final class StatusItemViewTests: XCTestCase {
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
 
-        XCTAssertNil(menu.item(withTitle: "login"))
-        XCTAssertNil(menu.item(withTitle: "openInBrowser"))
-        XCTAssertNil(menu.item(withTitle: "recheck"))
-        XCTAssertNil(menu.item(withTitle: "scheduleDowntime"))
-        XCTAssertNil(menu.item(withTitle: "acknowledge"))
+        XCTAssertNil(menu.item(withTitle: "Login"))
+        XCTAssertNil(menu.item(withTitle: "Open in browser"))
+        XCTAssertNil(menu.item(withTitle: "Recheck"))
+        XCTAssertNil(menu.item(withTitle: "Schedule Downtime"))
+        XCTAssertNil(menu.item(withTitle: "Acknowledge"))
         XCTAssertTrue(menu.items.first?.isSeparatorItem ?? false)
-        XCTAssertTrue(menu.item(withTitle: "addToFilter")?.target is AddToFilterAction)
-        XCTAssertEqual(representedItems(menu.item(withTitle: "addToFilter")).count, 2)
+        XCTAssertTrue(menu.item(withTitle: "Add to filter")?.target is AddToFilterAction)
+        XCTAssertEqual(representedItems(menu.item(withTitle: "Add to filter")).count, 2)
     }
 
     func testStatusPanelContextMenuUsesSavedLoginActionAndRemoveLoginSettingsItem() throws {
@@ -501,8 +502,8 @@ final class StatusItemViewTests: XCTestCase {
         table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
-        let login = try XCTUnwrap(menu.item(withTitle: "login"))
-        let remove = try XCTUnwrap(menu.item(withTitle: "removeLoginSettings"))
+        let login = try XCTUnwrap(menu.item(withTitle: "Login"))
+        let remove = try XCTUnwrap(menu.item(withTitle: "Remove login settings"))
 
         XCTAssertNil(login.submenu)
         XCTAssertEqual(login.action, #selector(ServerLogin.rdpLogin(_:)))
@@ -512,15 +513,15 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertTrue(remove.target is ServerLogin)
         XCTAssertEqual((remove.representedObject as? MonitoringItem)?.host, "web-01")
         XCTAssertEqual(menu.items.map(\.title), [
-            "login",
-            "removeLoginSettings",
+            "Login",
+            "Remove login settings",
             "",
-            "openInBrowser",
-            "recheck",
-            "scheduleDowntime",
-            "acknowledge",
+            "Open in browser",
+            "Recheck",
+            "Schedule Downtime",
+            "Acknowledge",
             "",
-            "addToFilter"
+            "Add to filter"
         ])
     }
 
@@ -533,12 +534,12 @@ final class StatusItemViewTests: XCTestCase {
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
 
-        XCTAssertNotNil(menu.item(withTitle: "login"))
-        XCTAssertNotNil(menu.item(withTitle: "openInBrowser"))
-        XCTAssertNil(menu.item(withTitle: "recheck"))
-        XCTAssertNil(menu.item(withTitle: "scheduleDowntime"))
-        XCTAssertNil(menu.item(withTitle: "acknowledge"))
-        XCTAssertNotNil(menu.item(withTitle: "addToFilter"))
+        XCTAssertNotNil(menu.item(withTitle: "Login"))
+        XCTAssertNotNil(menu.item(withTitle: "Open in browser"))
+        XCTAssertNil(menu.item(withTitle: "Recheck"))
+        XCTAssertNil(menu.item(withTitle: "Schedule Downtime"))
+        XCTAssertNil(menu.item(withTitle: "Acknowledge"))
+        XCTAssertNotNil(menu.item(withTitle: "Add to filter"))
     }
 
     func testStatusPanelContextMenuRightClickWithoutPriorSelectionUsesClickedRow() throws {
@@ -549,10 +550,10 @@ final class StatusItemViewTests: XCTestCase {
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent(location: NSPoint(x: 5, y: table.bounds.height - 5))))
 
-        XCTAssertEqual(representedItems(menu.item(withTitle: "recheck")).first?.host, "web-01")
-        XCTAssertNotNil(menu.item(withTitle: "login"))
-        XCTAssertNotNil(menu.item(withTitle: "openInBrowser"))
-        XCTAssertNotNil(menu.item(withTitle: "recheck"))
+        XCTAssertEqual(representedItems(menu.item(withTitle: "Recheck")).first?.host, "web-01")
+        XCTAssertNotNil(menu.item(withTitle: "Login"))
+        XCTAssertNotNil(menu.item(withTitle: "Open in browser"))
+        XCTAssertNotNil(menu.item(withTitle: "Recheck"))
     }
 
     func testStatusPanelContextMenuReturnsNilWhenRightClickIsOutsideRows() {
@@ -572,7 +573,7 @@ final class StatusItemViewTests: XCTestCase {
         table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
 
         let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
-        let loginSubmenu = try XCTUnwrap(menu.item(withTitle: "login")?.submenu)
+        let loginSubmenu = try XCTUnwrap(menu.item(withTitle: "Login")?.submenu)
         let ssh = try XCTUnwrap(loginSubmenu.item(withTitle: "SSH"))
         let rdp = try XCTUnwrap(loginSubmenu.item(withTitle: "RDP"))
 

@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+@testable import NagBar
 
 final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
     private var server: FakeIcingaServer?
@@ -833,15 +834,15 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
     }
 
     func testAcknowledgeCommandActionDisplayNameIsStable() {
-        XCTAssertEqual(CommandAction.acknowledge.displayName, "acknowledge")
+        XCTAssertEqual(CommandAction.acknowledge.displayName, "Acknowledge")
     }
 
     func testRecheckCommandActionDisplayNameIsStable() {
-        XCTAssertEqual(CommandAction.recheck.displayName, "recheck")
+        XCTAssertEqual(CommandAction.recheck.displayName, "Recheck")
     }
 
     func testScheduleDowntimeCommandActionDisplayNameIsStable() {
-        XCTAssertEqual(CommandAction.scheduleDowntime.displayName, "scheduleDowntime")
+        XCTAssertEqual(CommandAction.scheduleDowntime.displayName, "Schedule Downtime")
     }
 
     func testCommandFeedbackPresenterReceivesSuccessfulCommandResult() {

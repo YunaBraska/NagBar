@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+@testable import NagBar
 
 class MonitoringInstancesTest: XCTestCase {
 
@@ -551,7 +552,7 @@ class MonitoringInstancesTest: XCTestCase {
 
         XCTAssertEqual(statusView.accessibilityIdentifier(), MonitoringInstancesAccessibility.cellIdentifier(column: "status", row: 0))
         XCTAssertEqual(statusView.accessibilityLabel(), "Monitoring instance connection status")
-        XCTAssertEqual(text.stringValue, "unknown")
+        XCTAssertEqual(text.stringValue, "Unknown")
         XCTAssertNotNil(image.image)
     }
 
@@ -564,8 +565,8 @@ class MonitoringInstancesTest: XCTestCase {
         let statusView = MIStatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")).createViewForRow(0)
         let text = try XCTUnwrap(firstSubview(in: statusView, matching: { $0.accessibilityIdentifier() == MonitoringInstancesAccessibility.cellIdentifier(column: "status.text", row: 0) }) as? NSTextField)
 
-        XCTAssertEqual(text.stringValue, "checking")
-        try waitForTextField(text, value: "ok")
+        XCTAssertEqual(text.stringValue, "Checking")
+        try waitForTextField(text, value: "OK")
     }
 
     func testMonitoringInstancesStatusCellShowsErrorForEnabledUnreachableRemote() throws {
@@ -584,8 +585,8 @@ class MonitoringInstancesTest: XCTestCase {
         let statusView = MIStatusTableColumn(identifier: NSUserInterfaceItemIdentifier("status")).createViewForRow(0)
         let text = try XCTUnwrap(firstSubview(in: statusView, matching: { $0.accessibilityIdentifier() == MonitoringInstancesAccessibility.cellIdentifier(column: "status.text", row: 0) }) as? NSTextField)
 
-        XCTAssertEqual(text.stringValue, "checking")
-        try waitForTextField(text, value: "error")
+        XCTAssertEqual(text.stringValue, "Checking")
+        try waitForTextField(text, value: "Error")
     }
 
     func testMonitoringInstancesTableDelegateCreatesViewThroughColumnEntrypoint() throws {
