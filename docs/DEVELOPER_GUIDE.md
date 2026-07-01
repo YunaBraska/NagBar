@@ -35,6 +35,9 @@ Focused fake-server coverage:
 
 ```sh
 xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
+xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/CheckMKHTTPClientFakeServerTests
+xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/URLProviderTests
+xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/StatusItemViewTests
 ```
 
 ## Testing Priorities
@@ -64,9 +67,10 @@ runner process. It launches the Release app with isolated storage and defaults,
 verifies the status-item menu through System Events, opens the status panel,
 opens Preferences through the status item, and quits through the same menu.
 
-Automated smoke uses `AXPress` on the menu extra and validates named menu items
-after the menu opens. Full global keyboard focus into macOS menu extras is still
-a manual accessibility check because system settings control that path.
+Automated smoke and tests use `AXPress` on the menu extra and validate named
+menu items after the menu opens. Full global keyboard focus into macOS menu
+extras is still a manual accessibility check because system settings control
+that path.
 
 Do not publish full-screen screenshots without checking for private desktop
 contents first.

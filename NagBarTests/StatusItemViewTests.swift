@@ -249,6 +249,39 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(capturedPoint, NSPoint(x: 0, y: view.bounds.minY))
     }
 
+    func testStatusItemAccessibilityPressExposesAccessibleMenuEntrypoints() throws {
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        defer { NSStatusBar.system.removeStatusItem(statusItem) }
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        view.statusItem = statusItem
+        StatusItemAccessibility.applyMainButtonMetadata(to: view)
+        var capturedIdentifiers: [String] = []
+        var capturedTitles: [String] = []
+        StatusItemView.performStatusItemClick = { capturedItem, button, menu, capturedView in
+            capturedItem.menu = menu
+            let commandItems = menu.items.filter { !$0.isSeparatorItem }
+            capturedIdentifiers = commandItems.compactMap { $0.accessibilityIdentifier() }
+            capturedTitles = commandItems.map { $0.title }
+            XCTAssertTrue(capturedItem === statusItem)
+            XCTAssertTrue(button === statusItem.button)
+            XCTAssertTrue(capturedView === view)
+        }
+
+        XCTAssertTrue(view.accessibilityPerformPress())
+
+        XCTAssertEqual(view.accessibilityIdentifier(), StatusItemAccessibility.statusItemButtonIdentifier)
+        XCTAssertEqual(view.accessibilityTitle(), StatusItemAccessibility.title)
+        XCTAssertEqual(view.accessibilityHelp(), StatusItemAccessibility.help)
+        XCTAssertEqual(capturedTitles, ["Show Status", "About NagBar", "Preferences", "Refresh", "Quit"])
+        XCTAssertEqual(capturedIdentifiers, [
+            StatusItemAccessibility.showStatusIdentifier,
+            StatusItemAccessibility.aboutIdentifier,
+            StatusItemAccessibility.preferencesIdentifier,
+            StatusItemAccessibility.refreshIdentifier,
+            StatusItemAccessibility.quitIdentifier
+        ])
+    }
+
     func testStatusItemViewStatusItemPathAttachesMenuThroughInjectedClick() throws {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         defer { NSStatusBar.system.removeStatusItem(statusItem) }
