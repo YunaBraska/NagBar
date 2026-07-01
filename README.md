@@ -56,7 +56,7 @@ Create a local/private Release package:
 The canonical project status lives in [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
 As of 2026-07-01:
 
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 324 tests.
+- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 329 tests.
 - `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes.
 - `./script/build_and_run.sh --acceptance` passes full tests, Release build, and the live runtime smoke.
 - `./script/build_and_run.sh --package` creates a local/private zip, checksum, and manifest under `dist/`.

@@ -151,6 +151,40 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization != nil })
     }
 
+    func testRefreshStatusDataPublishesHealthyResultsAndFailedInstanceWhenOneRemoteFails() throws {
+        let server = try makeServer()
+        let healthy = storeEnabledMonitoringInstance(server: server, type: .Icinga)
+        let failing = makeMonitoringInstance(server: server, type: .Icinga, password: "wrongpass")
+        failing.name = "fake-Icinga-wrong-password"
+        MonitoringInstances().insert(key: failing.name, value: failing)
+        MonitoringInstances().updatePassword(monitoringInstance: failing, password: "wrongpass")
+        ConnectionManager.sharedInstance.update()
+        let refreshed = expectation(description: "Refresh publishes mixed success and failure")
+        var publishedResults: [MonitoringItem] = []
+        var publishedFailures: FailedMonitoringInstances = [:]
+        let loader = LoadMonitoringDataCore(loadStatusBar: { results, failedMonitoringInstances in
+            publishedResults = results
+            publishedFailures = failedMonitoringInstances
+        })
+
+        loader.refreshStatusData { _, _ in
+            refreshed.fulfill()
+        }
+
+        waitForExpectations(timeout: 5)
+        let failed = try XCTUnwrap(publishedFailures.first)
+        XCTAssertEqual(failed.key.name, "fake-Icinga-wrong-password")
+        XCTAssertEqual(failed.value.diagnosticName, "wrongCredentials")
+        XCTAssertGreaterThan(publishedResults.count, 0)
+        XCTAssertTrue(publishedResults.allSatisfy { $0.monitoringInstance?.name == healthy.name })
+        XCTAssertTrue(publishedResults.contains { $0.host == "hplj2605dn" && $0.status == "DOWN" })
+        XCTAssertTrue(publishedResults.contains { $0.host == "localhost" && $0.service == "Total Processes" && $0.status == "WARNING" })
+        XCTAssertEqual(OldStatusData.sharedInstance.statusData?.count, publishedResults.count)
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization == nil })
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization == ConnectionManager.sharedInstance.authorizationHeader(username: "testuser", password: "testpass") })
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization == ConnectionManager.sharedInstance.authorizationHeader(username: "testuser", password: "wrongpass") })
+    }
+
     func testRefreshStatusDataProcessesExistingRefreshActionsBeforePublishing() throws {
         let server = try makeServer()
         _ = storeEnabledMonitoringInstance(server: server, type: .Icinga)
@@ -333,6 +367,29 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertEqual(form["service"], "Disk / Root")
     }
 
+    func testThrukProcessorAcknowledgeServiceUsesInheritedNagiosCommandWithThrukHTTPHeaders() throws {
+        let server = try makeThrukServer()
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Thruk)
+        let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
+
+        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Handled in Thruk"))
+
+        let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
+        let form = formValues(request.body)
+        XCTAssertEqual(commandResult.result?.action, .acknowledge)
+        XCTAssertEqual(commandResult.result?.itemCount, 1)
+        XCTAssertNil(commandResult.error)
+        XCTAssertEqual(request.authorization, ConnectionManager.sharedInstance.authorizationHeader(username: "testuser", password: "testpass"))
+        XCTAssertEqual(request.userAgent, "curl")
+        XCTAssertEqual(request.contentType, "application/x-www-form-urlencoded; charset=utf-8")
+        XCTAssertEqual(form["cmd_typ"], "34")
+        XCTAssertEqual(form["cmd_mod"], "2")
+        XCTAssertEqual(form["host"], "web-01")
+        XCTAssertEqual(form["service"], "Disk")
+        XCTAssertEqual(form["com_data"], "Handled in Thruk")
+        XCTAssertEqual(form["btnSubmit"], "Commit")
+    }
+
     func testNagiosAcknowledgeHostPostsCommandToFakeServer() throws {
         let server = try makeServer()
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
@@ -426,6 +483,25 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertEqual(form["service"], "Disk")
         XCTAssertEqual(form["force_check"], "on")
         XCTAssertEqual(form["start_time"], "30-06-2026 12:00:00")
+    }
+
+    func testNagiosRecheckMixedHostAndServicePostsOneCommandPerItem() throws {
+        let server = try makeServer()
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
+        let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
+        let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
+
+        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().recheck([host, service]))
+
+        let requests = authorizedPosts(pathSuffix: "/cmd.cgi")
+        let forms = requests.map { formValues($0.body) }
+        XCTAssertEqual(commandResult.result?.action, .recheck)
+        XCTAssertEqual(commandResult.result?.itemCount, 2)
+        XCTAssertNil(commandResult.error)
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.path.hasSuffix("/cmd.cgi") && $0.query.contains("cmd_typ=55") })
+        XCTAssertTrue(forms.contains { $0["cmd_typ"] == "96" && $0["host"] == "web-01" && $0["service"] == nil && $0["force_check"] == "on" })
+        XCTAssertTrue(forms.contains { $0["cmd_typ"] == "7" && $0["host"] == "web-01" && $0["service"] == "Disk" && $0["force_check"] == "on" })
     }
 
     func testIcinga2AcknowledgeServicePostsJSONCommandToFakeServer() throws {
@@ -646,6 +722,27 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertEqual(json["duration"], "9000")
         XCTAssertNotNil(json["start_time"])
         XCTAssertNotNil(json["end_time"])
+    }
+
+    func testIcinga2FixedServiceDowntimePostsStartAndEndWithoutDuration() throws {
+        let server = try makeServer()
+        let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
+        let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
+
+        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().scheduleDowntime([service], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "1", hours: "2", minutes: "30"))
+
+        let request = try waitForAuthorizedPost(pathSuffix: "/actions/schedule-downtime")
+        let json = try jsonValues(request.body)
+        XCTAssertEqual(commandResult.result?.action, .scheduleDowntime)
+        XCTAssertEqual(commandResult.result?.itemCount, 1)
+        XCTAssertNil(commandResult.error)
+        XCTAssertEqual(request.query, "service=web-01!Disk")
+        XCTAssertEqual(json["author"], "testuser")
+        XCTAssertEqual(json["comment"], "Maintenance")
+        XCTAssertEqual(json["fixed"], "1")
+        XCTAssertNotNil(json["start_time"])
+        XCTAssertNotNil(json["end_time"])
+        XCTAssertNil(json["duration"])
     }
 
     func testIcinga2CommandCapabilitiesExposeSupportedStatusPanelActions() throws {
@@ -956,6 +1053,22 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
 
         XCTFail("Timed out waiting for authorized POST ending with \(pathSuffix)")
         throw NSError(domain: "NagBarTests.FakeIcingaServer", code: 1, userInfo: nil)
+    }
+
+    private func authorizedPosts(pathSuffix: String, timeout: TimeInterval = 5, expectedCount: Int = 2) -> [FakeIcingaServer.Request] {
+        let deadline = Date().addingTimeInterval(timeout)
+
+        repeat {
+            let requests = server?.requests().filter { $0.method == "POST" && $0.path.hasSuffix(pathSuffix) && $0.authorization != nil } ?? []
+            if requests.count >= expectedCount {
+                return requests
+            }
+
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        } while Date() < deadline
+
+        XCTFail("Timed out waiting for \(expectedCount) authorized POSTs ending with \(pathSuffix)")
+        return server?.requests().filter { $0.method == "POST" && $0.path.hasSuffix(pathSuffix) && $0.authorization != nil } ?? []
     }
 
     private func waitForTextField(_ textField: NSTextField, value: String, timeout: TimeInterval = 5) throws {
