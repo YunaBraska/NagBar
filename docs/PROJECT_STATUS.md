@@ -23,7 +23,7 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 450 tests |
+| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 457 tests |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
@@ -32,16 +32,19 @@ Snapshot date: 2026-07-01.
 | GitHub release automation | Done | Release `2026.07.1820815` completed through `.github/workflows/release.yml` with local/private signing; Developer ID notarization remains secret-dependent |
 | Coverage gate | Done | Xcode result metrics report 95.01% coverage for `NagBar.app`, above the 95% gate |
 | Status-panel command hardening | Done | Public menu/action regressions cover malformed or empty command input, nil monitoring instances, unsupported filter statuses, and pre-assignment command window loading |
+| Backend compatibility smoke | Done | Recorded real-shape fixture tests cover Nagios CGI, Icinga CGI, Icinga 2 API, Thruk JSON, and Check_MK JSON view parsing; fake-server tests cover auth/session/command protocol behavior |
+| Accessibility automation evidence | Done | Status-item AX press, accessible menu item identifiers, status panel identifiers, command windows, monitoring instance table cells, and About content are covered by repeatable macOS tests |
+| Legacy dependency guardrails | Done | Tests and CI reject CocoaPods/project references and removed runtime imports for Alamofire, PromiseKit, RealmSwift, SAMKeychain, SwiftyJSON, and hpple |
 
 ## Supported Backends
 
 | Backend | Status | Current evidence | Current gap |
 | --- | --- | --- | --- |
-| Nagios HTML CGI | Partial | Parser coverage, URL provider coverage, fake-server HTTP auth, mixed host/service recheck, and command POST tests | Broader real-version compatibility smoke |
-| Icinga HTML CGI | Partial | Parser coverage, fake-server load/auth/command tests, mixed successful/failed refresh path, first-run local fallback path | Broader real-version compatibility smoke |
-| Icinga 2 API | Partial | URL provider, JSON parser, JSON command POST coverage, flexible host downtime, and fixed service downtime | Broader API error and real-server compatibility smoke |
-| Thruk JSON API | Partial | URL provider, JSON parser, HTTP behavior coverage, and inherited command POST coverage through Thruk HTTP semantics | Broader command and real-server compatibility smoke |
-| Check_MK | Partial | URL provider, parser, cookie-login, Basic auth, and session coverage | Real-server compatibility smoke and unsupported command expansion only if intentionally added |
+| Nagios HTML CGI | Covered | Recorded Nagios Core 4.1.1 CGI fixture, URL provider coverage, fake-server HTTP auth, mixed host/service recheck, and command POST tests | Optional live-server lab proof only |
+| Icinga HTML CGI | Covered | Recorded Icinga Classic UI 1.14.0 CGI fixture, fake-server load/auth/command tests, mixed successful/failed refresh path, first-run local fallback path | Optional live-server lab proof only |
+| Icinga 2 API | Covered | Recorded Icinga 2 API JSON fixture, URL provider, JSON parser, JSON command POST coverage, flexible host downtime, and fixed service downtime | Optional live-server lab proof only |
+| Thruk JSON API | Covered | Recorded Thruk JSON fixture, URL provider, parser coverage, preemptive Basic auth, curl user-agent, and inherited command POST coverage | Optional live-server lab proof only |
+| Check_MK | Covered | Recorded Check_MK JSON view fixture, URL provider, parser, cookie-login, Basic auth, and session coverage | Unsupported command expansion only if intentionally added |
 
 ## Simplification Status
 
@@ -88,7 +91,9 @@ Release-only helpers:
 
 - Public Release evidence is still incomplete without a real Developer ID-signed, notarized, stapled artifact.
 - Signed artifact launch on a clean macOS account still needs recorded evidence.
-- Some global accessibility checks remain manual because macOS menu-extra focus depends on system settings.
+- Full global keyboard focus into macOS menu extras remains manual because
+  system Accessibility settings control that path; AX press and exposed menu
+  structure are automated.
 
 ## Remaining Work
 
@@ -99,10 +104,8 @@ without losing the next useful slices.
 | --- | --- | --- |
 | Public release proof | High | Run and record a Developer ID-signed, notarized, stapled release when Apple signing secrets are available. |
 | Clean-account smoke | High | Install the packaged app in a fresh macOS user account and record launch, status-item, Preferences, fake Icinga fallback, and Quit evidence. |
-| Backend compatibility | High | Add real-version smoke evidence for Nagios HTML CGI, Icinga HTML CGI, Icinga 2 API, Thruk JSON API, and Check_MK. Fake-server coverage exists, but real-version compatibility is still broader than the local stub can prove. |
 | Update indicator | Medium | Add a weekly release-check indicator that informs the user when a newer GitHub release exists. |
 | UI/UX/DX redesign | Medium | Redesign Preferences, status details, and empty/error states with verified light and dark mode screenshots. |
-| Accessibility evidence | Medium | Replace remaining manual menu-extra accessibility checks with repeatable evidence where macOS automation allows it. |
 
 ## Documentation Map
 

@@ -208,6 +208,134 @@ final class URLProviderTests: XCTestCase {
         XCTAssertEqual(String(decoding: commandSubmit.body, as: UTF8.self), "OK")
     }
 
+    func testNagiosCGIRecordedCompatibilityFixtureParsesHostAndServiceStatus() throws {
+        let instance = monitoringInstance(type: .Nagios, url: "http://example.test/nagios/cgi-bin/")
+        let parser = NagiosParser(instance)
+        let hostData = try fixtureData(name: "NagiosHostStatus", type: "html")
+        let serviceData = try fixtureData(name: "NagiosServiceStatus", type: "html")
+        let hostHTML = String(decoding: hostData, as: UTF8.self)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! [ServiceMonitoringItem]
+
+        XCTAssertTrue(hostHTML.contains("Nagios&reg; Core&trade; 4.1.1"))
+        XCTAssertEqual(hosts.count, 48)
+        XCTAssertEqual(hosts.first?.host, "Firewall")
+        XCTAssertEqual(hosts.first?.status, "UP")
+        XCTAssertEqual(services.count, 100)
+        XCTAssertTrue(services.contains { $0.host == "Log-Server.nagios.local" && $0.service == "/ Disk Usage" && $0.status == "OK" })
+    }
+
+    func testIcingaCGIRecordedCompatibilityFixtureParsesHostAndServiceStatus() throws {
+        let instance = monitoringInstance(type: .Icinga, url: "http://example.test/icinga/cgi-bin/")
+        let parser = IcingaParser(instance)
+        let hostData = try fixtureData(name: "IcingaHostStatus", type: "htm")
+        let serviceData = try fixtureData(name: "IcingaServiceStatus", type: "htm")
+        let hostHTML = String(decoding: hostData, as: UTF8.self)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! [ServiceMonitoringItem]
+
+        XCTAssertTrue(hostHTML.contains("Icinga Classic UI <b>1.14.0</b>"))
+        XCTAssertTrue(hostHTML.contains("Backend <b>1.14.0</b>"))
+        XCTAssertEqual(hosts.count, 3)
+        XCTAssertTrue(hosts.contains { $0.host == "hplj2605dn" && $0.status == "DOWN" })
+        XCTAssertEqual(services.count, 15)
+        XCTAssertTrue(services.contains { $0.host == "localhost" && $0.service == "Total Processes" && $0.status == "WARNING" })
+    }
+
+    func testIcinga2APIRecordedCompatibilityFixtureParsesHostAndServiceStatus() throws {
+        let instance = monitoringInstance(type: .Icinga2, url: "https://icinga.example:5665/v1")
+        let parser = Icinga2Parser(instance)
+        let hostData = try fixtureData(name: "Icinga2HostStatus", type: "json")
+        let serviceData = try fixtureData(name: "Icinga2ServiceStatus", type: "json")
+        let hostJSON = String(decoding: hostData, as: UTF8.self)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! [ServiceMonitoringItem]
+
+        XCTAssertTrue(hostJSON.contains(#""type":"Host""#))
+        XCTAssertTrue(hostJSON.contains(#""check_source":"icinga2""#))
+        XCTAssertEqual(hosts.count, 2)
+        XCTAssertTrue(hosts.contains { $0.host == "c2-web-1" && $0.status == "DOWN" })
+        XCTAssertEqual(services.count, 47)
+        XCTAssertTrue(services.contains { $0.host == "icinga2" && $0.service == "disk" && $0.status == "CRITICAL" })
+    }
+
+    func testThrukJSONRecordedCompatibilityFixtureParsesHostAndServiceStatus() throws {
+        let instance = monitoringInstance(type: .Thruk, url: "http://example.test/thruk/cgi-bin/")
+        let parser = ThrukParser(instance)
+        let hostData = try fixtureData(name: "ThrukHostStatus", type: nil)
+        let serviceData = try fixtureData(name: "ThrukServiceStatus", type: nil)
+        let hostJSON = String(decoding: hostData, as: UTF8.self)
+        let serviceJSON = String(decoding: serviceData, as: UTF8.self)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! [ServiceMonitoringItem]
+
+        XCTAssertTrue(hostJSON.contains(#""check_command" : "check-host-alive""#))
+        XCTAssertTrue(serviceJSON.contains(#""current_notification_number""#))
+        XCTAssertEqual(hosts.count, 3)
+        XCTAssertTrue(hosts.contains { $0.host == "localhost" && $0.status == "UP" })
+        XCTAssertEqual(services.count, 9)
+        XCTAssertTrue(services.contains { $0.host == "localhost" && $0.service == "Current Load" && $0.status == "OK" })
+    }
+
+    func testCheckMKRecordedCompatibilityFixtureParsesHostAndServiceStatus() throws {
+        let instance = monitoringInstance(type: .Check_MK, url: "http://example.test/site/check_mk/")
+        let parser = CheckMKParser(instance)
+        let hostData = try fixtureData(name: "Check_MKHostStatus", type: nil)
+        let serviceData = try fixtureData(name: "Check_MKServiceStatus", type: nil)
+        let hostJSON = String(decoding: hostData, as: UTF8.self)
+        let serviceJSON = String(decoding: serviceData, as: UTF8.self)
+
+        let hosts = parser.parse(urlType: .hosts, data: hostData)
+        let services = parser.parse(urlType: .services, data: serviceData) as! [ServiceMonitoringItem]
+
+        XCTAssertTrue(hostJSON.contains(#""sitename_plain""#))
+        XCTAssertTrue(serviceJSON.contains(#""svc_plugin_output""#))
+        XCTAssertEqual(hosts.count, 18)
+        XCTAssertTrue(hosts.contains { $0.host == "Bienenstock-Waage" && $0.status == "UP" })
+        XCTAssertEqual(services.count, 12)
+        XCTAssertTrue(services.contains { $0.host == "google.de" && $0.service == "PING" && $0.status == "CRITICAL" })
+    }
+
+    func testRemovedLegacyDependenciesStayOutOfSupportedBuildInputs() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let forbiddenPaths = [
+            "Podfile",
+            "Podfile.lock",
+            "Pods",
+            "Carthage",
+            "Package.resolved"
+        ]
+        let forbiddenSourceImports = [
+            "import Alamofire",
+            "import PromiseKit",
+            "import RealmSwift",
+            "import SAMKeychain",
+            "import SwiftyJSON",
+            "import hpple"
+        ]
+
+        for path in forbiddenPaths {
+            XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent(path).path), "\(path) must stay removed")
+        }
+
+        for file in try productionSwiftFiles() {
+            let source = try String(contentsOf: file)
+            for forbiddenImport in forbiddenSourceImports {
+                XCTAssertFalse(source.contains(forbiddenImport), "\(forbiddenImport) must stay out of \(file.lastPathComponent)")
+            }
+        }
+
+        let projectFile = root.appendingPathComponent("NagBar.xcodeproj/project.pbxproj")
+        let project = try String(contentsOf: projectFile)
+        XCTAssertFalse(project.contains("Pods.xcodeproj"))
+        XCTAssertFalse(project.contains("RealmSwift"))
+        XCTAssertFalse(project.contains("Alamofire"))
+    }
+
     private func monitoringInstance(type: MonitoringInstanceType, url: String) -> MonitoringInstance {
         let instance = MonitoringInstance().initDefault(
             name: "test-\(type.rawValue)",
@@ -218,6 +346,12 @@ final class URLProviderTests: XCTestCase {
             enabled: 1
         )
         return instance
+    }
+
+    private func fixtureData(name: String, type: String?) throws -> Data {
+        let bundle = Bundle(for: Self.self)
+        let url = try XCTUnwrap(bundle.url(forResource: name, withExtension: type))
+        return try Data(contentsOf: url)
     }
 
     private func fetchData(_ url: String, client: HTTPClient) throws -> Data {

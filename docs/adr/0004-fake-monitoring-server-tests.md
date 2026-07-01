@@ -39,10 +39,10 @@ Negative:
 ## Required Follow-Up
 
 Current fake-server coverage includes Nagios/Icinga load/auth tests,
-Nagios/Icinga form command POSTs, Icinga 2 JSON command POSTs, and Check_MK
+Nagios/Icinga form command POSTs, Icinga 2 JSON command POSTs, Thruk
+preemptive Basic authentication with curl user-agent behavior, and Check_MK
 cookie/basic-auth session behavior.
 
 Remaining fake-server coverage:
 
-- Thruk preemptive authentication;
 - optional local TLS invalid-certificate behavior.
