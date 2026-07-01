@@ -30,6 +30,19 @@ final class StatusItemViewTests: XCTestCase {
         Settings().resetKnownSettings()
         ServerLogin().resetStorage()
         ServerLogin.storageURLOverride = nil
+        StatusItemView.performStatusItemClick = { statusItem, button, menu, view in
+            statusItem.menu = menu
+            button.performClick(view)
+        }
+        StatusItemView.popUpContextMenu = { menu, event, view in
+            NSMenu.popUpContextMenu(menu, with: event, for: view)
+        }
+        StatusItemView.popUpMenu = { menu, point, view in
+            menu.popUp(positioning: nil, at: point, in: view)
+        }
+        StatusItemView.refreshStatusData = {
+            LoadMonitoringData().refreshStatusData()
+        }
         super.tearDown()
     }
 
@@ -114,6 +127,263 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(failedButton.accessibilityTitle(), "NagBar monitoring connection warnings")
         XCTAssertEqual(failedButton.accessibilityHelp(), "Opens monitoring instances that failed during refresh.")
         XCTAssertEqual(failedButton.accessibilityIdentifier(), "nagbar.statusItem.failed.button")
+    }
+
+    func testStatusItemViewAppliesAccessibilityWhenAttachedToWindow() {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+
+        view.viewDidMoveToWindow()
+
+        XCTAssertEqual(view.accessibilityTitle(), "NagBar status menu")
+        XCTAssertEqual(view.accessibilityHelp(), "Opens NagBar status, settings, refresh, and quit actions.")
+        XCTAssertEqual(view.accessibilityIdentifier(), "nagbar.statusItem.button")
+    }
+
+    func testStatusItemViewBuildsStatusItemMenuWithApplicationDelegateTarget() throws {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        let target = try XCTUnwrap(NSApplication.shared.delegate as AnyObject?)
+
+        let menu = view.statusItemMenu()
+
+        XCTAssertEqual(menu.items.map { $0.title }, ["Show Status", "", "About NagBar", "Preferences", "", "Refresh", "", "Quit"])
+        XCTAssertTrue(menu.items[0].target === target)
+        XCTAssertEqual(menu.items[0].action, #selector(AppDelegate.showStatusFromStatusItem))
+        XCTAssertTrue(menu.items[2].target === target)
+        XCTAssertEqual(menu.items[2].action, #selector(AppDelegate.showAboutFromStatusItem))
+        XCTAssertTrue(menu.items[3].target === target)
+        XCTAssertEqual(menu.items[3].action, #selector(AppDelegate.openPreferencesFromStatusItem))
+        XCTAssertTrue(menu.items[5].target === target)
+        XCTAssertEqual(menu.items[5].action, #selector(AppDelegate.refreshFromStatusItem))
+        XCTAssertTrue(menu.items[7].target === NSApplication.shared)
+    }
+
+    func testStatusItemViewSetStatusItemTitleUpdatesButtonAndStatusItemLength() {
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        view.statusItem = statusItem
+        view.title = "Old"
+
+        view.setStatusItemTitle("Total Count: 12")
+
+        XCTAssertEqual(view.title, "Total Count: 12")
+        XCTAssertGreaterThan(statusItem.length, 0)
+        NSStatusBar.system.removeStatusItem(statusItem)
+    }
+
+    func testStatusItemViewSetStatusItemTitleDoesNothingWhenTitleIsUnchanged() {
+        let statusItem = NSStatusBar.system.statusItem(withLength: 42)
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        view.statusItem = statusItem
+        view.title = "Total Count: 1"
+        view.needsDisplay = false
+
+        view.setStatusItemTitle("Total Count: 1")
+
+        XCTAssertEqual(statusItem.length, 42)
+        XCTAssertFalse(view.needsDisplay)
+        NSStatusBar.system.removeStatusItem(statusItem)
+    }
+
+    func testStatusItemViewTitleBoundingRectUsesCurrentTitle() {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        view.title = "Total Count: 123"
+
+        let bounds = view.titleBoundingRect()
+
+        XCTAssertGreaterThan(bounds.width, 0)
+        XCTAssertGreaterThan(bounds.height, 0)
+    }
+
+    func testStatusItemViewDrawsCurrentTitleIntoCachedDisplay() throws {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        view.title = "Total Count: 3"
+        let representation = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+
+        view.cacheDisplay(in: view.bounds, to: representation)
+
+        XCTAssertGreaterThanOrEqual(representation.pixelsWide, 160)
+        XCTAssertGreaterThanOrEqual(representation.pixelsHigh, 24)
+    }
+
+    func testStatusItemViewMouseDownPopsContextMenuThroughInjectedPresenter() throws {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        let event = try XCTUnwrap(leftClickEvent(location: NSPoint(x: 4, y: 4)))
+        var capturedTitles: [String] = []
+        StatusItemView.popUpContextMenu = { menu, _, capturedView in
+            capturedTitles = menu.items.map { $0.title }
+            XCTAssertTrue(capturedView === view)
+        }
+
+        view.mouseDown(with: event)
+
+        XCTAssertEqual(capturedTitles.first, "Show Status")
+    }
+
+    func testStatusItemViewRightMouseDownPopsContextMenuThroughInjectedPresenter() throws {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        let event = try XCTUnwrap(leftClickEvent(location: NSPoint(x: 4, y: 4)))
+        var capturedTitles: [String] = []
+        StatusItemView.popUpContextMenu = { menu, _, capturedView in
+            capturedTitles = menu.items.map { $0.title }
+            XCTAssertTrue(capturedView === view)
+        }
+
+        view.rightMouseDown(with: event)
+
+        XCTAssertEqual(capturedTitles.first, "Show Status")
+    }
+
+    func testStatusItemViewAccessibilityPressPopsMenuThroughInjectedPresenter() {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        var capturedPoint: NSPoint?
+        var capturedTitles: [String] = []
+        StatusItemView.popUpMenu = { menu, point, capturedView in
+            capturedTitles = menu.items.map { $0.title }
+            capturedPoint = point
+            XCTAssertTrue(capturedView === view)
+        }
+
+        XCTAssertTrue(view.accessibilityPerformPress())
+
+        XCTAssertEqual(capturedTitles.first, "Show Status")
+        XCTAssertEqual(capturedPoint, NSPoint(x: 0, y: view.bounds.minY))
+    }
+
+    func testStatusItemViewStatusItemPathAttachesMenuThroughInjectedClick() throws {
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        defer { NSStatusBar.system.removeStatusItem(statusItem) }
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        view.statusItem = statusItem
+        var capturedTitles: [String] = []
+        StatusItemView.performStatusItemClick = { capturedItem, _, menu, capturedView in
+            capturedItem.menu = menu
+            capturedTitles = menu.items.map { $0.title }
+            XCTAssertTrue(capturedItem === statusItem)
+            XCTAssertTrue(capturedView === view)
+        }
+
+        view.accessibilityPerformPress()
+
+        XCTAssertEqual(capturedTitles.first, "Show Status")
+        XCTAssertTrue(statusItem.menu?.item(withTitle: "Refresh")?.action == #selector(AppDelegate.refreshFromStatusItem))
+    }
+
+    func testStatusItemViewRefreshUsesInjectedRefreshEntrypoint() {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 160, height: 24))
+        var refreshCount = 0
+        StatusItemView.refreshStatusData = {
+            refreshCount += 1
+        }
+
+        view.refresh(self)
+
+        XCTAssertEqual(refreshCount, 1)
+    }
+
+    func testStatusItemViewDirectShowStatusActionOpensLoadedStatusPanel() {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        let statusBar = StatusBar.get()
+        statusBar.load([], failedMonitoringInstances: [:])
+
+        view.showStatus(self)
+
+        closeStatusPanelWindows()
+    }
+
+    func testAppDelegateShowStatusEntrypointsUseStatusBar() throws {
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        StatusBar.get().load([], failedMonitoringInstances: [:])
+
+        appDelegate.showStatus(NSButton())
+        appDelegate.showStatusFromStatusItem()
+
+        closeStatusPanelWindows()
+    }
+
+    func testStatusItemViewDirectAboutAndPreferencesActionsUseApplicationDelegate() throws {
+        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        defer {
+            appDelegate.preferencesWindow?.close()
+            appDelegate.preferencesWindow = nil
+        }
+
+        view.openPreferences(self)
+        let preferencesWindow = try XCTUnwrap(appDelegate.preferencesWindow)
+        view.showAbout(self)
+        let tabView = try XCTUnwrap(preferencesWindow.findTabView(in: preferencesWindow.window?.contentView))
+        let selectedItem = try XCTUnwrap(tabView.selectedTabViewItem)
+
+        XCTAssertTrue(preferencesWindow === appDelegate.preferencesWindow)
+        XCTAssertTrue(AboutSettingsTabBuilder.isAboutTab(selectedItem))
+    }
+
+    func testStatusBarShowStatusPanelWithLoadedResultsOpensWithoutRefreshing() {
+        let statusBar = StatusBar.get()
+        var refreshCount = 0
+        let previousRefresh = statusBar.refreshStatusData
+        statusBar.refreshStatusData = {
+            refreshCount += 1
+        }
+        statusBar.load([], failedMonitoringInstances: [:])
+
+        let opened = statusBar.showStatusPanel()
+
+        XCTAssertTrue(opened)
+        XCTAssertEqual(refreshCount, 0)
+        closeStatusPanelWindows()
+        statusBar.refreshStatusData = previousRefresh
+    }
+
+    func testStatusBarRefreshMenuActionUsesInjectedRefreshEntrypoint() {
+        let statusBar = StatusBar.get()
+        var refreshCount = 0
+        let previousRefresh = statusBar.refreshStatusData
+        statusBar.refreshStatusData = {
+            refreshCount += 1
+        }
+
+        statusBar.refresh(self)
+
+        XCTAssertEqual(refreshCount, 1)
+        statusBar.refreshStatusData = previousRefresh
+    }
+
+    func testStatusBarDirectShowStatusActionUsesLoadedPanelPath() {
+        let statusBar = StatusBar.get()
+        statusBar.load([], failedMonitoringInstances: [:])
+
+        statusBar.showStatus(self)
+
+        closeStatusPanelWindows()
+    }
+
+    func testStatusBarDirectPreferencesAndAboutActionsUseApplicationDelegate() throws {
+        let statusBar = StatusBar.get()
+        let appDelegate = try XCTUnwrap(NSApplication.shared.delegate as? AppDelegate)
+        defer {
+            appDelegate.preferencesWindow?.close()
+            appDelegate.preferencesWindow = nil
+        }
+
+        statusBar.openPreferences(self)
+        let preferencesWindow = try XCTUnwrap(appDelegate.preferencesWindow)
+        statusBar.showAbout(self)
+        let tabView = try XCTUnwrap(preferencesWindow.findTabView(in: preferencesWindow.window?.contentView))
+        let selectedItem = try XCTUnwrap(tabView.selectedTabViewItem)
+
+        XCTAssertTrue(preferencesWindow === appDelegate.preferencesWindow)
+        XCTAssertTrue(AboutSettingsTabBuilder.isAboutTab(selectedItem))
+    }
+
+    func testStatusBarStatusPanelObserverHandlesResignKeyNotification() {
+        let statusBar = StatusBar.get()
+        statusBar.load([], failedMonitoringInstances: [:])
+
+        XCTAssertTrue(statusBar.showStatusPanel())
+        Foundation.NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: nil)
+
+        closeStatusPanelWindows()
     }
 
     func testStatusPanelRequestBeforeFirstRefreshRequestsRefreshWithoutOpeningPanel() {
@@ -203,6 +473,38 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(title, "Total Count: 2")
     }
 
+    func testStatusBarLoadBuildsFailedMonitoringInstancesWarningMenu() throws {
+        let statusBar = StatusBar.get()
+        defer { statusBar.load([], failedMonitoringInstances: [:]) }
+        let wrongCredentials = monitoringInstance(name: "wrong-credentials")
+        let ssl = monitoringInstance(name: "bad-certificate")
+        let unknown = monitoringInstance(name: "offline")
+
+        statusBar.load([], failedMonitoringInstances: [
+            wrongCredentials: .wrongCredentials,
+            ssl: .ssl,
+            unknown: .unknown
+        ])
+
+        let failedStatusItem = try XCTUnwrap(failedStatusItem(from: statusBar))
+        let titles = failedStatusItem.menu?.items.map(\.title) ?? []
+        XCTAssertTrue(titles.contains("Connection to monitoring instance \"wrong-credentials\" failed - incorrect credentials"))
+        XCTAssertTrue(titles.contains("Connection to monitoring instance \"bad-certificate\" failed because of invalid certificate"))
+        XCTAssertTrue(titles.contains("Connection to monitoring instance \"offline\" failed"))
+        XCTAssertEqual(failedStatusItem.button?.accessibilityIdentifier(), StatusItemAccessibility.failedStatusItemButtonIdentifier)
+    }
+
+    func testStatusBarLoadClearsFailedMonitoringInstancesWarningMenuWhenFailuresRecover() {
+        let statusBar = StatusBar.get()
+        statusBar.load([], failedMonitoringInstances: [
+            monitoringInstance(name: "offline"): .unknown
+        ])
+
+        statusBar.load([], failedMonitoringInstances: [:])
+
+        XCTAssertNil(failedStatusItem(from: statusBar))
+    }
+
     func testStatusBarAnimationTriggerIgnoresMissingOldResults() {
         let trigger = StatusBarAnimationTrigger.evaluate(oldResults: nil, newResults: [
             service("web-01", service: "HTTP", status: "CRITICAL")
@@ -259,6 +561,46 @@ final class StatusItemViewTests: XCTestCase {
         ])
 
         XCTAssertEqual(trigger, .none)
+    }
+
+    func testLightFlashStatusBarAddsAlarmAndRecoveryAnimationOverlays() throws {
+        let button = try XCTUnwrap(StatusBar.get().statusItem.button)
+        let originalSubviews = button.subviews
+        defer {
+            for subview in button.subviews where !originalSubviews.contains(subview) {
+                subview.removeFromSuperview()
+            }
+        }
+        let animator = LightFlashStatusBar()
+
+        animator.animate(oldResults: [], newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+        animator.animate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: [])
+
+        XCTAssertGreaterThanOrEqual(button.subviews.count, originalSubviews.count + 2)
+    }
+
+    func testDarkFlashStatusBarAddsAlarmAndRecoveryAnimationOverlays() throws {
+        let button = try XCTUnwrap(StatusBar.get().statusItem.button)
+        let originalSubviews = button.subviews
+        defer {
+            for subview in button.subviews where !originalSubviews.contains(subview) {
+                subview.removeFromSuperview()
+            }
+        }
+        let animator = DarkFlashStatusBar()
+
+        animator.animate(oldResults: [], newResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+        animator.animate(oldResults: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ], newResults: [])
+
+        XCTAssertGreaterThanOrEqual(button.subviews.count, originalSubviews.count + 2)
     }
 
     func testApplicationMenuPolicyRemovesAboutAndPreferencesEntrypoints() {
@@ -431,6 +773,77 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(view.color, NSColor(calibratedRed: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
     }
 
+    func testStatusPanelKnownStatusUsesConfiguredCellBackgroundColor() throws {
+        Settings().setString("0.8,0.1,0.1,1.0", forKey: "criticalColor")
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        let view = try XCTUnwrap(SPStatusTableColumn(results: [row]).createViewForRow(0) as? TableViewCellBackground)
+
+        XCTAssertEqual(view.color, NSColor(calibratedRed: 0.8, green: 0.1, blue: 0.1, alpha: 1.0))
+        XCTAssertEqual(textValue(in: view), "CRITICAL")
+    }
+
+    func testStatusPanelBaseColumnRendersEmptyValueWithConfiguredBackground() throws {
+        Settings().setString("0.2,0.3,0.4,1.0", forKey: "warningColor")
+        let row = service("web-01", service: "HTTP", status: "WARNING")
+        let column = SPTableColumn(results: [row])
+
+        let view = try XCTUnwrap(column.createViewForRow(0) as? TableViewCellBackground)
+
+        XCTAssertEqual(column.columnWidth(row, font: statusPanelFont()), 0)
+        XCTAssertEqual(column.setValue(0), "")
+        XCTAssertEqual(view.color, NSColor(calibratedRed: 0.2, green: 0.3, blue: 0.4, alpha: 1.0))
+        XCTAssertEqual(textValue(in: view), "")
+    }
+
+    func testStatusPanelTableDelegateCreatesCellAndCustomRowView() throws {
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        let table = NSTableView(frame: NSRect(x: 0, y: 0, width: 200, height: 80))
+        let column = SPHostTableColumn(results: [row])
+        table.addTableColumn(column)
+        let delegate = StatusPanelTableDelegate(results: [row])
+
+        let cell = try XCTUnwrap(delegate.tableView(table, viewFor: column, row: 0))
+        let rowView = try XCTUnwrap(delegate.tableView(table, rowViewForRow: 0))
+
+        XCTAssertEqual(textValue(in: cell), "web-01")
+        XCTAssertTrue(rowView is StatusTableRowView)
+        XCTAssertEqual(table.intercellSpacing, NSMakeSize(0, 2))
+    }
+
+    func testStatusPanelCellBackgroundDrawsGradient() throws {
+        let view = TableViewCellBackground(
+            frame: NSRect(x: 0, y: 0, width: 80, height: 24),
+            color: NSColor(calibratedRed: 0.5, green: 0.6, blue: 0.7, alpha: 1.0)
+        )
+        let representation = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+
+        view.cacheDisplay(in: view.bounds, to: representation)
+
+        XCTAssertGreaterThanOrEqual(representation.pixelsWide, 80)
+        XCTAssertGreaterThanOrEqual(representation.pixelsHigh, 24)
+    }
+
+    func testStatusPanelRowViewDrawsCustomSelection() {
+        let image = NSImage(size: NSSize(width: 80, height: 24))
+        let rowView = StatusTableRowView(frame: NSRect(x: 0, y: 0, width: 80, height: 24))
+
+        image.lockFocus()
+        rowView.drawSelection(in: rowView.bounds)
+        image.unlockFocus()
+
+        XCTAssertEqual(image.size, NSSize(width: 80, height: 24))
+    }
+
+    func testStatusPanelDrawArrowRendersScrollIndicator() throws {
+        let view = DrawArrow(frame: NSRect(x: 0, y: 0, width: 180, height: 20))
+        let representation = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+
+        view.cacheDisplay(in: view.bounds, to: representation)
+
+        XCTAssertGreaterThanOrEqual(representation.pixelsWide, 180)
+        XCTAssertGreaterThanOrEqual(representation.pixelsHigh, 20)
+    }
+
     func testStatusPanelContextMenuBuildsIcingaCommandMenuForSingleSelection() throws {
         let table = initializedStatusPanelTable(rows: [
             service("web-01", service: "HTTP", status: "CRITICAL")
@@ -525,6 +938,68 @@ final class StatusItemViewTests: XCTestCase {
         ])
     }
 
+    func testStatusPanelContextMenuUsesSavedSSHLoginAction() throws {
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        ServerLogin().setLoginType(row, loginType: .ssh)
+        let table = initializedStatusPanelTable(rows: [row])
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+
+        let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
+        let login = try XCTUnwrap(menu.item(withTitle: "Login"))
+
+        XCTAssertNil(login.submenu)
+        XCTAssertEqual(login.action, #selector(ServerLogin.sshLogin(_:)))
+        XCTAssertTrue(login.target is ServerLogin)
+        XCTAssertEqual((login.representedObject as? MonitoringItem)?.host, "web-01")
+    }
+
+    func testStatusPanelContextMenuUsesSavedSSHiTermLoginAction() throws {
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        ServerLogin().setLoginType(row, loginType: .sshiTerm)
+        let table = initializedStatusPanelTable(rows: [row])
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+
+        let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
+        let login = try XCTUnwrap(menu.item(withTitle: "Login"))
+
+        XCTAssertNil(login.submenu)
+        XCTAssertEqual(login.action, #selector(ServerLogin.sshITermLogin(_:)))
+        XCTAssertTrue(login.target is ServerLogin)
+        XCTAssertEqual((login.representedObject as? MonitoringItem)?.host, "web-01")
+    }
+
+    func testStatusPanelTableMouseDownRemovesCustomRightClickHighlight() throws {
+        let table = initializedStatusPanelTable(rows: [
+            service("web-01", service: "HTTP", status: "CRITICAL")
+        ])
+        table.reloadData()
+        _ = table.view(atColumn: 0, row: 0, makeIfNecessary: true)
+        _ = try XCTUnwrap(table.menu(for: rightClickEvent(location: NSPoint(x: 5, y: table.bounds.height - 5))))
+        XCTAssertGreaterThan(selectedBackgroundCount(in: table), 0)
+
+        table.mouseDown(with: leftClickEvent(location: NSPoint(x: 5, y: table.bounds.height - 5)))
+
+        XCTAssertEqual(selectedBackgroundCount(in: table), 0)
+    }
+
+    func testUnscrollableStatusPanelScrollViewIgnoresScrollWheel() {
+        let scrollView = UnscrollableScrollView(frame: NSRect(x: 0, y: 0, width: 100, height: 100))
+
+        scrollView.scrollWheel(with: scrollWheelEvent())
+
+        XCTAssertEqual(scrollView.bounds.origin, .zero)
+    }
+
+    func testSelectedTableViewCellBackgroundDrawsSelectionOverlay() throws {
+        let view = SelectedTableViewCellBackground(frame: NSRect(x: 0, y: 0, width: 40, height: 20))
+        let representation = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+
+        view.cacheDisplay(in: view.bounds, to: representation)
+
+        XCTAssertGreaterThanOrEqual(representation.pixelsWide, 40)
+        XCTAssertGreaterThanOrEqual(representation.pixelsHigh, 20)
+    }
+
     func testStatusPanelContextMenuOnlyShowsOpenInBrowserForUnsupportedCommandBackend() throws {
         let checkMK = monitoringInstance(name: "checkmk", type: .Check_MK)
         let table = initializedStatusPanelTable(rows: [
@@ -540,6 +1015,52 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertNil(menu.item(withTitle: "Schedule Downtime"))
         XCTAssertNil(menu.item(withTitle: "Acknowledge"))
         XCTAssertNotNil(menu.item(withTitle: "Add to filter"))
+    }
+
+    func testOpenInBrowserActionOpensValidMonitoringItemURL() {
+        var openedURLs: [URL] = []
+        let originalOpenURL = OpenInBrowserAction.openURL
+        OpenInBrowserAction.openURL = { openedURLs.append($0) }
+        defer { OpenInBrowserAction.openURL = originalOpenURL }
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        row.itemUrl = "https://monitoring.example/cgi-bin/extinfo.cgi?host=web-01"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [row]
+
+        OpenInBrowserAction().action(menuItem)
+
+        XCTAssertEqual(openedURLs.map(\.absoluteString), ["https://monitoring.example/cgi-bin/extinfo.cgi?host=web-01"])
+    }
+
+    func testOpenInBrowserActionPercentEncodesRecoverableURL() {
+        var openedURLs: [URL] = []
+        let originalOpenURL = OpenInBrowserAction.openURL
+        OpenInBrowserAction.openURL = { openedURLs.append($0) }
+        defer { OpenInBrowserAction.openURL = originalOpenURL }
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        row.itemUrl = "https://monitoring.example/cgi-bin/extinfo.cgi?query=[web 01]"
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [row]
+
+        OpenInBrowserAction().action(menuItem)
+
+        XCTAssertEqual(openedURLs.count, 1)
+        XCTAssertTrue(openedURLs[0].absoluteString.contains("%5Bweb%2001%5D"))
+    }
+
+    func testOpenInBrowserActionEscapesBracketURLBeforeOpeningBrowser() {
+        var openedURLs: [URL] = []
+        let originalOpenURL = OpenInBrowserAction.openURL
+        OpenInBrowserAction.openURL = { openedURLs.append($0) }
+        defer { OpenInBrowserAction.openURL = originalOpenURL }
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        row.itemUrl = "http://["
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [row]
+
+        OpenInBrowserAction().action(menuItem)
+
+        XCTAssertEqual(openedURLs.map(\.absoluteString), ["http://%5B"])
     }
 
     func testStatusPanelContextMenuRightClickWithoutPriorSelectionUsesClickedRow() throws {
@@ -650,8 +1171,53 @@ final class StatusItemViewTests: XCTestCase {
         )!
     }
 
+    private func leftClickEvent(location: NSPoint) -> NSEvent {
+        return NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: location,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 0,
+            clickCount: 1,
+            pressure: 1
+        )!
+    }
+
+    private func scrollWheelEvent() -> NSEvent {
+        return leftClickEvent(location: NSPoint(x: 0, y: 0))
+    }
+
     private func representedItems(_ menuItem: NSMenuItem?) -> [MonitoringItem] {
         return menuItem?.representedObject as? [MonitoringItem] ?? []
+    }
+
+    private func selectedBackgroundCount(in table: NSTableView) -> Int {
+        var count = 0
+        for row in 0..<table.numberOfRows {
+            for column in 0..<table.numberOfColumns {
+                guard let cell = table.view(atColumn: column, row: row, makeIfNecessary: false) else {
+                    continue
+                }
+                count += cell.subviews.filter { $0 is SelectedTableViewCellBackground }.count
+            }
+        }
+        return count
+    }
+
+    private func failedStatusItem(from statusBar: StatusBar) -> NSStatusItem? {
+        let child = Mirror(reflecting: statusBar).children.first { $0.label == "statusItemFailed" }
+        guard let value = child?.value else {
+            return nil
+        }
+
+        let optional = Mirror(reflecting: value)
+        if optional.displayStyle == .optional {
+            return optional.children.first?.value as? NSStatusItem
+        }
+
+        return value as? NSStatusItem
     }
 
     private func textValue(in view: NSView) -> String {

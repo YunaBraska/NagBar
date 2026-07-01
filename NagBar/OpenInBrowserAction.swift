@@ -10,6 +10,9 @@ import Foundation
 import Cocoa
 
 class OpenInBrowserAction: NSObject, MenuAction {
+    static var openURL: (URL) -> Void = { url in
+        _ = NSWorkspace.shared.open(url)
+    }
     
     func action(_ sender: NSMenuItem) {
         let monitoringItems = sender.representedObject as! Array<MonitoringItem>
@@ -26,6 +29,6 @@ class OpenInBrowserAction: NSObject, MenuAction {
             return
         }
         
-        NSWorkspace.shared.open(url!)
+        OpenInBrowserAction.openURL(url!)
     }
 }

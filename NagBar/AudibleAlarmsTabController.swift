@@ -10,6 +10,17 @@ import Foundation
 import Cocoa
 
 class AudibleAlarmsTabController: NSWindowController {
+    var soundFilePicker: () -> [URL] = {
+        let fileSelectDialog = NSOpenPanel()
+        fileSelectDialog.canChooseFiles = true
+        fileSelectDialog.allowedFileTypes = ["aiff", "wav", "mp3"]
+
+        if fileSelectDialog.runModal() == NSApplication.ModalResponse.OK {
+            return fileSelectDialog.urls
+        }
+
+        return []
+    }
     
     @IBOutlet weak var enableAudibleAlarms: NSButton!
     @IBOutlet weak var enableAudibleAlarmsCritical: NSButton!
@@ -41,22 +52,13 @@ class AudibleAlarmsTabController: NSWindowController {
     
     @IBAction func popupButtonFileSelector(_ sender: NSPopUpButton) {
         if sender.titleOfSelectedItem != "Default" {
-            let fileSelectDialog = NSOpenPanel()
-            
-            // Enable the selection of files in the dialog.
-            fileSelectDialog.canChooseFiles = true
-            fileSelectDialog.allowedFileTypes = ["aiff", "wav", "mp3"]
-            
-            
-            // Display the dialog. If the OK button was pressed, process the files.
-            if fileSelectDialog.runModal() == NSApplication.ModalResponse.OK {
-                // Get an array containing the full filenames of all
-                // files and directories selected.
-                let files = fileSelectDialog.urls
+            let files = soundFilePicker()
+            if !files.isEmpty {
                 sender.removeItem(at: 1)
                 let fileStringArray = files[0].absoluteString.components(separatedBy: "/")
-                sender.title = fileStringArray.last!
-                
+                sender.insertItem(withTitle: fileStringArray.last!, at: 1)
+                sender.selectItem(at: 1)
+
                 Settings().setString(files[0].path, forKey: sender.identifier!.rawValue)
             }
         } else {

@@ -10,6 +10,20 @@ import Foundation
 import Cocoa
 
 class StatusItemView: NSStatusBarButton {
+    static var performStatusItemClick: (NSStatusItem, NSButton, NSMenu, StatusItemView) -> Void = { statusItem, button, menu, view in
+        statusItem.menu = menu
+        button.performClick(view)
+    }
+    static var popUpContextMenu: (NSMenu, NSEvent, StatusItemView) -> Void = { menu, event, view in
+        NSMenu.popUpContextMenu(menu, with: event, for: view)
+    }
+    static var popUpMenu: (NSMenu, NSPoint, StatusItemView) -> Void = { menu, point, view in
+        menu.popUp(positioning: nil, at: point, in: view)
+    }
+    static var refreshStatusData: () -> Void = {
+        LoadMonitoringData().refreshStatusData()
+    }
+
     let StatusItemViewPaddingWidth = CGFloat(6)
     let StatusItemViewPaddingHeight = CGFloat(3)
     
@@ -83,7 +97,7 @@ class StatusItemView: NSStatusBarButton {
     }
     
     @objc func refresh(_ sender: AnyObject) {
-        LoadMonitoringData().refreshStatusData()
+        Self.refreshStatusData()
     }
 
     @objc func showAbout(_ sender: AnyObject) {
@@ -114,15 +128,14 @@ class StatusItemView: NSStatusBarButton {
     private func openStatusItemMenu(with event: NSEvent? = nil) {
         let menu = statusItemMenu()
         if let statusItem = statusItem, let button = statusItem.button {
-            statusItem.menu = menu
-            button.performClick(self)
+            Self.performStatusItemClick(statusItem, button, menu, self)
             return
         }
 
         if let event = event {
-            NSMenu.popUpContextMenu(menu, with: event, for: self)
+            Self.popUpContextMenu(menu, event, self)
             return
         }
-        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: bounds.minY), in: self)
+        Self.popUpMenu(menu, NSPoint(x: 0, y: bounds.minY), self)
     }
 }

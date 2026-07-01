@@ -58,6 +58,48 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertTrue(snapshot.applicationSupportPath.hasSuffix("ApplicationSupport/com.volendavidov.NagBar"))
     }
 
+    func testRuntimeSnapshotReportsConfiguredEnabledRemotesAndBundleFallbacks() {
+        let enabled = MonitoringInstance().initDefault(
+            name: "enabled",
+            url: "https://icinga.example",
+            type: .Icinga,
+            username: "user",
+            password: "",
+            enabled: 1
+        )
+        let disabled = MonitoringInstance().initDefault(
+            name: "disabled",
+            url: "https://nagios.example",
+            type: .Nagios,
+            username: "user",
+            password: "",
+            enabled: 0
+        )
+        MonitoringInstances().insert(key: enabled.name, value: enabled)
+        MonitoringInstances().insert(key: disabled.name, value: disabled)
+        let report = UpgradeCompatibilityReport(
+            legacyRealmFiles: ["/tmp/default.realm"],
+            currentJSONFiles: [],
+            requiresManualReconfiguration: true,
+            message: "Manual reconfiguration required."
+        )
+
+        let snapshot = NagBarRuntimeSnapshot.capture(
+            bundle: Bundle(),
+            monitoringInstances: MonitoringInstances(),
+            upgradeReport: report
+        )
+
+        XCTAssertEqual(snapshot.bundleIdentifier, "com.volendavidov.NagBar")
+        XCTAssertEqual(snapshot.version, "unknown")
+        XCTAssertEqual(snapshot.build, "unknown")
+        XCTAssertEqual(snapshot.configuredRemoteCount, 2)
+        XCTAssertEqual(snapshot.enabledConfiguredRemoteCount, 1)
+        XCTAssertFalse(snapshot.usingLocalFallback)
+        XCTAssertEqual(snapshot.legacyRealmFileCount, 1)
+        XCTAssertTrue(snapshot.requiresManualReconfiguration)
+    }
+
     func testApplicationSupportDirectoryUsesTemporaryStorageDuringHostedTests() {
         NagBarStorage.applicationSupportDirectoryOverride = nil
         let directory = NagBarStorage.applicationSupportDirectory(
@@ -159,6 +201,70 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertTrue(event.message.contains("errorCode=-1202"))
         XCTAssertTrue(event.message.contains("errorDomain=\"NSURLErrorDomain\""))
         XCTAssertFalse(event.message.contains("secret"))
+    }
+
+    func testRefreshFinishedAndLocalServerEventsUseDedicatedCategories() {
+        let refresh = NagBarDiagnostics.refreshFinishedEvent(itemCount: 7, failedCount: 2)
+        let local = NagBarDiagnostics.localServerEvent(message: "localIcingaServerStarted baseURL=http://127.0.0.1:1234/")
+
+        XCTAssertEqual(refresh.category, .refresh)
+        XCTAssertEqual(refresh.message, "refreshFinished items=7 failedInstances=2")
+        XCTAssertEqual(local.category, .localServer)
+        XCTAssertTrue(local.message.contains("localIcingaServerStarted"))
+    }
+
+    func testFailReasonDiagnosticNamesCoverAllReasons() {
+        XCTAssertEqual(FailReason.wrongCredentials.diagnosticName, "wrongCredentials")
+        XCTAssertEqual(FailReason.ssl.diagnosticName, "ssl")
+        XCTAssertEqual(FailReason.unknown.diagnosticName, "unknown")
+    }
+
+    func testDiagnosticLogEntryPointsAcceptSuccessFailureAndStorageEvents() {
+        let instance = MonitoringInstance().initDefault(
+            name: "prod-icinga",
+            url: "https://icinga.example",
+            type: .Icinga,
+            username: "user",
+            password: "secret",
+            enabled: 1
+        )
+        let report = UpgradeCompatibilityReport(
+            legacyRealmFiles: ["/tmp/default.realm"],
+            currentJSONFiles: [],
+            requiresManualReconfiguration: true,
+            message: "Manual reconfiguration required."
+        )
+        let error = NSError(domain: NSURLErrorDomain, code: -1012, userInfo: nil)
+
+        NagBarDiagnostics.logStartup(NagBarRuntimeSnapshot(
+            bundleIdentifier: "com.volendavidov.NagBar",
+            version: "1.0",
+            build: "1",
+            processIdentifier: 42,
+            applicationSupportPath: "/tmp/support",
+            configuredRemoteCount: 1,
+            enabledConfiguredRemoteCount: 1,
+            usingLocalFallback: false,
+            legacyRealmFileCount: 1,
+            requiresManualReconfiguration: true
+        ))
+        NagBarDiagnostics.logUpgradeReport(report)
+        NagBarDiagnostics.logUpgradeReport(UpgradeCompatibilityReport(
+            legacyRealmFiles: [],
+            currentJSONFiles: [],
+            requiresManualReconfiguration: false,
+            message: "No legacy Realm configuration was found."
+        ))
+        NagBarDiagnostics.logRefreshFailure(instance: instance, reason: .wrongCredentials, error: error)
+        NagBarDiagnostics.logRefreshFinished(itemCount: 3, failedCount: 0)
+        NagBarDiagnostics.logRefreshFinished(itemCount: 3, failedCount: 1)
+        NagBarDiagnostics.logLocalServerStarted(baseURL: "http://127.0.0.1:1234/icinga/cgi-bin/")
+        NagBarDiagnostics.logLocalServerStartFailed(error)
+        NagBarDiagnostics.logLocalServerEvent(message: "localIcingaServerStartTimedOut")
+        NagBarDiagnostics.logStatusItemEvent(message: "showStatus")
+        NagBarDiagnostics.logStorageError("storageFailure", error: error)
+
+        XCTAssertEqual(NagBarDiagnostics.refreshFailureEvent(instance: instance, reason: .wrongCredentials, error: error).category, .refresh)
     }
 
     func testStatusItemEventKeepsMessageInDedicatedCategory() {

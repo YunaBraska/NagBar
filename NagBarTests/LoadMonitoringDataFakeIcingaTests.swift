@@ -32,6 +32,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         MonitoringInstances.storageURLOverride = nil
         PasswordStore.sharedInstance.removeAll()
         OldStatusData.sharedInstance.statusData = nil
+        AlertCommandFeedbackPresenter.presentAlert = { alert in
+            alert.runModal()
+        }
         super.tearDown()
     }
 
@@ -125,6 +128,31 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertTrue(publishedResults.contains { $0.monitoringInstance?.name == "fake-Icinga" && $0.host == "localhost" && $0.service == "Total Processes" && $0.status == "WARNING" })
         XCTAssertEqual(OldStatusData.sharedInstance.statusData?.count, publishedResults.count)
         XCTAssertTrue(server.requests().contains { $0.method == "GET" && $0.authorization != nil })
+    }
+
+    func testLoadMonitoringDataWrapperExposesRefreshActions() {
+        let loader = LoadMonitoringData(loadStatusBar: { _, _ in })
+        let firstAction = RecordingRefreshAction()
+        let secondAction = RecordingRefreshAction()
+
+        loader.dataRefreshActions = [firstAction, secondAction]
+
+        XCTAssertEqual(loader.dataRefreshActions.count, 2)
+        XCTAssertTrue(loader.dataRefreshActions[0] as? RecordingRefreshAction === firstAction)
+        XCTAssertTrue(loader.dataRefreshActions[1] as? RecordingRefreshAction === secondAction)
+    }
+
+    func testNagBarAlertBuildsWarningAlertWithoutRunningModal() throws {
+        var capturedAlert: NSAlert?
+        NagBarAlert.presentAlert = { capturedAlert = $0 }
+
+        NagBarAlert().showWarningAlert("Configuration problem", informativeText: "The Icinga URL is invalid.")
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.messageText, "Configuration problem")
+        XCTAssertEqual(alert.informativeText, "The Icinga URL is invalid.")
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertEqual(alert.buttons.map { $0.title }, ["OK"])
     }
 
     func testRefreshStatusDataReportsWrongCredentialsForFailedIcingaRemote() throws {
@@ -876,6 +904,33 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertEqual(presenter.failures.count, 1)
         XCTAssertEqual(presenter.failures.first?.action, .scheduleDowntime)
         XCTAssertEqual(presenter.failures.first?.error.localizedDescription, "Rejected by backend")
+    }
+
+    func testAlertCommandFeedbackPresenterBuildsSuccessAlertWithoutRunningModal() throws {
+        var capturedAlert: NSAlert?
+        AlertCommandFeedbackPresenter.presentAlert = { capturedAlert = $0 }
+
+        AlertCommandFeedbackPresenter().showSuccess(CommandResult(action: .recheck, itemCount: 4))
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.messageText, "Recheck accepted")
+        XCTAssertEqual(alert.informativeText, "4 item(s) submitted to the monitoring backend.")
+        XCTAssertEqual(alert.alertStyle, .informational)
+        XCTAssertEqual(alert.buttons.map { $0.title }, ["OK"])
+    }
+
+    func testAlertCommandFeedbackPresenterBuildsFailureAlertWithoutRunningModal() throws {
+        var capturedAlert: NSAlert?
+        AlertCommandFeedbackPresenter.presentAlert = { capturedAlert = $0 }
+        let error = NSError(domain: "NagBarTests.CommandFeedback", code: 7, userInfo: [NSLocalizedDescriptionKey: "Rejected by backend"])
+
+        AlertCommandFeedbackPresenter().showFailure(action: .scheduleDowntime, error: error)
+
+        let alert = try XCTUnwrap(capturedAlert)
+        XCTAssertEqual(alert.messageText, "Schedule Downtime failed")
+        XCTAssertEqual(alert.informativeText, "Rejected by backend")
+        XCTAssertEqual(alert.alertStyle, .warning)
+        XCTAssertEqual(alert.buttons.map { $0.title }, ["OK"])
     }
 
     private func fixtureData(name: String, type: String?) throws -> Data {
