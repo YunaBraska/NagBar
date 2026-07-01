@@ -8,6 +8,8 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+## [2026.07.1820540] - 2026-07-01
+
 ### Changed
 
 - Consolidated roadmap, spec, and readiness notes into `docs/PROJECT_STATUS.md`.
@@ -17,6 +19,7 @@ security, upgrade notes, and verification evidence.
 
 - Kept local packaging and release helper paths working after the `script/cicd/`
   move, with CI coverage for the nested release-note helper path.
+
 
 ## [2026.06.1812002] - 2026-06-30
 
