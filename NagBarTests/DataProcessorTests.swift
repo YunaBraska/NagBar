@@ -706,6 +706,31 @@ class FilterItemsProcessorTests: XCTestCase {
         XCTAssertEqual(FilterItems().count(), 1)
     }
 
+    func testFilterItemsMalformedStorageReturnsEmptyAndRecoversOnSave() throws {
+        let storageURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NagBarTests", isDirectory: true)
+            .appendingPathComponent(name, isDirectory: false)
+            .appendingPathExtension("filter-items.json")
+        FilterItems.storageURLOverride = storageURL
+        defer {
+            FilterItems().resetStorage()
+            FilterItems.storageURLOverride = nil
+        }
+        try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("not-json".utf8).write(to: storageURL, options: .atomic)
+
+        XCTAssertEqual(FilterItems().count(), 0)
+
+        let recovered = FilterItem().initDefault(host: "web-01", service: "Disk", status: 16)
+        FilterItems().insert(key: FilterItems.generateKey(recovered.host, service: recovered.service), value: recovered)
+
+        let reloaded = FilterItems().getByKey("web-01Disk")
+        XCTAssertEqual(FilterItems().count(), 1)
+        XCTAssertEqual(reloaded?.host, "web-01")
+        XCTAssertEqual(reloaded?.service, "Disk")
+        XCTAssertEqual(reloaded?.status, 16)
+    }
+
     func testAddToFilterCreatesServiceFilterForCriticalSelection() {
         AddToFilterAction().addToFilter([service("web-01", service: "HTTP", status: "CRITICAL")])
 

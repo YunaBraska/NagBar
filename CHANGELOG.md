@@ -19,6 +19,9 @@ security, upgrade notes, and verification evidence.
 
 - Kept local packaging and release helper paths working after the `script/cicd/`
   move, with CI coverage for the nested release-note helper path.
+- Added fake-server and storage regression coverage for mixed Icinga refresh
+  failures, Thruk command posts, multi-item Nagios rechecks, fixed Icinga 2
+  service downtime, and malformed filter storage recovery.
 
 
 ## [2026.06.1812002] - 2026-06-30
