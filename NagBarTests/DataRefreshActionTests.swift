@@ -8,11 +8,12 @@
 
 import Foundation
 import XCTest
+import UserNotifications
 @testable import NagBar
 
 class NotificationDisplayTests: XCTestCase {
     func testProcess() {
-        var deliveredNotifications: Array<NSUserNotification> = []
+        var deliveredNotifications: Array<MonitoringNotification> = []
         let notificationDisplay = NotificationDisplay { notification, _ in
             deliveredNotifications.append(notification)
         }
@@ -50,11 +51,11 @@ class NotificationDisplayTests: XCTestCase {
         XCTAssertEqual(deliveredNotifications[0].title, "testhost")
         XCTAssertEqual(deliveredNotifications[0].subtitle, "testservice2 CRITICAL")
         XCTAssertEqual(deliveredNotifications[0].informativeText, "CRITICAL - Packet loss = 100%")
-        XCTAssertEqual(deliveredNotifications[0].userInfo?["monitoringItemUrl"] as? String, "http://192.168.1.106/nagios/cgi-bin/extinfo.cgi?type=1&host=192.168.1.107")
+        XCTAssertEqual(deliveredNotifications[0].monitoringItemUrl, "http://192.168.1.106/nagios/cgi-bin/extinfo.cgi?type=1&host=192.168.1.107")
     }
 
     func testProcessDoesNotDeliverNotificationForExistingResult() {
-        var deliveredNotifications: Array<NSUserNotification> = []
+        var deliveredNotifications: Array<MonitoringNotification> = []
         let notificationDisplay = NotificationDisplay { notification, _ in
             deliveredNotifications.append(notification)
         }
@@ -66,7 +67,7 @@ class NotificationDisplayTests: XCTestCase {
     }
 
     func testProcessDeliversNotificationWhenExistingServiceChangesStatus() {
-        var deliveredNotifications: Array<NSUserNotification> = []
+        var deliveredNotifications: Array<MonitoringNotification> = []
         let notificationDisplay = NotificationDisplay { notification, _ in
             deliveredNotifications.append(notification)
         }
@@ -81,7 +82,7 @@ class NotificationDisplayTests: XCTestCase {
     }
 
     func testProcessDeliversOneNotificationPerNewResult() {
-        var deliveredNotifications: Array<NSUserNotification> = []
+        var deliveredNotifications: Array<MonitoringNotification> = []
         let notificationDisplay = NotificationDisplay { notification, _ in
             deliveredNotifications.append(notification)
         }
@@ -97,29 +98,84 @@ class NotificationDisplayTests: XCTestCase {
     }
 
     func testNotificationActivationIgnoresMissingUserInfo() {
-        let notification = NSUserNotification()
+        var openedURLs: [URL] = []
 
-        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+        NotificationDisplay(openURL: { openedURLs.append($0) }).openMonitoringItemURL(from: [:])
 
-        XCTAssertNil(notification.userInfo)
+        XCTAssertEqual(openedURLs, [])
     }
 
     func testNotificationActivationIgnoresMissingMonitoringItemURL() {
-        let notification = NSUserNotification()
-        notification.userInfo = ["other": "value"]
+        var openedURLs: [URL] = []
 
-        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+        NotificationDisplay(openURL: { openedURLs.append($0) }).openMonitoringItemURL(from: ["other": "value"])
 
-        XCTAssertEqual(notification.userInfo?["other"] as? String, "value")
+        XCTAssertEqual(openedURLs, [])
     }
 
     func testNotificationActivationRejectsMalformedMonitoringItemURL() {
-        let notification = NSUserNotification()
-        notification.userInfo = ["monitoringItemUrl": "http://["]
+        var openedURLs: [URL] = []
 
-        NotificationDisplay().userNotificationCenter(.default, didActivate: notification)
+        NotificationDisplay(openURL: { openedURLs.append($0) }).openMonitoringItemURL(from: ["monitoringItemUrl": "http://["])
 
-        XCTAssertEqual(notification.userInfo?["monitoringItemUrl"] as? String, "http://[")
+        XCTAssertEqual(openedURLs, [])
+    }
+
+    func testNotificationActivationOpensMonitoringItemURL() {
+        var openedURLs: [URL] = []
+        let expectedURL = URL(string: "https://monitoring.example/items/1")!
+
+        NotificationDisplay(openURL: { openedURLs.append($0) }).openMonitoringItemURL(from: ["monitoringItemUrl": expectedURL.absoluteString])
+
+        XCTAssertEqual(openedURLs, [expectedURL])
+    }
+
+    func testDeliverThroughUserNotificationCenterRequestsAuthorizationAndAddsNotification() {
+        let notification = MonitoringNotification(
+            title: "db-01",
+            subtitle: "Disk CRITICAL",
+            informativeText: "Disk full",
+            monitoringItemUrl: "https://monitoring.example/items/2"
+        )
+        let center = RecordingUserNotificationCenter(granted: true)
+        let display = NotificationDisplay()
+
+        NotificationDisplay.deliverThroughUserNotificationCenter(notification, delegate: display, center: center)
+
+        XCTAssertTrue(center.delegate === display)
+        XCTAssertEqual(center.authorizationOptions, [.alert, .sound])
+        XCTAssertEqual(center.addedRequests.count, 1)
+        XCTAssertEqual(center.addedRequests[0].content.title, "db-01")
+        XCTAssertEqual(center.addedRequests[0].content.subtitle, "Disk CRITICAL")
+        XCTAssertEqual(center.addedRequests[0].content.body, "Disk full")
+        XCTAssertEqual(center.addedRequests[0].content.userInfo["monitoringItemUrl"] as? String, "https://monitoring.example/items/2")
+    }
+
+    func testDeliverThroughUserNotificationCenterSkipsAddWhenAuthorizationDenied() {
+        let notification = MonitoringNotification(title: "db-01", subtitle: "DOWN", informativeText: "Host down", monitoringItemUrl: "https://monitoring.example/items/3")
+        let center = RecordingUserNotificationCenter(granted: false)
+
+        NotificationDisplay.deliverThroughUserNotificationCenter(notification, delegate: NotificationDisplay(), center: center)
+
+        XCTAssertEqual(center.addedRequests.count, 0)
+    }
+
+    func testDeliverThroughUserNotificationCenterSkipsAddWhenAuthorizationFails() {
+        let notification = MonitoringNotification(title: "db-01", subtitle: "DOWN", informativeText: "Host down", monitoringItemUrl: "https://monitoring.example/items/4")
+        let center = RecordingUserNotificationCenter(granted: true, authorizationError: RecordingNotificationError())
+
+        NotificationDisplay.deliverThroughUserNotificationCenter(notification, delegate: NotificationDisplay(), center: center)
+
+        XCTAssertEqual(center.addedRequests.count, 0)
+    }
+
+    func testDeliverThroughUserNotificationCenterHandlesDeliveryErrorAfterAdd() {
+        let notification = MonitoringNotification(title: "db-01", subtitle: "DOWN", informativeText: "Host down", monitoringItemUrl: "https://monitoring.example/items/5")
+        let center = RecordingUserNotificationCenter(granted: true, deliveryError: RecordingNotificationError())
+
+        NotificationDisplay.deliverThroughUserNotificationCenter(notification, delegate: NotificationDisplay(), center: center)
+
+        XCTAssertEqual(center.addedRequests.count, 1)
     }
 
     private func host(_ name: String, status: String, information: String = "Host problem") -> HostMonitoringItem {
@@ -140,6 +196,34 @@ class NotificationDisplayTests: XCTestCase {
         item.itemUrl = "https://monitoring.example/services/" + host + "/" + service
         return item
     }
+}
+
+private final class RecordingUserNotificationCenter: UserNotificationScheduling {
+    weak var delegate: UNUserNotificationCenterDelegate?
+    private let granted: Bool
+    private let authorizationError: Error?
+    private let deliveryError: Error?
+    var authorizationOptions: UNAuthorizationOptions = []
+    var addedRequests: [UNNotificationRequest] = []
+
+    init(granted: Bool, authorizationError: Error? = nil, deliveryError: Error? = nil) {
+        self.granted = granted
+        self.authorizationError = authorizationError
+        self.deliveryError = deliveryError
+    }
+
+    func requestAuthorization(options: UNAuthorizationOptions, completionHandler: @escaping @Sendable (Bool, Error?) -> Void) {
+        authorizationOptions = options
+        completionHandler(granted, authorizationError)
+    }
+
+    func add(_ request: UNNotificationRequest, withCompletionHandler completionHandler: (@Sendable (Error?) -> Void)?) {
+        addedRequests.append(request)
+        completionHandler?(deliveryError)
+    }
+}
+
+private struct RecordingNotificationError: Error {
 }
 
 class PlaySoundAlarmTests: XCTestCase {

@@ -8,6 +8,7 @@
 
 import Foundation
 import Cocoa
+import UserNotifications
 
 
 protocol DataRefreshAction {
@@ -18,11 +19,35 @@ class NotificationCenter {
     static var sharedInstance = NotificationDisplay()
 }
 
-class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefreshAction {
-    private let deliverNotification: (NSUserNotification, NotificationDisplay) -> Void
+struct MonitoringNotification {
+    let title: String
+    let subtitle: String
+    let informativeText: String
+    let monitoringItemUrl: String
+}
 
-    init(deliverNotification: @escaping (NSUserNotification, NotificationDisplay) -> Void = NotificationDisplay.deliverThroughUserNotificationCenter) {
+protocol UserNotificationScheduling: AnyObject {
+    var delegate: UNUserNotificationCenterDelegate? { get set }
+
+    func requestAuthorization(options: UNAuthorizationOptions, completionHandler: @escaping @Sendable (Bool, Error?) -> Void)
+    func add(_ request: UNNotificationRequest, withCompletionHandler completionHandler: (@Sendable (Error?) -> Void)?)
+}
+
+extension UNUserNotificationCenter: UserNotificationScheduling {
+}
+
+class NotificationDisplay : NSObject, UNUserNotificationCenterDelegate, DataRefreshAction {
+    private let deliverNotification: (MonitoringNotification, NotificationDisplay) -> Void
+    private let openURL: (URL) -> Void
+
+    init(
+        deliverNotification: @escaping (MonitoringNotification, NotificationDisplay) -> Void = { notification, delegate in
+            NotificationDisplay.deliverThroughUserNotificationCenter(notification, delegate: delegate)
+        },
+        openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) }
+    ) {
         self.deliverNotification = deliverNotification
+        self.openURL = openURL
         super.init()
     }
     
@@ -30,11 +55,12 @@ class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefr
         let resultsDiff = self.resultsDiff(oldResults, newResults: newResults)
         
         for i in resultsDiff {
-            let notification = NSUserNotification()
-            notification.userInfo = ["monitoringItemUrl": i.itemUrl]
-            notification.title = i.host
-            notification.subtitle = i.service + " " + i.status
-            notification.informativeText = i.statusInformation
+            let notification = MonitoringNotification(
+                title: i.host,
+                subtitle: NotificationDisplay.subtitle(for: i),
+                informativeText: i.statusInformation.trimmingCharacters(in: .whitespacesAndNewlines),
+                monitoringItemUrl: i.itemUrl
+            )
 
             deliverNotification(notification, self)
             
@@ -42,9 +68,42 @@ class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefr
         }
     }
 
-    private static func deliverThroughUserNotificationCenter(_ notification: NSUserNotification, delegate: NotificationDisplay) {
-        NSUserNotificationCenter.default.delegate = delegate
-        NSUserNotificationCenter.default.deliver(notification)
+    static func deliverThroughUserNotificationCenter(_ notification: MonitoringNotification, delegate: NotificationDisplay, center: UserNotificationScheduling = UNUserNotificationCenter.current()) {
+        center.delegate = delegate
+
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                NSLog("Notification authorization failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard granted else {
+                NSLog("Notification authorization denied")
+                return
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = notification.title
+            content.subtitle = notification.subtitle
+            content.body = notification.informativeText
+            content.userInfo = ["monitoringItemUrl": notification.monitoringItemUrl]
+
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            center.add(request) { error in
+                if let error = error {
+                    NSLog("Notification delivery failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private static func subtitle(for monitoringItem: MonitoringItem) -> String {
+        let service = monitoringItem.service.trimmingCharacters(in: .whitespacesAndNewlines)
+        if service.isEmpty {
+            return monitoringItem.status
+        }
+
+        return service + " " + monitoringItem.status
     }
     
     private func resultsDiff(_ oldResults: Array<MonitoringItem>, newResults: Array<MonitoringItem>) -> Array<MonitoringItem> {
@@ -69,23 +128,27 @@ class NotificationDisplay : NSObject, NSUserNotificationCenterDelegate, DataRefr
         return notificationArray
     }
     
-    func userNotificationCenter(_ center: NSUserNotificationCenter, didActivate notification: NSUserNotification) {
-        
-        guard let userInfo = notification.userInfo else {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        openMonitoringItemURL(from: response.notification.request.content.userInfo)
+        completionHandler()
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+
+    func openMonitoringItemURL(from userInfo: [AnyHashable: Any]) {
+        guard let monitoringItemUrl = userInfo["monitoringItemUrl"] as? String else {
+            NSLog("URL not found")
             return
         }
-        
-        let monitoringItemUrl = userInfo["monitoringItemUrl"]
-        
-        if let monitoringItemUrl = monitoringItemUrl {
-            if let url = URL(string: monitoringItemUrl as! String) {
-                NSWorkspace.shared.open(url)
-            } else {
-                NSLog("Malformed URL: " + (monitoringItemUrl as! String))
-            }
-        } else {
-            NSLog("URL not found")
+
+        guard let url = URL(string: monitoringItemUrl) else {
+            NSLog("Malformed URL: " + monitoringItemUrl)
+            return
         }
+
+        openURL(url)
     }
 }
 
