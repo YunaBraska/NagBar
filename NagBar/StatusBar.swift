@@ -158,7 +158,8 @@ class StatusBar : NSObject {
             Foundation.NotificationCenter.default.removeObserver(observer)
             self.observer = nil
         }
-        observer = Foundation.NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: nil, using: {_ in
+        let observedPanel = self.statusPanel?.panel
+        observer = Foundation.NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: observedPanel, queue: nil, using: {_ in
             // dismiss the panel only if another application is in foreground
             // otherwise the panel will be dismissed also on functions which open a modal inside the app
             // (e.g. acknowledge, schedule downtime) and when submitting the modal, the error

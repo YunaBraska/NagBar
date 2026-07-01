@@ -381,7 +381,13 @@ final class StatusItemViewTests: XCTestCase {
         statusBar.load([], failedMonitoringInstances: [:])
 
         XCTAssertTrue(statusBar.showStatusPanel())
-        Foundation.NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: nil)
+        guard let statusPanel = NSApplication.shared.windows.first(where: { window in
+            window.accessibilityIdentifier() == StatusItemAccessibility.statusPanelIdentifier
+        }) else {
+            XCTFail("Expected status panel window")
+            return
+        }
+        Foundation.NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: statusPanel)
 
         closeStatusPanelWindows()
     }
