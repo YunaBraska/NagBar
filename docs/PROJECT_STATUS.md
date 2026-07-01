@@ -29,7 +29,7 @@ Snapshot date: 2026-07-01.
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
 | Local/private packaging | Done | `./script/build_and_run.sh --package` creates a zip, checksum, and manifest under `dist/`, then verifies the packaged app signature |
 | CI workflow | Done | `.github/workflows/ci.yml` runs helper syntax checks, release helper path smoke, tests, Release build, and CocoaPods guardrails |
-| GitHub release automation | Done | Release `2026.07.1820737` completed through `.github/workflows/release.yml` with local/private signing; Developer ID notarization remains secret-dependent |
+| GitHub release automation | Done | Release `2026.07.1820815` completed through `.github/workflows/release.yml` with local/private signing; Developer ID notarization remains secret-dependent |
 | Coverage gate | Done | Xcode result metrics report 95.01% coverage for `NagBar.app`, above the 95% gate |
 | Status-panel command hardening | Done | Public menu/action regressions cover malformed or empty command input, nil monitoring instances, unsupported filter statuses, and pre-assignment command window loading |
 

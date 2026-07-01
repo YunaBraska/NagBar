@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  group: release-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
   build-and-release:
@@ -74,7 +74,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Release metadata already current."
           else
-            git commit -m "Release ${{ steps.version.outputs.tag }}"
+            git commit -m "Release ${{ steps.version.outputs.tag }} [skip ci]"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
