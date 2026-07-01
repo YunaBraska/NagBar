@@ -34,7 +34,7 @@ jobs:
       - name: Check release helper paths
         run: |
           ./script/cicd/release_version.sh 2026.07.0010000
-          ./script/cicd/extract_changelog_release_notes.sh 2026.06.1812002 >/tmp/nagbar-release-notes.md
+          ./script/cicd/extract_changelog_release_notes.sh 2026.07.1820815 >/tmp/nagbar-release-notes.md
 
       - name: Test
         run: ./script/build_and_run.sh --test
