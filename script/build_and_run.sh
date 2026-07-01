@@ -146,7 +146,7 @@ case "$MODE" in
     build_app
     ;;
   package)
-    "$ROOT_DIR/script/package_release.sh"
+    "$ROOT_DIR/script/cicd/package_release.sh"
     ;;
   smoke)
     "$ROOT_DIR/script/status_item_smoke.sh"

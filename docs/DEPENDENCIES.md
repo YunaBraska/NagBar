@@ -31,6 +31,6 @@ Before adding a dependency:
 1. Prefer Apple SDK or Swift standard-library APIs first.
 2. Add or update an ADR explaining the tradeoff.
 3. Add behavior tests covering the dependency boundary.
-4. Update this file, `NOTICE`, `README.md`, and `docs/OSS_READINESS.md`.
+4. Update this file, `NOTICE`, `README.md`, and `docs/PROJECT_STATUS.md`.
 5. Confirm `.github/workflows/ci.yml` still rejects CocoaPods reintroduction
    unless a future ADR explicitly reverses that policy.

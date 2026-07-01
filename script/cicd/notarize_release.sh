@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 APP_PATH="$ROOT_DIR/build/Release/NagBar.app"
 KEYCHAIN_PROFILE=
 APPLE_ID=
@@ -129,7 +129,7 @@ else
   fi
 fi
 
-"$ROOT_DIR/script/verify_release_signing.sh" --developer-id "$APP_PATH"
+"$ROOT_DIR/script/cicd/verify_release_signing.sh" --developer-id "$APP_PATH"
 
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/nagbar-notary.XXXXXX")
 ZIP_PATH="$TMP_DIR/NagBar-notary.zip"
@@ -148,5 +148,5 @@ fi
 
 xcrun stapler staple "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
-"$ROOT_DIR/script/verify_release_signing.sh" --developer-id "$APP_PATH"
+"$ROOT_DIR/script/cicd/verify_release_signing.sh" --developer-id "$APP_PATH"
 printf 'Notarization and stapling complete: %s\n' "$APP_PATH"

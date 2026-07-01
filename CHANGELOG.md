@@ -8,6 +8,16 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+### Changed
+
+- Consolidated roadmap, spec, and readiness notes into `docs/PROJECT_STATUS.md`.
+- Moved release helper scripts under `script/cicd/`.
+
+### Fixed
+
+- Kept local packaging and release helper paths working after the `script/cicd/`
+  move, with CI coverage for the nested release-note helper path.
+
 ## [2026.06.1812002] - 2026-06-30
 
 ### Changed
@@ -61,5 +71,4 @@ security, upgrade notes, and verification evidence.
 - Public distribution still requires Developer ID signing and notarization.
 - Local/private ad-hoc builds are not public release artifacts.
 - Coverage remains below the production target documented in
-  `docs/PRODUCTION_READINESS.md`.
-
+  `docs/PROJECT_STATUS.md`.

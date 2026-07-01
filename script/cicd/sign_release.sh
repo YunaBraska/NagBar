@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 APP_PATH="$ROOT_DIR/build/Release/NagBar.app"
 IDENTITY=
 
@@ -83,5 +83,5 @@ find "$APP_PATH/Contents" \
   done
 
 sign_target "$APP_PATH"
-"$ROOT_DIR/script/verify_release_signing.sh" --developer-id "$APP_PATH"
+"$ROOT_DIR/script/cicd/verify_release_signing.sh" --developer-id "$APP_PATH"
 printf 'Developer ID signing complete: %s\n' "$APP_PATH"

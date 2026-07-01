@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 MODE=local
 REQUIRE_STAPLED=0
 APP_PATH="$ROOT_DIR/build/Release/NagBar.app"
@@ -86,7 +86,7 @@ if [ "$MODE" = "developer-id" ]; then
   if [ "$REQUIRE_STAPLED" -eq 1 ]; then
     if ! xcrun stapler validate "$APP_PATH"; then
       printf 'Release app does not have a valid stapled notarization ticket.\n' >&2
-      printf 'Run notarization first with: ./script/notarize_release.sh --keychain-profile PROFILE\n' >&2
+      printf 'Run notarization first with: ./script/cicd/notarize_release.sh --keychain-profile PROFILE\n' >&2
       exit 1
     fi
   fi
