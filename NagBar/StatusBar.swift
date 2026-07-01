@@ -57,38 +57,37 @@ class StatusBar : NSObject {
     private func failedMonitoringInstancesView(_ failedMonitoringInstances: FailedMonitoringInstances) {
         
         if failedMonitoringInstances.count > 0 {
-            self.statusItemFailed = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+            let failedStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+            self.statusItemFailed = failedStatusItem
+
+            // we want to use the default NSCaution image, but we have to change its size
+            let cautionImage = NSImage(named: "NSCaution")
+            cautionImage?.size = CGSize(width: 18, height: 18)
+
+            failedStatusItem.button?.image = cautionImage
+            StatusItemAccessibility.applyFailedButtonMetadata(to: failedStatusItem.button)
+
+            let menu = NSMenu()
+
+            for (failedInstance, reason) in failedMonitoringInstances {
+                let menuText: String
+
+                switch reason {
+                case .wrongCredentials:
+                    menuText = String(format: NSLocalizedString("monitoringInstanceFailedWrongCredentials", comment: ""), failedInstance.name)
+                case .ssl:
+                    menuText = String(format: NSLocalizedString("monitoringInstanceFailedSSL", comment: ""), failedInstance.name)
+                default:
+                    menuText = String(format: NSLocalizedString("monitoringInstanceFailedUnknown", comment: ""), failedInstance.name)
+                }
+                menu.addItem(withTitle: menuText, action: nil, keyEquivalent: "")
+            }
+
+            failedStatusItem.menu = menu
         } else {
             self.statusItemFailed = nil
             return
         }
-        
-        // we want to use the default NSCaution image, but we have to change its size
-        
-        let cautionImage = NSImage(named: "NSCaution")
-        cautionImage?.size = CGSize(width: 18, height: 18)
-        
-        statusItemFailed!.button?.image = cautionImage
-        StatusItemAccessibility.applyFailedButtonMetadata(to: statusItemFailed!.button)
-        
-        let menu = NSMenu()
-        
-        for (failedInstance, reason) in failedMonitoringInstances {
-            
-            var menuText: String?
-            
-            switch reason {
-            case .wrongCredentials:
-                menuText = String(format: NSLocalizedString("monitoringInstanceFailedWrongCredentials", comment: ""), failedInstance.name)
-            case .ssl:
-                menuText = String(format: NSLocalizedString("monitoringInstanceFailedSSL", comment: ""), failedInstance.name)
-            default:
-                menuText = String(format: NSLocalizedString("monitoringInstanceFailedUnknown", comment: ""), failedInstance.name)
-            }
-            menu.addItem(withTitle: menuText!, action: nil, keyEquivalent: "")
-        }
-        
-        statusItemFailed!.menu = menu
     }
     
     func onClick() {
@@ -153,12 +152,13 @@ class StatusBar : NSObject {
         self.statusPanel?.panel?.close()
         self.statusPanel = nil
         
-        self.statusPanel = StatusPanel(results: results, panelBounds: panelBounds)
+        let statusPanel = StatusPanel(results: results, panelBounds: panelBounds)
+        self.statusPanel = statusPanel
         if let observer = self.observer as? NSObjectProtocol {
             Foundation.NotificationCenter.default.removeObserver(observer)
             self.observer = nil
         }
-        let observedPanel = self.statusPanel?.panel
+        let observedPanel = statusPanel.panel
         observer = Foundation.NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: observedPanel, queue: nil, using: {_ in
             // dismiss the panel only if another application is in foreground
             // otherwise the panel will be dismissed also on functions which open a modal inside the app
@@ -181,16 +181,12 @@ class StatusBar : NSObject {
             }
         )
         
-        self.statusPanel!.load()
+        statusPanel.load()
     }
 
     private func statusItemFrame() -> NSRect? {
         if let frame = self.statusItem.button?.window?.frame {
             return frame
-        }
-
-        if let window = self.statusItem.value(forKey: "window") as? NSWindow {
-            return window.frame
         }
 
         guard let visibleFrame = NSScreen.main?.visibleFrame else {

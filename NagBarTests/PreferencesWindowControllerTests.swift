@@ -310,6 +310,66 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertEqual(popup.titleOfSelectedItem, "Basso.aiff")
     }
 
+    func testAudibleAlarmsTabMapsEverySoundFileSettingToItsPopup() {
+        let cases: [(String, WritableKeyPath<AudibleAlarmsTabController, NSPopUpButton?>, String)] = [
+            ("audibleAlarmsCriticalSoundFile", \.audibleAlarmsCriticalSoundFile, "critical.aiff"),
+            ("audibleAlarmsWarningSoundFile", \.audibleAlarmsWarningSoundFile, "warning.aiff"),
+            ("audibleAlarmsDownSoundFile", \.audibleAlarmsDownSoundFile, "down.aiff"),
+            ("audibleAlarmsUnreachableSoundFile", \.audibleAlarmsUnreachableSoundFile, "unreachable.aiff"),
+            ("audibleAlarmsRecoverySoundFile", \.audibleAlarmsRecoverySoundFile, "recovery.aiff"),
+        ]
+
+        for (settingKey, popupKeyPath, fileName) in cases {
+            Settings().setString("/Library/Sounds/\(fileName)", forKey: settingKey)
+            var controller = AudibleAlarmsTabController()
+            let popup = NSPopUpButton()
+            popup.addItems(withTitles: ["Default", "Custom"])
+            controller[keyPath: popupKeyPath] = popup
+
+            controller.setPopupState(settingKey)
+
+            XCTAssertEqual(popup.indexOfSelectedItem, 1, settingKey)
+            XCTAssertEqual(popup.titleOfSelectedItem, fileName, settingKey)
+        }
+    }
+
+    func testAudibleAlarmsTabMapsEveryEmptySoundFileSettingToDefaultSelection() {
+        let cases: [(String, WritableKeyPath<AudibleAlarmsTabController, NSPopUpButton?>)] = [
+            ("audibleAlarmsCriticalSoundFile", \.audibleAlarmsCriticalSoundFile),
+            ("audibleAlarmsWarningSoundFile", \.audibleAlarmsWarningSoundFile),
+            ("audibleAlarmsDownSoundFile", \.audibleAlarmsDownSoundFile),
+            ("audibleAlarmsUnreachableSoundFile", \.audibleAlarmsUnreachableSoundFile),
+            ("audibleAlarmsRecoverySoundFile", \.audibleAlarmsRecoverySoundFile),
+        ]
+
+        for (settingKey, popupKeyPath) in cases {
+            Settings().setString("", forKey: settingKey)
+            var controller = AudibleAlarmsTabController()
+            let popup = NSPopUpButton()
+            popup.addItems(withTitles: ["Default", "Custom"])
+            popup.selectItem(withTitle: "Custom")
+            controller[keyPath: popupKeyPath] = popup
+
+            controller.setPopupState(settingKey)
+
+            XCTAssertEqual(popup.indexOfSelectedItem, 0, settingKey)
+            XCTAssertEqual(popup.titleOfSelectedItem, "Default", settingKey)
+        }
+    }
+
+    func testAudibleAlarmsTabIgnoresUnknownSoundFilePopupKey() {
+        let controller = AudibleAlarmsTabController()
+        let popup = NSPopUpButton()
+        popup.addItems(withTitles: ["Default", "Custom"])
+        popup.selectItem(withTitle: "Custom")
+        controller.audibleAlarmsCriticalSoundFile = popup
+
+        controller.setPopupState("unknownSoundFile")
+
+        XCTAssertEqual(popup.itemTitles, ["Default", "Custom"])
+        XCTAssertEqual(popup.titleOfSelectedItem, "Custom")
+    }
+
     func testAudibleAlarmsPopupDefaultSelectionClearsCustomSoundFile() {
         Settings().setString("/Library/Sounds/Basso.aiff", forKey: "audibleAlarmsCriticalSoundFile")
         let controller = AudibleAlarmsTabController()
@@ -321,6 +381,20 @@ final class PreferencesWindowControllerTests: XCTestCase {
         controller.popupButtonFileSelector(popup)
 
         XCTAssertEqual(popup.itemTitles, ["Default", "Custom"])
+        XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), "")
+    }
+
+    func testAudibleAlarmsPopupWithoutIdentifierDoesNotPersistSoundFile() {
+        Settings().setString("", forKey: "audibleAlarmsCriticalSoundFile")
+        let controller = AudibleAlarmsTabController()
+        let popup = NSPopUpButton()
+        popup.addItems(withTitles: ["Default", "Custom"])
+        popup.selectItem(withTitle: "Custom")
+        controller.soundFilePicker = { [URL(fileURLWithPath: "/Library/Sounds/Basso.aiff")] }
+
+        controller.popupButtonFileSelector(popup)
+
+        XCTAssertEqual(popup.titleOfSelectedItem, "Custom")
         XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), "")
     }
 

@@ -133,21 +133,24 @@ final class URLProviderTests: XCTestCase {
 
         XCTAssertEqual(hosts.count, 6)
         XCTAssertEqual(hosts[0].monitoringInstance?.name, LocalIcingaFallback.instanceName)
-        XCTAssertEqual(hosts[0].host, "web-de-smtp")
+        XCTAssertEqual(hosts[0].host, "gmx-pop")
         XCTAssertEqual(hosts[0].status, "DOWN")
-        XCTAssertEqual(hosts[0].statusInformation, "Connection refused")
+        XCTAssertEqual(hosts[0].statusInformation, "CRITICAL - TCP socket timeout after 10 seconds")
         XCTAssertTrue(hosts.contains { $0.host == "google-www" && $0.status == "DOWN" && $0.acknowledged })
         XCTAssertTrue(hosts.contains { $0.host == "web-de-pop" && $0.status == "DOWN" && $0.downtime })
+        XCTAssertTrue(hosts.contains { $0.host == "web-de-www" && $0.statusInformation == "HTTP CRITICAL: HTTP/1.1 503 Service Unavailable" })
         XCTAssertTrue(hosts.contains { $0.host == "yahoo-www" && $0.status == "DOWN" && $0.statusInformation == "CRITICAL - DNS lookup returned no records" })
-        XCTAssertEqual(services.count, 6)
-        XCTAssertEqual(services[0].host, "secure.nagios.com")
-        XCTAssertEqual(services[0].service, "Web Page Content")
+        XCTAssertEqual(services.count, 7)
+        XCTAssertEqual(services[0].host, "web-de-smtp")
+        XCTAssertEqual(services[0].service, "SMTP")
         XCTAssertEqual(services[0].status, "CRITICAL")
+        XCTAssertEqual(services[0].statusInformation, "Connection refused")
+        XCTAssertTrue(services.contains { $0.host == "secure.nagios.com" && $0.service == "Web Page Content" && $0.status == "CRITICAL" })
         XCTAssertTrue(services.contains { $0.host == "secure.nagios.com" && $0.service == "SSL Certificate" && $0.acknowledged })
         XCTAssertTrue(services.contains { $0.host == "www.twitter.com" && $0.service == "DNS IP Match" && $0.status == "CRITICAL" })
+        XCTAssertTrue(services.contains { $0.host == "www.twitter.com" && $0.service == "HTTP" && $0.status == "UNKNOWN" })
         XCTAssertTrue(services.contains { $0.host == "NOAA" && $0.service == "Weather Strafford New Hampshire" && $0.downtime })
         XCTAssertTrue(services.contains { $0.host == "localhost" && $0.service == "XI Software Updates" && $0.attempt == "3/3" })
-        XCTAssertTrue(services.contains { $0.host == "mail.example.net" && $0.service == "SMTP" && $0.status == "UNKNOWN" })
     }
 
     func testLocalIcingaFallbackDoesNotUseProductionDemoModeBranches() throws {
@@ -156,6 +159,7 @@ final class URLProviderTests: XCTestCase {
         let appSideSampleTerms = [
             "Connection refused",
             "CRITICAL - TCP socket timeout after 10 seconds",
+            "HTTP CRITICAL: HTTP/1.1 503 Service Unavailable",
             "HTTP CRITICAL: HTTP/1.1 200 OK - string not found",
             "CRITICAL - Certificate 'secure.nagios.com' expired",
             "DNS CRITICAL - expected '199.59.148.10,199.59.149.230'",

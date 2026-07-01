@@ -44,21 +44,26 @@ class AudibleAlarmsTabController: NSWindowController {
     @IBOutlet weak var audibleAlarmsRecoverySoundFile: NSPopUpButton!
     
     func setPopupState(_ propertyName: String) {
-        let popUpButton = self.value(forKey: propertyName) as! NSPopUpButton
+        guard let popUpButton = soundFilePopup(propertyName) else {
+            return
+        }
         
-        let filePath = Settings().valueForKey(propertyName) as! String
+        let filePath = Settings().stringForKey(propertyName) ?? ""
         
         if filePath == "" {
             popUpButton.selectItem(at: 0)
         } else {
             popUpButton.removeItem(at: 1)
-            let fileStringArray = filePath.components(separatedBy: "/")
-            popUpButton.insertItem(withTitle: fileStringArray.last!, at: 1)
+            popUpButton.insertItem(withTitle: URL(fileURLWithPath: filePath).lastPathComponent, at: 1)
             popUpButton.selectItem(at: 1)
         }
     }
     
     @IBAction func popupButtonFileSelector(_ sender: NSPopUpButton) {
+        guard let settingKey = sender.identifier?.rawValue else {
+            return
+        }
+
         if sender.titleOfSelectedItem != "Default" {
             let files = soundFilePicker()
             if !files.isEmpty {
@@ -66,12 +71,29 @@ class AudibleAlarmsTabController: NSWindowController {
                 sender.insertItem(withTitle: files[0].lastPathComponent, at: 1)
                 sender.selectItem(at: 1)
 
-                Settings().setString(files[0].path, forKey: sender.identifier!.rawValue)
+                Settings().setString(files[0].path, forKey: settingKey)
             }
         } else {
             sender.removeItem(at: 1)
             sender.insertItem(withTitle: "Custom", at: 1)
-            Settings().setString("", forKey: sender.identifier!.rawValue)
+            Settings().setString("", forKey: settingKey)
+        }
+    }
+
+    private func soundFilePopup(_ propertyName: String) -> NSPopUpButton? {
+        switch propertyName {
+        case "audibleAlarmsCriticalSoundFile":
+            return audibleAlarmsCriticalSoundFile
+        case "audibleAlarmsWarningSoundFile":
+            return audibleAlarmsWarningSoundFile
+        case "audibleAlarmsDownSoundFile":
+            return audibleAlarmsDownSoundFile
+        case "audibleAlarmsUnreachableSoundFile":
+            return audibleAlarmsUnreachableSoundFile
+        case "audibleAlarmsRecoverySoundFile":
+            return audibleAlarmsRecoverySoundFile
+        default:
+            return nil
         }
     }
 }

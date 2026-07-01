@@ -941,7 +941,7 @@ class FilterItemWindowControllerTests: XCTestCase {
     }
 
     func testEditingExistingHostFilterLoadsSelectedHostStatuses() {
-        let existing = FilterItem().initDefault(host: "router-.*", service: "", status: 12)
+        let existing = FilterItem().initDefault(host: "router-.*", service: "", status: 13)
         FilterItems().insert(key: "router-.*", value: existing)
         let fixture = FilterItemWindowControllerFixture()
         fixture.controller.filterItemKey = "router-.*"
@@ -952,7 +952,40 @@ class FilterItemWindowControllerTests: XCTestCase {
         XCTAssertEqual(fixture.service.stringValue, "")
         XCTAssertEqual(fixture.hostDown.state, .on)
         XCTAssertEqual(fixture.hostUnreachable.state, .on)
-        XCTAssertEqual(fixture.hostPending.state, .off)
+        XCTAssertEqual(fixture.hostPending.state, .on)
+        XCTAssertFalse(fixture.critical.isEnabled)
+        XCTAssertFalse(fixture.warning.isEnabled)
+        XCTAssertFalse(fixture.unknown.isEnabled)
+        XCTAssertFalse(fixture.pending.isEnabled)
+    }
+
+    func testEditingExistingServiceFilterLoadsSelectedServiceStatuses() {
+        let existing = FilterItem().initDefault(host: "web-01", service: "HTTP", status: 29)
+        FilterItems().insert(key: "web-01HTTP", value: existing)
+        let fixture = FilterItemWindowControllerFixture()
+        fixture.controller.filterItemKey = "web-01HTTP"
+
+        fixture.controller.awakeFromNib()
+
+        XCTAssertEqual(fixture.host.stringValue, "web-01")
+        XCTAssertEqual(fixture.service.stringValue, "HTTP")
+        XCTAssertEqual(fixture.critical.state, .on)
+        XCTAssertEqual(fixture.warning.state, .on)
+        XCTAssertEqual(fixture.unknown.state, .on)
+        XCTAssertEqual(fixture.pending.state, .on)
+        XCTAssertFalse(fixture.hostDown.isEnabled)
+        XCTAssertFalse(fixture.hostUnreachable.isEnabled)
+        XCTAssertFalse(fixture.hostPending.isEnabled)
+    }
+
+    func testEditingMissingFilterKeyLeavesNewFilterStateWithoutCrashing() {
+        let fixture = FilterItemWindowControllerFixture()
+        fixture.controller.filterItemKey = "missing-filter"
+
+        fixture.controller.awakeFromNib()
+
+        XCTAssertEqual(fixture.host.stringValue, "")
+        XCTAssertEqual(fixture.service.stringValue, "")
         XCTAssertFalse(fixture.critical.isEnabled)
         XCTAssertFalse(fixture.warning.isEnabled)
         XCTAssertFalse(fixture.unknown.isEnabled)

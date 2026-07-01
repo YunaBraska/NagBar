@@ -28,27 +28,26 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
     override func awakeFromNib() {
         
         // If filterItemKey is nil, then this is a new entry, we do not have to load values in the window and we just have to disable the service status buttons.
-        if filterItemKey == nil {
+        guard let filterItemKey = filterItemKey,
+              let filterItem = FilterItems().getByKey(filterItemKey) else {
             setServiceButtonsEnabled(false)
             return
         }
-        
-        let filterItem = FilterItems().getByKey(filterItemKey!)
-        
+
         // load host and service values
-        host.stringValue = filterItem!.host
-        service.stringValue = filterItem!.service
+        host.stringValue = filterItem.host
+        service.stringValue = filterItem.service
         
         // load the status values
         let serviceStatusMapping: Dictionary<Int, String> = [1: "pending", 4: "warning", 8: "unknown", 16: "critical"]
         let hostStatusMapping: Dictionary<Int, String> = [1: "hostPending", 4: "hostDown", 8: "hostUnreachable"]
         
         // if there is more than one letter in the "service" field, enable the service buttons
-        if filterItem!.service.count != 0 {
-            setStates(filterItem!, mapping: serviceStatusMapping)
+        if filterItem.service.count != 0 {
+            setStates(filterItem, mapping: serviceStatusMapping)
             setHostButtonsEnabled(false)
         } else {
-            setStates(filterItem!, mapping: hostStatusMapping)
+            setStates(filterItem, mapping: hostStatusMapping)
             setServiceButtonsEnabled(false)
         }
     }
@@ -57,7 +56,9 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
         var status = filterItem.status
         // loop over the sorted mapping - dictionaries do not keep the order of the keys
         for (key, value) in mapping.sorted(by: {$0.key > $1.key}) {
-            let object = self.value(forKey: value) as! NSButton
+            guard let object = statusButton(value) else {
+                continue
+            }
             if status/key >= 1 {
                 object.isEnabled = true
                 object.state = NSControl.StateValue.on
@@ -65,6 +66,27 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
             } else {
                 object.state = NSControl.StateValue.off
             }
+        }
+    }
+
+    private func statusButton(_ name: String) -> NSButton? {
+        switch name {
+        case "pending":
+            return pending
+        case "warning":
+            return warning
+        case "unknown":
+            return unknown
+        case "critical":
+            return critical
+        case "hostPending":
+            return hostPending
+        case "hostDown":
+            return hostDown
+        case "hostUnreachable":
+            return hostUnreachable
+        default:
+            return nil
         }
     }
     
@@ -114,15 +136,15 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
             
             let alert = NagBarAlert()
             
-            var informativeText: String?
-            
+            let informativeText: String
+
             if service.stringValue == "" {
                 informativeText = String(format:NSLocalizedString("filterAlreadyExistsHost", comment: ""), host.stringValue)
             } else {
                 informativeText = String(format:NSLocalizedString("filterAlreadyExistsService", comment: ""), host.stringValue, service.stringValue)
             }
             
-            alert.showWarningAlert(NSLocalizedString("filterAlreadyExists", comment: ""), informativeText: informativeText!)
+            alert.showWarningAlert(NSLocalizedString("filterAlreadyExists", comment: ""), informativeText: informativeText)
             
             return
         }
@@ -136,7 +158,13 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
         
         // The easiest way to update the status is by removing and re-addeding the FilterItem. This
         // also covers the case where the host or the service names are changed.
-        FilterItems().removeByKey(filterItemKey!)
+        guard let filterItemKey = filterItemKey else {
+            FilterItems().insert(key: key, value: filterItem)
+            window?.close()
+            return
+        }
+
+        FilterItems().removeByKey(filterItemKey)
         FilterItems().insert(key: key, value: filterItem)
         
         // After closing, an NSWindowWillCloseNotification is automatically posted and observed by FilterOptionsTabController
@@ -145,11 +173,12 @@ class FilterItemWindowController: NSWindowController, NSControlTextEditingDelega
     
     func controlTextDidChange(_ obj: Notification) {
         // react only on changed service field
-        if (obj.object as AnyObject).identifier != "service" {
+        guard let textField = obj.object as? NSTextField,
+              textField.identifier?.rawValue == "service" else {
             return
         }
         
-        if (obj.object as AnyObject).stringValue == "" {
+        if textField.stringValue == "" {
             setHostButtonsEnabled(true)
             setServiceButtonsEnabled(false)
         } else {

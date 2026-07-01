@@ -207,10 +207,6 @@ final class LocalIcingaFakeServer {
         return Data("""
         <html><body><form id="tableformhost"><div><table>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-de-smtp">web-de-smtp</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>DOWN</td><td>30-06-2026 12:00:00</td><td>35d 6h 48m 25s</td><td>4/4</td><td>Connection refused</td>
-          </tr>
-          <tr>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=gmx-pop">gmx-pop</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
             <td>DOWN</td><td>30-06-2026 12:03:00</td><td>133d 3h 59m 3s</td><td>1/10</td><td>CRITICAL - TCP socket timeout after 10 seconds</td>
           </tr>
@@ -227,8 +223,12 @@ final class LocalIcingaFakeServer {
             <td>DOWN</td><td>30-06-2026 12:07:00</td><td>5d 16h 7m 52s</td><td>1/10</td><td>CRITICAL - POP3 login failed</td>
           </tr>
           <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-de-www">web-de-www</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>DOWN</td><td>30-06-2026 12:08:00</td><td>0d 0h 27m 52s</td><td>4/10</td><td>HTTP CRITICAL: HTTP/1.1 503 Service Unavailable</td>
+          </tr>
+          <tr>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=yahoo-www">yahoo-www</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
-            <td>DOWN</td><td>30-06-2026 12:08:00</td><td>3d 0h 1m 24s</td><td>4/10</td><td>CRITICAL - DNS lookup returned no records</td>
+            <td>DOWN</td><td>30-06-2026 12:08:30</td><td>3d 0h 1m 24s</td><td>4/10</td><td>CRITICAL - DNS lookup returned no records</td>
           </tr>
         </table></div></form></body></html>
         """.utf8)
@@ -237,6 +237,11 @@ final class LocalIcingaFakeServer {
     private func serviceStatusPage() -> Data {
         return Data("""
         <html><body><form id="tableformservice"><div><table>
+          <tr>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=web-de-smtp">web-de-smtp</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=web-de-smtp&amp;service=SMTP">SMTP</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td>CRITICAL</td><td>30-06-2026 12:00:00</td><td>35d 6h 48m 25s</td><td>4/4</td><td>Connection refused</td>
+          </tr>
           <tr>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=secure.nagios.com">secure.nagios.com</a></td></tr></table></td></tr></table></td>
             <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=secure.nagios.com&amp;service=Web%20Page%20Content">Web Page Content</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
@@ -263,8 +268,8 @@ final class LocalIcingaFakeServer {
             <td>CRITICAL</td><td>30-06-2026 12:02:30</td><td>0d 0h 2m 15s</td><td>3/3</td><td>XI Updates CRITICAL: New XI version available</td>
           </tr>
           <tr>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=mail.example.net">mail.example.net</a></td></tr></table></td></tr></table></td>
-            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=mail.example.net&amp;service=SMTP">SMTP</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=1&amp;host=www.twitter.com">www.twitter.com</a></td></tr></table></td></tr></table></td>
+            <td><table><tr><td><table><tr><td><a href="extinfo.cgi?type=2&amp;host=www.twitter.com&amp;service=HTTP">HTTP</a></td></tr></table></td><td><table><tr><td></td></tr></table></td></tr></table></td>
             <td>UNKNOWN</td><td>30-06-2026 12:04:00</td><td>210d 2h 11m 52s</td><td>5/5</td><td>check_smtp: Invalid onredirect option -- usage output follows</td>
           </tr>
         </table></div></form></body></html>
