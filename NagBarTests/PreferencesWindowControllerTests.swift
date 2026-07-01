@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+import UniformTypeIdentifiers
 @testable import NagBar
 
 final class PreferencesWindowControllerTests: XCTestCase {
@@ -337,6 +338,38 @@ final class PreferencesWindowControllerTests: XCTestCase {
         XCTAssertEqual(popup.itemTitles, ["Default", "Submarine.aiff"])
         XCTAssertEqual(popup.titleOfSelectedItem, "Submarine.aiff")
         XCTAssertEqual(Settings().stringForKey("audibleAlarmsCriticalSoundFile"), selectedURL.path)
+    }
+
+    func testAudibleAlarmsPopupCustomSelectionDisplaysUnescapedFileName() throws {
+        let controller = AudibleAlarmsTabController()
+        let popup = NSPopUpButton()
+        popup.identifier = NSUserInterfaceItemIdentifier("audibleAlarmsCriticalSoundFile")
+        popup.addItems(withTitles: ["Default", "Custom"])
+        popup.selectItem(withTitle: "Custom")
+        let selectedURL = URL(fileURLWithPath: "/Library/Sounds/Warning Bell.aiff")
+        controller.soundFilePicker = { [selectedURL] }
+
+        controller.popupButtonFileSelector(popup)
+
+        XCTAssertEqual(popup.titleOfSelectedItem, "Warning Bell.aiff")
+    }
+
+    func testAudibleAlarmsSoundFilePanelAllowsSupportedAudioContentTypesOnly() throws {
+        let panel = AudibleAlarmsTabController.soundFilePanel()
+        let contentTypeIdentifiers = Set(panel.allowedContentTypes.map { $0.identifier })
+
+        XCTAssertTrue(contentTypeIdentifiers.contains(try XCTUnwrap(UTType(filenameExtension: "aiff")).identifier))
+        XCTAssertTrue(contentTypeIdentifiers.contains(try XCTUnwrap(UTType(filenameExtension: "wav")).identifier))
+        XCTAssertTrue(contentTypeIdentifiers.contains(try XCTUnwrap(UTType(filenameExtension: "mp3")).identifier))
+        XCTAssertFalse(contentTypeIdentifiers.contains(try XCTUnwrap(UTType(filenameExtension: "txt")).identifier))
+    }
+
+    func testAudibleAlarmsSoundFilePanelRejectsDirectoriesAndMultipleSelection() {
+        let panel = AudibleAlarmsTabController.soundFilePanel()
+
+        XCTAssertTrue(panel.canChooseFiles)
+        XCTAssertFalse(panel.canChooseDirectories)
+        XCTAssertFalse(panel.allowsMultipleSelection)
     }
 
     func testAudibleAlarmsPopupCustomSelectionCancelLeavesExistingSoundFile() {

@@ -8,18 +8,26 @@
 
 import Foundation
 import Cocoa
+import UniformTypeIdentifiers
 
 class AudibleAlarmsTabController: NSWindowController {
     var soundFilePicker: () -> [URL] = {
-        let fileSelectDialog = NSOpenPanel()
-        fileSelectDialog.canChooseFiles = true
-        fileSelectDialog.allowedFileTypes = ["aiff", "wav", "mp3"]
+        let fileSelectDialog = AudibleAlarmsTabController.soundFilePanel()
 
         if fileSelectDialog.runModal() == NSApplication.ModalResponse.OK {
             return fileSelectDialog.urls
         }
 
         return []
+    }
+
+    static func soundFilePanel() -> NSOpenPanel {
+        let fileSelectDialog = NSOpenPanel()
+        fileSelectDialog.canChooseFiles = true
+        fileSelectDialog.canChooseDirectories = false
+        fileSelectDialog.allowsMultipleSelection = false
+        fileSelectDialog.allowedContentTypes = ["aiff", "wav", "mp3"].compactMap { UTType(filenameExtension: $0) }
+        return fileSelectDialog
     }
     
     @IBOutlet weak var enableAudibleAlarms: NSButton!
@@ -55,8 +63,7 @@ class AudibleAlarmsTabController: NSWindowController {
             let files = soundFilePicker()
             if !files.isEmpty {
                 sender.removeItem(at: 1)
-                let fileStringArray = files[0].absoluteString.components(separatedBy: "/")
-                sender.insertItem(withTitle: fileStringArray.last!, at: 1)
+                sender.insertItem(withTitle: files[0].lastPathComponent, at: 1)
                 sender.selectItem(at: 1)
 
                 Settings().setString(files[0].path, forKey: sender.identifier!.rawValue)
