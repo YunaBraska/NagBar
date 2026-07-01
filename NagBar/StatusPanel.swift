@@ -36,10 +36,11 @@ class StatusPanel : NSObject {
             allColumnsWidth += column.width
         }
         
-        var xCoords = (self.panelBounds.origin.x + self.panelBounds.size.width - (allColumnsWidth))
-        
         // We always want to start from the leftmost part of the display, including the dock if its position is on the left side.
         let visibleScreenRect = NSScreen.main?.visibleFrame ?? self.panelBounds
+        let panelWidth = min(allColumnsWidth, visibleScreenRect.width)
+        var xCoords = (self.panelBounds.origin.x + self.panelBounds.size.width - panelWidth)
+
         if (xCoords < visibleScreenRect.origin.x) {
             xCoords = visibleScreenRect.origin.x
         }
@@ -55,10 +56,12 @@ class StatusPanel : NSObject {
         if (panelHeight > maxPanelHeight) {
             panelHeight = maxPanelHeight
         }
+
+        statusTable.frame = NSRect(x: 0, y: 0, width: allColumnsWidth, height: panelHeight)
         
         let yCoords = self.panelBounds.origin.y - CGFloat(panelHeight);
         
-        let frame = NSMakeRect(xCoords, yCoords, allColumnsWidth, panelHeight)
+        let frame = NSMakeRect(xCoords, yCoords, panelWidth, panelHeight)
         
         panel = StatusNSPanel(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         panel!.hasShadow = true
@@ -84,6 +87,9 @@ class StatusPanel : NSObject {
         scrollView.documentView = statusTable
         panel!.contentView?.addSubview(scrollView)
         statusTable.reloadData()
+        scrollView.contentView.scroll(to: .zero)
+        statusTable.scroll(.zero)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
     }
 }
 

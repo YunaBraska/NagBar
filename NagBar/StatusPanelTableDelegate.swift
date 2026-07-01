@@ -61,6 +61,7 @@ protocol SPTableColumnProtocol {
 
 class SPTableColumn : NSTableColumn, SPTableColumnProtocol  {
 
+    private static let textFont = NSFont.systemFont(ofSize: 12.0)
     var results: Array<MonitoringItem> = []
     
     required init(coder: NSCoder) {
@@ -86,7 +87,7 @@ class SPTableColumn : NSTableColumn, SPTableColumnProtocol  {
     }
     
     func initTable() {
-        let font = [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 16.0)]
+        let font = [NSAttributedString.Key.font: Self.textFont]
         
         var columnWidth = CGFloat(0)
         
@@ -110,11 +111,13 @@ class SPTableColumn : NSTableColumn, SPTableColumnProtocol  {
         
         let background = TableViewCellBackground(frame: NSMakeRect(0, 0, self.width, rowHeight), color: self.getColor(status: self.results[row].status))
         
-        let text = NSTextField(frame: NSMakeRect(0, 0, self.width, rowHeight))
+        let text = NSTextField(frame: NSMakeRect(2, 0, max(self.width - 4, 0), rowHeight))
         text.isEditable = false
         text.isBezeled = false
         text.isBordered = false
         text.drawsBackground = false
+        text.font = Self.textFont
+        text.textColor = .black
         text.tag = row
         
         text.stringValue = self.setValue(row)
