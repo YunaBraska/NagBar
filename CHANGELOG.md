@@ -8,6 +8,12 @@ security, upgrade notes, and verification evidence.
 
 ## [Unreleased]
 
+## [2026.07.1820613] - 2026-07-01
+
+### Changed
+
+- Release 2026.07.1820613.
+
 ## [2026.07.1820540] - 2026-07-01
 
 ### Changed
