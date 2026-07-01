@@ -15,11 +15,12 @@ import Cocoa
 
 class RecheckAction: NSObject, MenuAction {
     func action(_ sender: NSMenuItem) {
-        let monitoringItems = sender.representedObject as! Array<MonitoringItem>
-        
-        let monitoringInstance = monitoringItems[0].monitoringInstance
+        guard let monitoringItems = sender.representedObject as? Array<MonitoringItem>,
+              let monitoringInstance = monitoringItems.first?.monitoringInstance else {
+            return
+        }
 
-        let promise = monitoringInstance!.monitoringProcessor().command().recheck(monitoringItems)
+        let promise = monitoringInstance.monitoringProcessor().command().recheck(monitoringItems)
         CommandFeedback.shared.observe(.recheck, promise: promise)
     }
 }
@@ -29,13 +30,18 @@ class ScheduleDowntimeAction: NSObject, MenuAction {
     private var downtimeWindow: ScheduleDowntimeWindow?
     
     func action(_ sender: NSMenuItem) {
+        guard let monitoringItems = sender.representedObject as? Array<MonitoringItem>,
+              !monitoringItems.isEmpty else {
+            return
+        }
+
         if self.downtimeWindow == nil {
             self.downtimeWindow = ScheduleDowntimeWindow(windowNibName: "ScheduleDowntimeWindow")
         }
         
-        self.downtimeWindow!.monitoringItems = sender.representedObject as! Array<MonitoringItem>
+        self.downtimeWindow?.monitoringItems = monitoringItems
         
-        self.downtimeWindow!.showWindow(self)
+        self.downtimeWindow?.showWindow(self)
     }
 }
 
@@ -44,14 +50,18 @@ class AcknowledgeAction: NSObject, MenuAction {
     private var downtimeWindow: AcknowledgeWindow?
     
     func action(_ sender: NSMenuItem) {
+        guard let monitoringItems = sender.representedObject as? Array<MonitoringItem>,
+              !monitoringItems.isEmpty else {
+            return
+        }
         
         if self.downtimeWindow == nil {
             self.downtimeWindow = AcknowledgeWindow(windowNibName: "AcknowledgeWindow")
         }
         
-        self.downtimeWindow!.monitoringItems = sender.representedObject as! Array<MonitoringItem>
+        self.downtimeWindow?.monitoringItems = monitoringItems
         
-        self.downtimeWindow!.showWindow(self)
+        self.downtimeWindow?.showWindow(self)
     }
 }
 
@@ -68,7 +78,10 @@ class AddToFilterAction : NSObject, MenuAction {
 
     func action(_ sender: NSMenuItem) {
         if self.confirmAddToFilter() {
-            let monitoringItems = sender.representedObject as! Array<MonitoringItem>
+            guard let monitoringItems = sender.representedObject as? Array<MonitoringItem>,
+                  !monitoringItems.isEmpty else {
+                return
+            }
             self.addToFilter(monitoringItems)
         }
     }
@@ -79,32 +92,32 @@ class AddToFilterAction : NSObject, MenuAction {
         let filterItemHostStatus = ["UNREACHABLE": 8, "DOWN": 4, "PENDING" : 1]
         
         for monitoringItem in monitoringItems {
+            guard let statusCode = self.filterStatusCode(for: monitoringItem, serviceStatuses: filterItemServiceStatus, hostStatuses: filterItemHostStatus) else {
+                NSLog("Unsupported filter status \(monitoringItem.status) for \(monitoringItem.host) \(monitoringItem.service)")
+                continue
+            }
             
             let key = FilterItems.generateKey(monitoringItem.host, service: monitoringItem.service)
             
             // this is the case where the monitoring item already has a filter, but it is
             // for a different status
             if let filterItem = FilterItems().getByKey(key) {
-                if monitoringItem.monitoringItemType == .service {
-                    // There is no need to use bitwise operations, as if the value already exists, it won't be displayed in the table view at first place. But bitwise is the proper way to do it.
-                    FilterItems().updateStatus(filterItem: filterItem, status: filterItem.status | filterItemServiceStatus[monitoringItem.status]!)
-                } else {
-                    FilterItems().updateStatus(filterItem: filterItem, status: filterItem.status | filterItemHostStatus[monitoringItem.status]!)
-                }
+                // There is no need to use bitwise operations, as if the value already exists, it won't be displayed in the table view at first place. But bitwise is the proper way to do it.
+                FilterItems().updateStatus(filterItem: filterItem, status: filterItem.status | statusCode)
                 
             } else {
-                var statusCode = 0
-                
-                if monitoringItem.monitoringItemType == .service {
-                    statusCode = filterItemServiceStatus[monitoringItem.status]!
-                } else {
-                    statusCode = filterItemHostStatus[monitoringItem.status]!
-                }
-                
                 let filterItem = FilterItem().initDefault(host: monitoringItem.host, service: monitoringItem.service, status: statusCode)
                 
                 FilterItems().insert(key: key, value: filterItem)
             }
         }
+    }
+
+    private func filterStatusCode(for monitoringItem: MonitoringItem, serviceStatuses: [String: Int], hostStatuses: [String: Int]) -> Int? {
+        if monitoringItem.monitoringItemType == .service {
+            return serviceStatuses[monitoringItem.status]
+        }
+
+        return hostStatuses[monitoringItem.status]
     }
 }

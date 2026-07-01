@@ -914,6 +914,23 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(representedItems(menu.item(withTitle: "Add to filter")).count, 2)
     }
 
+    func testStatusPanelContextMenuSuppressesBackendCommandsWhenMonitoringInstanceIsMissing() throws {
+        let row = service("web-01", service: "HTTP", status: "CRITICAL")
+        row.monitoringInstance = nil
+        let table = initializedStatusPanelTable(rows: [row])
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+
+        let menu = try XCTUnwrap(table.menu(for: rightClickEvent()))
+
+        XCTAssertNil(menu.item(withTitle: "Login"))
+        XCTAssertNil(menu.item(withTitle: "Open in browser"))
+        XCTAssertNil(menu.item(withTitle: "Recheck"))
+        XCTAssertNil(menu.item(withTitle: "Schedule Downtime"))
+        XCTAssertNil(menu.item(withTitle: "Acknowledge"))
+        XCTAssertTrue(menu.item(withTitle: "Add to filter")?.target is AddToFilterAction)
+        XCTAssertEqual(representedItems(menu.item(withTitle: "Add to filter")).count, 1)
+    }
+
     func testStatusPanelContextMenuUsesSavedLoginActionAndRemoveLoginSettingsItem() throws {
         let row = service("web-01", service: "HTTP", status: "CRITICAL")
         ServerLogin().setLoginType(row, loginType: .rdp)
@@ -1067,6 +1084,30 @@ final class StatusItemViewTests: XCTestCase {
         OpenInBrowserAction().action(menuItem)
 
         XCTAssertEqual(openedURLs.map(\.absoluteString), ["http://%5B"])
+    }
+
+    func testOpenInBrowserActionIgnoresMissingMonitoringItems() {
+        var openedURLs: [URL] = []
+        let originalOpenURL = OpenInBrowserAction.openURL
+        OpenInBrowserAction.openURL = { openedURLs.append($0) }
+        defer { OpenInBrowserAction.openURL = originalOpenURL }
+
+        OpenInBrowserAction().action(NSMenuItem())
+
+        XCTAssertTrue(openedURLs.isEmpty)
+    }
+
+    func testOpenInBrowserActionIgnoresEmptyMonitoringItems() {
+        var openedURLs: [URL] = []
+        let originalOpenURL = OpenInBrowserAction.openURL
+        OpenInBrowserAction.openURL = { openedURLs.append($0) }
+        defer { OpenInBrowserAction.openURL = originalOpenURL }
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [MonitoringItem]()
+
+        OpenInBrowserAction().action(menuItem)
+
+        XCTAssertTrue(openedURLs.isEmpty)
     }
 
     func testStatusPanelContextMenuRightClickWithoutPriorSelectionUsesClickedRow() throws {

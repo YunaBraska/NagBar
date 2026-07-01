@@ -773,6 +773,20 @@ class FilterItemsProcessorTests: XCTestCase {
         XCTAssertEqual(FilterItems().getByKey("router-01")?.status, 9)
     }
 
+    func testAddToFilterIgnoresUnsupportedServiceStatus() {
+        AddToFilterAction().addToFilter([service("web-01", service: "HTTP", status: "OK")])
+
+        XCTAssertNil(FilterItems().getByKey("web-01HTTP"))
+        XCTAssertEqual(FilterItems().count(), 0)
+    }
+
+    func testAddToFilterIgnoresUnsupportedHostStatus() {
+        AddToFilterAction().addToFilter([host("router-01", status: "UP")])
+
+        XCTAssertNil(FilterItems().getByKey("router-01"))
+        XCTAssertEqual(FilterItems().count(), 0)
+    }
+
     func testAddToFilterMenuActionCreatesFilterAfterConfirmation() {
         let action = AddToFilterAction()
         action.confirmAddToFilter = { true }
@@ -782,6 +796,26 @@ class FilterItemsProcessorTests: XCTestCase {
         action.action(menuItem)
 
         XCTAssertEqual(FilterItems().getByKey("web-01HTTP")?.status, 16)
+    }
+
+    func testAddToFilterMenuActionIgnoresMissingMonitoringItemsAfterConfirmation() {
+        let action = AddToFilterAction()
+        action.confirmAddToFilter = { true }
+
+        action.action(NSMenuItem())
+
+        XCTAssertEqual(FilterItems().count(), 0)
+    }
+
+    func testAddToFilterMenuActionIgnoresEmptyMonitoringItemsAfterConfirmation() {
+        let action = AddToFilterAction()
+        action.confirmAddToFilter = { true }
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [MonitoringItem]()
+
+        action.action(menuItem)
+
+        XCTAssertEqual(FilterItems().count(), 0)
     }
 
     func testAddToFilterMenuActionLeavesFiltersUnchangedWhenCancelled() {

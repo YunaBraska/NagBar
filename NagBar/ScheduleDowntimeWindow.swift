@@ -26,18 +26,18 @@ class ScheduleDowntimeWindow : NSWindowController {
         hours.isEnabled = false
         minutes.isEnabled = false
         
-        let monitoringInstance = self.monitoringItems[0].monitoringInstance
-        
-        let time = monitoringInstance!.monitoringProcessor().command().getTime(self.monitoringItems)
-        
-        time.done { (arg) -> Void in
-            let (startTime, endTime) = arg
-            DispatchQueue.main.async {
-                self.startTime.stringValue = startTime
-                self.endTime.stringValue = endTime
+        if let monitoringInstance = self.monitoringItems.first?.monitoringInstance {
+            let time = monitoringInstance.monitoringProcessor().command().getTime(self.monitoringItems)
+
+            time.done { (arg) -> Void in
+                let (startTime, endTime) = arg
+                DispatchQueue.main.async {
+                    self.startTime.stringValue = startTime
+                    self.endTime.stringValue = endTime
+                }
+            }.catch { _ in
+                
             }
-        }.catch { _ in
-            
         }
         
         let hourFormatter = HourNumberFormatter()
@@ -45,7 +45,7 @@ class ScheduleDowntimeWindow : NSWindowController {
         let minuteFormatter = MinuteNumberFormatter()
         minutes.formatter = minuteFormatter
 
-        self.comment.stringValue = Settings().stringForKey("scheduleDowntimeDefaultComment")!
+        self.comment.stringValue = Settings().stringForKey("scheduleDowntimeDefaultComment") ?? ""
         applyAccessibilityMetadata()
     }
 
@@ -75,9 +75,12 @@ class ScheduleDowntimeWindow : NSWindowController {
             return
         }
         
-        let typeString = String(self.type.selectedItem!.tag)
-        
-        let monitoringInstance = self.monitoringItems[0].monitoringInstance!
+        guard let selectedType = self.type.selectedItem,
+              let monitoringInstance = self.monitoringItems.first?.monitoringInstance else {
+            return
+        }
+
+        let typeString = String(selectedType.tag)
         
         let promise = monitoringInstance.monitoringProcessor().command().scheduleDowntime(self.monitoringItems, from: self.startTime.stringValue, to: self.endTime.stringValue, comment: self.comment.stringValue, type: typeString, hours: self.hours.stringValue, minutes: self.minutes.stringValue)
         CommandFeedback.shared.observe(.scheduleDowntime, promise: promise)

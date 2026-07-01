@@ -78,7 +78,7 @@ class StatusPanelTable : NSTableView {
         }
         
         var monitoringItems: Array<MonitoringItem> = []
-        for i in self.selectedIndexes! {
+        for i in self.selectedIndexes ?? [] {
             guard let results = self.results, i >= 0, i < results.count else {
                 return nil
             }
@@ -103,15 +103,21 @@ class StatusPanelTable : NSTableView {
         if self.checkDifferentMonitoringInstances(monitoringItems: monitoringItems) {
             return menu
         }
+
+        guard let firstItem = monitoringItems.first,
+              let serverLogin = self.serverLogin,
+              let monitoringInstance = firstItem.monitoringInstance else {
+            return menu
+        }
         
-        menu.addItem(self.loadLoginSubmenu(monitoringItems[0]))
-        if serverLogin!.getLoginType(monitoringItems[0]) != nil {
-            menu.addItem(self.removeLoginSettingsMenu(monitoringItems[0]))
+        menu.addItem(self.loadLoginSubmenu(firstItem))
+        if serverLogin.getLoginType(firstItem) != nil {
+            menu.addItem(self.removeLoginSettingsMenu(firstItem))
         }
         
         menu.addItem(NSMenuItem.separator())
         
-        let capabilities = monitoringItems[0].monitoringInstance!.monitoringProcessor().command().capabilities()
+        let capabilities = monitoringInstance.monitoringProcessor().command().capabilities()
         
         if capabilities.contains(.openInBrowser) {
             menu.addItem(self.createSingleSelectionMenuItem(String(format:NSLocalizedString("openInBrowser", comment: "")), target: OpenInBrowserAction(), monitoringItems: monitoringItems))
@@ -135,8 +141,12 @@ class StatusPanelTable : NSTableView {
     private func checkDifferentMonitoringInstances(monitoringItems: Array<MonitoringItem>) -> Bool {
         var monitoringInstances: Array<String> = []
         for monitoringItem in monitoringItems {
-            if !monitoringInstances.contains(monitoringItem.monitoringInstance!.name) {
-                monitoringInstances.append(monitoringItem.monitoringInstance!.name)
+            guard let monitoringInstance = monitoringItem.monitoringInstance else {
+                return true
+            }
+
+            if !monitoringInstances.contains(monitoringInstance.name) {
+                monitoringInstances.append(monitoringInstance.name)
             }
         }
         
@@ -152,7 +162,7 @@ class StatusPanelTable : NSTableView {
     }
     
     private func removeLoginSettingsMenu(_ monitoringItem: MonitoringItem) -> NSMenuItem {
-        let removeLoginSettingsMenuItem = NSMenuItem(title: NSLocalizedString("removeLoginSettings", comment: ""), action: #selector(self.serverLogin!.removeLoginSettings(_:)), keyEquivalent: "")
+        let removeLoginSettingsMenuItem = NSMenuItem(title: NSLocalizedString("removeLoginSettings", comment: ""), action: #selector(ServerLogin.removeLoginSettings(_:)), keyEquivalent: "")
         removeLoginSettingsMenuItem.target = self.serverLogin
         removeLoginSettingsMenuItem.representedObject = monitoringItem
         
@@ -161,21 +171,18 @@ class StatusPanelTable : NSTableView {
     
     private func loadLoginSubmenu(_ monitoringItem: MonitoringItem) -> NSMenuItem {
         
-        if let loginType = serverLogin!.getLoginType(monitoringItem) {
-            var selector: Selector?
+        if let loginType = serverLogin?.getLoginType(monitoringItem) {
+            let selector: Selector
             switch loginType {
             case .ssh:
-                selector = #selector(self.serverLogin!.sshLogin(_:))
-                break
+                selector = #selector(ServerLogin.sshLogin(_:))
             case .sshiTerm:
-                selector = #selector(self.serverLogin!.sshITermLogin(_:))
-                break
+                selector = #selector(ServerLogin.sshITermLogin(_:))
             case .rdp:
-                selector = #selector(self.serverLogin!.rdpLogin(_:))
-                break
+                selector = #selector(ServerLogin.rdpLogin(_:))
             }
             
-            let login = self.loginMenuItem(monitoringItem, title: NSLocalizedString("login", comment: ""), selector: selector!)
+            let login = self.loginMenuItem(monitoringItem, title: NSLocalizedString("login", comment: ""), selector: selector)
             return login
         } else {
             let loginMenuItem = NSMenuItem(title: NSLocalizedString("login", comment: ""), action: nil, keyEquivalent: "")
@@ -189,15 +196,15 @@ class StatusPanelTable : NSTableView {
         let loginSubmenu = NSMenu()
         loginSubmenu.autoenablesItems = false
         
-        let sshLoginMenuItem = self.loginMenuItem(monitoringItem, title: "SSH", selector: #selector(self.serverLogin!.sshLogin(_:)))
+        let sshLoginMenuItem = self.loginMenuItem(monitoringItem, title: "SSH", selector: #selector(ServerLogin.sshLogin(_:)))
         loginSubmenu.addItem(sshLoginMenuItem)
         
         if self.checkITermInstalled() {
-            let sshITermLoginMenuItem = self.loginMenuItem(monitoringItem, title: "SSH (iTerm)", selector: #selector(self.serverLogin!.sshITermLogin(_:)))
+            let sshITermLoginMenuItem = self.loginMenuItem(monitoringItem, title: "SSH (iTerm)", selector: #selector(ServerLogin.sshITermLogin(_:)))
             loginSubmenu.addItem(sshITermLoginMenuItem)
         }
         
-        let rdpLoginMenuItem = self.loginMenuItem(monitoringItem, title: "RDP", selector: #selector(self.serverLogin!.rdpLogin(_:)))
+        let rdpLoginMenuItem = self.loginMenuItem(monitoringItem, title: "RDP", selector: #selector(ServerLogin.rdpLogin(_:)))
         loginSubmenu.addItem(rdpLoginMenuItem)
         
         return loginSubmenu
@@ -226,7 +233,7 @@ class StatusPanelTable : NSTableView {
     private func createSingleSelectionMenuItem(_ title: String, target: MenuAction, monitoringItems: Array<MonitoringItem>) -> NSMenuItem {
         let menuItem = self.createMultipleSelectionMenuItem(title, target: target, monitoringItems: monitoringItems)
         
-        if self.selectedIndexes!.count != 1 {
+        if self.selectedIndexes?.count != 1 {
             menuItem.isEnabled = false
         }
         

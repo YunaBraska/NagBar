@@ -23,7 +23,7 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 439 tests |
+| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 450 tests |
 | Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
@@ -31,6 +31,7 @@ Snapshot date: 2026-07-01.
 | CI workflow | Done | `.github/workflows/ci.yml` runs helper syntax checks, release helper path smoke, tests, Release build, and CocoaPods guardrails |
 | GitHub release automation | Done | Release `2026.07.1820737` completed through `.github/workflows/release.yml` with local/private signing; Developer ID notarization remains secret-dependent |
 | Coverage gate | Done | Xcode result metrics report 95.01% coverage for `NagBar.app`, above the 95% gate |
+| Status-panel command hardening | Done | Public menu/action regressions cover malformed or empty command input, nil monitoring instances, unsupported filter statuses, and pre-assignment command window loading |
 
 ## Supported Backends
 
@@ -99,7 +100,6 @@ without losing the next useful slices.
 | Public release proof | High | Run and record a Developer ID-signed, notarized, stapled release when Apple signing secrets are available. |
 | Clean-account smoke | High | Install the packaged app in a fresh macOS user account and record launch, status-item, Preferences, fake Icinga fallback, and Quit evidence. |
 | Backend compatibility | High | Add real-version smoke evidence for Nagios HTML CGI, Icinga HTML CGI, Icinga 2 API, Thruk JSON API, and Check_MK. Fake-server coverage exists, but real-version compatibility is still broader than the local stub can prove. |
-| Status-panel command hardening | Medium | Add public-entrypoint regression tests for malformed or empty menu action input, nil monitoring instances, command windows loaded before item assignment, and login submenu actions. Then replace reachable force-casts, first-item indexing, and force-unwraps in the menu/action/window path. |
 | Update indicator | Medium | Add a weekly release-check indicator that informs the user when a newer GitHub release exists. |
 | UI/UX/DX redesign | Medium | Redesign Preferences, status details, and empty/error states with verified light and dark mode screenshots. |
 | Accessibility evidence | Medium | Replace remaining manual menu-extra accessibility checks with repeatable evidence where macOS automation allows it. |

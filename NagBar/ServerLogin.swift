@@ -56,7 +56,9 @@ enum LoginType : Int {
     
     @objc
     func sshLogin(_ sender: NSMenuItem) {
-        let monitoringItem = sender.representedObject as! MonitoringItem
+        guard let monitoringItem = sender.representedObject as? MonitoringItem else {
+            return
+        }
         let loginMethod = sshLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .ssh)
@@ -67,7 +69,9 @@ enum LoginType : Int {
     
     @objc
     func sshITermLogin(_ sender: NSMenuItem) {
-        let monitoringItem = sender.representedObject as! MonitoringItem
+        guard let monitoringItem = sender.representedObject as? MonitoringItem else {
+            return
+        }
         let loginMethod = sshITermLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .sshiTerm)
@@ -78,7 +82,9 @@ enum LoginType : Int {
     
     @objc
     func rdpLogin(_ sender: NSMenuItem) {
-        let monitoringItem = sender.representedObject as! MonitoringItem
+        guard let monitoringItem = sender.representedObject as? MonitoringItem else {
+            return
+        }
         let loginMethod = rdpLoginMethodFactory()
         if self.getLoginType(monitoringItem) == nil {
             self.setLoginType(monitoringItem, loginType: .rdp)
@@ -104,7 +110,9 @@ enum LoginType : Int {
     
     @objc func removeLoginSettings(_ sender: NSMenuItem) {
         
-        let monitoringItem = sender.representedObject as! MonitoringItem
+        guard let monitoringItem = sender.representedObject as? MonitoringItem else {
+            return
+        }
 
         removeLoginSettings(forHost: monitoringItem.host)
     }
@@ -218,9 +226,11 @@ protocol ServerLoginMethod {
 
 class SSHLogin : ServerLoginMethod {
     static var executeScript: (String) -> NSDictionary? = { source in
-        let script = NSAppleScript(source: source)
+        guard let script = NSAppleScript(source: source) else {
+            return nil
+        }
         var err: NSDictionary? = nil
-        script!.executeAndReturnError(&err)
+        script.executeAndReturnError(&err)
         return err
     }
 
@@ -237,9 +247,11 @@ class SSHLogin : ServerLoginMethod {
 
 class SSHITermLogin : ServerLoginMethod {
     static var executeScript: (String) -> NSDictionary? = { source in
-        let script = NSAppleScript(source: source)
+        guard let script = NSAppleScript(source: source) else {
+            return nil
+        }
         var err: NSDictionary? = nil
-        script!.executeAndReturnError(&err)
+        script.executeAndReturnError(&err)
         return err
     }
 

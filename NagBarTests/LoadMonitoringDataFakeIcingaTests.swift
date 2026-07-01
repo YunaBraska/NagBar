@@ -639,6 +639,28 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         XCTAssertTrue(requests.contains { $0.method == "GET" && $0.path.hasSuffix("/cmd.cgi") && $0.authorization != nil })
     }
 
+    func testRecheckMenuActionIgnoresMalformedRepresentedObject() throws {
+        let server = try makeServer()
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = "not monitoring items"
+
+        RecheckAction().action(menuItem)
+
+        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        XCTAssertFalse(server.requests().contains { $0.method == "POST" })
+    }
+
+    func testRecheckMenuActionIgnoresEmptyMonitoringItems() throws {
+        let server = try makeServer()
+        let menuItem = NSMenuItem()
+        menuItem.representedObject = [MonitoringItem]()
+
+        RecheckAction().action(menuItem)
+
+        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        XCTAssertFalse(server.requests().contains { $0.method == "POST" })
+    }
+
     func testAcknowledgeMenuActionOpensWindowWithSelectedMonitoringItems() throws {
         let server = try makeServer()
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)

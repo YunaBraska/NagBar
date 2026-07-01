@@ -17,7 +17,7 @@ class AcknowledgeWindow: NSWindowController {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        self.comment.stringValue = Settings().stringForKey("acknowledgementDefaultComment")!
+        self.comment.stringValue = Settings().stringForKey("acknowledgementDefaultComment") ?? ""
         applyAccessibilityMetadata()
     }
 
@@ -36,7 +36,9 @@ class AcknowledgeWindow: NSWindowController {
             return
         }
         
-        let monitoringInstance = self.monitoringItems[0].monitoringInstance!
+        guard let monitoringInstance = self.monitoringItems.first?.monitoringInstance else {
+            return
+        }
         
         let promise = monitoringInstance.monitoringProcessor().command().acknowledge(self.monitoringItems, comment: self.comment.stringValue)
         CommandFeedback.shared.observe(.acknowledge, promise: promise)

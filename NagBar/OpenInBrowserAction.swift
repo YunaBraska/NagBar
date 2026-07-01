@@ -15,20 +15,25 @@ class OpenInBrowserAction: NSObject, MenuAction {
     }
     
     func action(_ sender: NSMenuItem) {
-        let monitoringItems = sender.representedObject as! Array<MonitoringItem>
-        
-        var url = URL(string: monitoringItems[0].itemUrl)
+        guard let monitoringItems = sender.representedObject as? Array<MonitoringItem>,
+              let monitoringItem = monitoringItems.first else {
+            return
+        }
+
+        var url = URL(string: monitoringItem.itemUrl)
         
         // the above sometimes fails with Thruk
         if url == nil {
-            url = URL(string: monitoringItems[0].itemUrl.addingPercentEncoding( withAllowedCharacters: NSCharacterSet.urlQueryAllowed)!)
+            url = monitoringItem.itemUrl
+                .addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
+                .flatMap { URL(string: $0) }
         }
         
-        if url == nil {
-            NSLog("Error parsing url with string " + monitoringItems[0].itemUrl)
+        guard let parsedURL = url else {
+            NSLog("Error parsing url with string " + monitoringItem.itemUrl)
             return
         }
         
-        OpenInBrowserAction.openURL(url!)
+        OpenInBrowserAction.openURL(parsedURL)
     }
 }
