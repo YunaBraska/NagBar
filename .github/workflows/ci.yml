@@ -25,8 +25,13 @@ jobs:
           test ! -f Podfile.lock
           ! grep -ER "Pods\\.xcodeproj|Pods_|Pods/" NagBar.xcworkspace NagBar.xcodeproj
 
-      - name: Check developer helper syntax
-        run: sh -n script/*.sh
+      - name: Check shell helper syntax
+        run: find script -name '*.sh' -exec sh -n {} +
+
+      - name: Check release helper paths
+        run: |
+          ./script/cicd/release_version.sh 2026.07.0010000
+          ./script/cicd/extract_changelog_release_notes.sh 2026.06.1812002 >/tmp/nagbar-release-notes.md
 
       - name: Test
         run: ./script/build_and_run.sh --test
@@ -36,7 +41,7 @@ jobs:
 
       - name: Check public release credential diagnostics
         run: |
-          ! ./script/sign_release.sh 2>signing.err
+          ! ./script/cicd/sign_release.sh 2>signing.err
           grep -F "Developer ID identity is required for public signing." signing.err
-          ! ./script/notarize_release.sh --app build/Release/NagBar.app 2>notary.err
+          ! ./script/cicd/notarize_release.sh --app build/Release/NagBar.app 2>notary.err
           grep -F "Apple notarization credentials are required." notary.err

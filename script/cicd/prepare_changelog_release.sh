@@ -6,9 +6,9 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   exit 2
 fi
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 CHANGELOG="$ROOT_DIR/CHANGELOG.md"
-VERSION=$("$ROOT_DIR/script/release_version.sh" "$1")
+VERSION=$("$ROOT_DIR/script/cicd/release_version.sh" "$1")
 RELEASE_DATE=${2:-$(date -u '+%Y-%m-%d')}
 TMP_FILE=$(mktemp "${TMPDIR:-/tmp}/nagbar-changelog.XXXXXX")
 

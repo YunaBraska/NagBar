@@ -1,115 +1,72 @@
 # Developer Guide
 
-Status: In progress.
+Status: Active.
 
 ## Local Setup
 
-Install:
+Requirements:
 
-- macOS 12.4 or newer build target
+- macOS 12.4 or newer
 - Xcode
 
-Then run:
+Open the workspace:
 
 ```sh
 open NagBar.xcworkspace
 ```
 
-## Build
+## Daily Commands
 
-```sh
-./script/build_and_run.sh --release-build
-```
+| Task | Command |
+| --- | --- |
+| Build and launch | `./script/build_and_run.sh --verify` |
+| Full test suite | `./script/build_and_run.sh --test` |
+| Release build | `./script/build_and_run.sh --release-build` |
+| Runtime smoke | `./script/build_and_run.sh --smoke` |
+| Local acceptance | `./script/build_and_run.sh --acceptance` |
+| Local/private package | `./script/build_and_run.sh --package` |
+| Logs | `./script/build_and_run.sh --logs` |
+| Telemetry | `./script/build_and_run.sh --telemetry` |
+| Debug under lldb | `./script/build_and_run.sh --debug` |
 
-## Build And Run
+Release-only helpers live under `script/cicd/`.
 
-```sh
-./script/build_and_run.sh --verify
-```
-
-The configured local run action points at the same command through
-`.codex/environments/environment.toml`.
-
-## Test
-
-```sh
-./script/build_and_run.sh --test
-```
-
-Focused fake-server tests:
+Focused fake-server coverage:
 
 ```sh
 xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
 ```
 
-## Release Build
-
-```sh
-./script/build_and_run.sh --release-build
-```
-
-The current release build is local-sign only. Do not treat it as a public
-distribution artifact until `docs/PRODUCTION_READINESS.md` gates are met.
-
-## Test Strategy
+## Testing Priorities
 
 Preferred order:
 
-1. Public-entrypoint tests.
+1. Public entrypoints.
 2. Fake local HTTP servers for backend protocol behavior.
-3. Parser fixture tests for backend data formats.
-4. Persistence tests with isolated in-memory stores.
-5. UI/runtime smoke for release builds.
+3. Parser fixtures for backend data shapes.
+4. Persistence tests with isolated storage or fake Keychain boundaries.
+5. Live runtime smoke for Release builds.
 
 Avoid private-helper tests unless there is no practical public boundary.
 
-## Dependency Strategy
+## Documentation Ownership
 
-Current remaining pods: none.
+- Update `docs/PROJECT_STATUS.md` when behavior, verification evidence, or release gates change.
+- Update `docs/USER_GUIDE.md` when user workflow changes.
+- Update `docs/RELEASE.md` when packaging, signing, or release automation changes.
+- Update `docs/DEPENDENCIES.md` and `NOTICE` when dependency or asset provenance changes.
+- Update ADRs for architecture decisions or long-lived tradeoffs.
 
-The maintained dependency inventory lives in `docs/DEPENDENCIES.md`.
-
-Replacement rules:
-
-1. Add or tighten behavior tests first.
-2. Replace one dependency category at a time.
-3. Run focused tests, full tests, and release build after each replacement.
-4. Update `ROADMAP.md`, `TEST_MAP.md`, and ADRs with the result.
-
-## Runtime Smoke
-
-```sh
-./script/status_item_smoke.sh
-```
-
-## One-Command Verification
-
-```sh
-./script/build_and_run.sh --acceptance
-```
-
-This runs the full macOS test suite, builds Release, then runs the live
-status-item smoke. Use it before handing a milestone to review.
-
-Additional workflow modes:
-
-```sh
-./script/build_and_run.sh --logs
-./script/build_and_run.sh --telemetry
-./script/build_and_run.sh --debug
-```
+## Smoke Notes
 
 The live smoke requires Accessibility permission for the invoking terminal or
-runner process. It builds and launches the Release app with isolated storage
-and defaults, verifies the menu-bar status item through System Events, opens
-the status panel, reaches the Monitoring Instances editor from status-item
-Settings, verifies the Preferences window is onscreen, and quits
-through the status-item menu.
+runner process. It launches the Release app with isolated storage and defaults,
+verifies the status-item menu through System Events, opens the status panel,
+opens Preferences through the status item, and quits through the same menu.
 
-Automated smoke opens the menu extra with Accessibility `AXPress`, then verifies
-named menu-item activation inside the opened menu. Full global keyboard focus into
-macOS menu extras is controlled by system keyboard settings and belongs in
-manual accessibility QA.
+Automated smoke uses `AXPress` on the menu extra and validates named menu items
+after the menu opens. Full global keyboard focus into macOS menu extras is still
+a manual accessibility check because system settings control that path.
 
-Screenshots are opt-in maintainer artifacts. Do not publish full-screen captures
-without checking for private desktop contents.
+Do not publish full-screen screenshots without checking for private desktop
+contents first.

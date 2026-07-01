@@ -7,8 +7,8 @@ Thanks for working on NagBar.
 - Keep behavior changes covered by tests.
 - Prefer public-entrypoint tests over private-helper tests.
 - Use fake local HTTP servers for backend protocol behavior.
-- Update `TEST_MAP.md` when adding, removing, or changing test coverage.
-- Update `SPEC.md`, `ROADMAP.md`, or ADRs when product scope or architecture changes.
+- Update `docs/PROJECT_STATUS.md` when behavior, verification evidence, or release status changes.
+- Update ADRs when architecture or long-lived tradeoffs change.
 - Avoid adding dependencies without an ADR.
 
 ## Local Workflow
