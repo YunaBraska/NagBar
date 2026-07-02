@@ -14,10 +14,9 @@ class InitConfig {
         let settings = Settings()
 
         settings.seedMissingDefaults()
-        NagBarDiagnostics.logUpgradeReport(UpgradeCompatibility.writeReportIfNeeded())
-        
-        if settings.stringForKey("flashStatusBarType") == "1" {
-            settings.setString("2", forKey: "flashStatusBarType")
+
+        if settings.integerForKey("flashStatusBarType") == 1 {
+            settings.setInteger(2, forKey: "flashStatusBarType")
         }
     }
 }

@@ -37,24 +37,14 @@ final class NagBarDiagnosticsTests: XCTestCase {
     }
 
     func testRuntimeSnapshotReportsLocalFallbackWithoutStartingFakeServerThroughEnabledList() {
-        let report = UpgradeCompatibilityReport(
-            legacyRealmFiles: [],
-            currentJSONFiles: [],
-            requiresManualReconfiguration: false,
-            message: "No legacy Realm configuration was found."
-        )
-
         let snapshot = NagBarRuntimeSnapshot.capture(
             bundle: Bundle(for: NagBarDiagnosticsTests.self),
-            monitoringInstances: MonitoringInstances(),
-            upgradeReport: report
+            monitoringInstances: MonitoringInstances()
         )
 
         XCTAssertEqual(snapshot.configuredRemoteCount, 0)
         XCTAssertEqual(snapshot.enabledConfiguredRemoteCount, 0)
         XCTAssertTrue(snapshot.usingLocalFallback)
-        XCTAssertEqual(snapshot.legacyRealmFileCount, 0)
-        XCTAssertFalse(snapshot.requiresManualReconfiguration)
         XCTAssertTrue(snapshot.applicationSupportPath.hasSuffix("ApplicationSupport/com.volendavidov.NagBar"))
     }
 
@@ -77,17 +67,9 @@ final class NagBarDiagnosticsTests: XCTestCase {
         )
         MonitoringInstances().insert(key: enabled.name, value: enabled)
         MonitoringInstances().insert(key: disabled.name, value: disabled)
-        let report = UpgradeCompatibilityReport(
-            legacyRealmFiles: ["/tmp/default.realm"],
-            currentJSONFiles: [],
-            requiresManualReconfiguration: true,
-            message: "Manual reconfiguration required."
-        )
-
         let snapshot = NagBarRuntimeSnapshot.capture(
             bundle: Bundle(),
-            monitoringInstances: MonitoringInstances(),
-            upgradeReport: report
+            monitoringInstances: MonitoringInstances()
         )
 
         XCTAssertEqual(snapshot.bundleIdentifier, "com.volendavidov.NagBar")
@@ -96,8 +78,6 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertEqual(snapshot.configuredRemoteCount, 2)
         XCTAssertEqual(snapshot.enabledConfiguredRemoteCount, 1)
         XCTAssertFalse(snapshot.usingLocalFallback)
-        XCTAssertEqual(snapshot.legacyRealmFileCount, 1)
-        XCTAssertTrue(snapshot.requiresManualReconfiguration)
     }
 
     func testApplicationSupportDirectoryUsesTemporaryStorageDuringHostedTests() {
@@ -137,7 +117,7 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertEqual(directory.path, "/tmp/nagbar-tests/NagBarTests/ApplicationSupport")
     }
 
-    func testStartupEventIncludesVersionStorageRemoteAndUpgradeSignals() {
+    func testStartupEventIncludesVersionStorageAndRemoteSignals() {
         let snapshot = NagBarRuntimeSnapshot(
             bundleIdentifier: "com.volendavidov.NagBar",
             version: "1.3.7",
@@ -146,9 +126,7 @@ final class NagBarDiagnosticsTests: XCTestCase {
             applicationSupportPath: "/tmp/NagBar/ApplicationSupport/com.volendavidov.NagBar",
             configuredRemoteCount: 2,
             enabledConfiguredRemoteCount: 1,
-            usingLocalFallback: false,
-            legacyRealmFileCount: 3,
-            requiresManualReconfiguration: true
+            usingLocalFallback: false
         )
 
         let event = NagBarDiagnostics.startupEvent(snapshot)
@@ -160,25 +138,6 @@ final class NagBarDiagnosticsTests: XCTestCase {
         XCTAssertTrue(event.message.contains("configuredRemotes=2"))
         XCTAssertTrue(event.message.contains("enabledRemotes=1"))
         XCTAssertTrue(event.message.contains("localFallback=false"))
-        XCTAssertTrue(event.message.contains("legacyRealmFiles=3"))
-        XCTAssertTrue(event.message.contains("manualReconfiguration=true"))
-    }
-
-    func testUpgradeEventSummarizesCutoffReportWithoutDumpingFileContents() {
-        let report = UpgradeCompatibilityReport(
-            legacyRealmFiles: ["/tmp/default.realm"],
-            currentJSONFiles: ["/tmp/monitoring-instances.json"],
-            requiresManualReconfiguration: false,
-            message: "Legacy Realm configuration was found and left untouched."
-        )
-
-        let event = NagBarDiagnostics.upgradeEvent(report)
-
-        XCTAssertEqual(event.category, .storage)
-        XCTAssertTrue(event.message.contains("legacyRealmFiles=1"))
-        XCTAssertTrue(event.message.contains("currentJSONFiles=1"))
-        XCTAssertTrue(event.message.contains("manualReconfiguration=false"))
-        XCTAssertFalse(event.message.contains("/tmp/default.realm"))
     }
 
     func testRefreshFailureEventIncludesInstanceTypeReasonAndErrorIdentity() {
@@ -228,12 +187,6 @@ final class NagBarDiagnosticsTests: XCTestCase {
             password: "secret",
             enabled: 1
         )
-        let report = UpgradeCompatibilityReport(
-            legacyRealmFiles: ["/tmp/default.realm"],
-            currentJSONFiles: [],
-            requiresManualReconfiguration: true,
-            message: "Manual reconfiguration required."
-        )
         let error = NSError(domain: NSURLErrorDomain, code: -1012, userInfo: nil)
 
         NagBarDiagnostics.logStartup(NagBarRuntimeSnapshot(
@@ -244,16 +197,7 @@ final class NagBarDiagnosticsTests: XCTestCase {
             applicationSupportPath: "/tmp/support",
             configuredRemoteCount: 1,
             enabledConfiguredRemoteCount: 1,
-            usingLocalFallback: false,
-            legacyRealmFileCount: 1,
-            requiresManualReconfiguration: true
-        ))
-        NagBarDiagnostics.logUpgradeReport(report)
-        NagBarDiagnostics.logUpgradeReport(UpgradeCompatibilityReport(
-            legacyRealmFiles: [],
-            currentJSONFiles: [],
-            requiresManualReconfiguration: false,
-            message: "No legacy Realm configuration was found."
+            usingLocalFallback: false
         ))
         NagBarDiagnostics.logRefreshFailure(instance: instance, reason: .wrongCredentials, error: error)
         NagBarDiagnostics.logRefreshFinished(itemCount: 3, failedCount: 0)

@@ -145,16 +145,6 @@ enum LoginType : Int {
         saveLoginItem(serverLoginItem)
     }
 
-    func importLegacyItems(_ legacyItems: [ServerLoginItem]) {
-        withStorageLock {
-            if !loadLoginItemsWithoutLock().isEmpty {
-                return
-            }
-
-            saveLoginItemsWithoutLock(legacyItems)
-        }
-    }
-
     func resetStorage() {
         withStorageLock {
             try? FileManager.default.removeItem(at: storageURL)

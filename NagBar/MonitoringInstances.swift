@@ -183,16 +183,6 @@ class MonitoringInstances {
         }
     }
 
-    func importLegacyItems(_ legacyItems: [MonitoringInstance]) {
-        withStorageLock {
-            if !loadItemsWithoutLock().isEmpty {
-                return
-            }
-
-            saveItemsWithoutLock(legacyItems)
-        }
-    }
-
     func resetStorage() {
         withStorageLock {
             try? FileManager.default.removeItem(at: storageURL)

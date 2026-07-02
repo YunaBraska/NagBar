@@ -20,8 +20,9 @@ class RecheckAction: NSObject, MenuAction {
             return
         }
 
-        let promise = monitoringInstance.monitoringProcessor().command().recheck(monitoringItems)
-        CommandFeedback.shared.observe(.recheck, promise: promise)
+        CommandFeedback.shared.observe(.recheck) {
+            try await monitoringInstance.monitoringProcessor().command().recheck(monitoringItems)
+        }
     }
 }
 

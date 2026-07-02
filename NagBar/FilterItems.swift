@@ -83,14 +83,6 @@ class FilterItems {
         saveItems(items)
     }
 
-    func importLegacyItems(_ legacyItems: [FilterItem]) {
-        if count() > 0 {
-            return
-        }
-
-        saveItems(legacyItems)
-    }
-
     func resetStorage() {
         try? FileManager.default.removeItem(at: storageURL)
     }

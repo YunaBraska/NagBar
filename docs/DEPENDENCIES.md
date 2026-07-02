@@ -17,12 +17,12 @@ no `Podfile`, `Podfile.lock`, or `Pods.xcodeproj` in the supported build path.
 | Previous dependency | Status | Replacement |
 | --- | --- | --- |
 | Alamofire | Removed | Foundation `URLSession` through `ConnectionManager` |
-| PromiseKit | Removed | App-local `Promise` compatibility layer |
+| PromiseKit | Removed | Swift structured concurrency (`async`/`await`) |
 | RealmSwift | Removed | `UserDefaults` and JSON storage under Application Support |
 | SAMKeychain | Removed | Local `Security.framework` wrapper |
 | SwiftyJSON | Removed | `JSONSerialization` through `JSONValue` |
 | hpple | Removed | App-local tolerant HTML row parser |
-| CocoaPods | Removed | Xcode workspace/project build with no pod install step |
+| CocoaPods | Removed | Plain Xcode project build with no pod install step |
 
 ## Maintainer Checklist
 

@@ -164,11 +164,12 @@ final class CheckMKHTTPClientFakeServerTests: XCTestCase {
         var loadedData: Data?
         var loadedError: Error?
 
-        client.get(url).done { data in
-            loadedData = data
-            expectation.fulfill()
-        }.catch { error in
-            loadedError = error
+        Task {
+            do {
+                loadedData = try await client.get(url)
+            } catch {
+                loadedError = error
+            }
             expectation.fulfill()
         }
 
@@ -180,10 +181,8 @@ final class CheckMKHTTPClientFakeServerTests: XCTestCase {
         let expectation = self.expectation(description: "Check connection")
         var connected: Bool?
 
-        client.checkConnection().done { value in
-            connected = value
-            expectation.fulfill()
-        }.catch { _ in
+        Task {
+            connected = await client.checkConnection()
             expectation.fulfill()
         }
 

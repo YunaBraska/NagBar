@@ -977,10 +977,8 @@ class MonitoringInstancesTest: XCTestCase {
         let instance = LocalIcingaFallback.instance()
         var checkResult = false
 
-        instance.monitoringProcessor().httpClient().checkConnection().done { result in
-            checkResult = result
-            expectation.fulfill()
-        }.catch { _ in
+        Task {
+            checkResult = await instance.monitoringProcessor().httpClient().checkConnection()
             expectation.fulfill()
         }
 
@@ -1020,10 +1018,12 @@ class MonitoringInstancesTest: XCTestCase {
         let expectation = self.expectation(description: "Reject unsupported Check_MK POST")
         var rejectedError: NSError?
 
-        CheckMKHTTPClient(monitoringInstance).post("https://monitoring.example/site/check_mk/unsupported.py", postData: ["cmd": "acknowledge"]).done { _ in
-            expectation.fulfill()
-        }.catch { error in
-            rejectedError = error as NSError
+        Task {
+            do {
+                _ = try await CheckMKHTTPClient(monitoringInstance).post("https://monitoring.example/site/check_mk/unsupported.py", postData: ["cmd": "acknowledge"])
+            } catch {
+                rejectedError = error as NSError
+            }
             expectation.fulfill()
         }
 
@@ -1184,7 +1184,6 @@ class MonitoringInstancesTest: XCTestCase {
         PasswordStore.sharedInstance.removeAll()
 
         Settings().seedMissingDefaults()
-        UpgradeCompatibility.writeReportIfNeeded()
 
         let reloadedRemote = try XCTUnwrap(MonitoringInstances().getByKey("surviving-remote"))
         let reloadedFilter = try XCTUnwrap(FilterItems().getByKey("web-.*Disk"))
@@ -1198,81 +1197,6 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertEqual(ServerLogin().getUsername(monitoringItem), "deploy")
         XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .rdp)
         XCTAssertEqual(Settings().integerForKey("refreshInterval"), 45)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: UpgradeCompatibility.reportURL().path))
-    }
-
-    func testLegacyRealmOnlyConfigurationWritesManualReconfigurationReport() throws {
-        let applicationSupportDirectory = try XCTUnwrap(NagBarStorage.applicationSupportDirectoryOverride)
-        let bundleDirectory = NagBarStorage.bundleStorageDirectory()
-        try FileManager.default.createDirectory(at: bundleDirectory, withIntermediateDirectories: true)
-        let legacyRealmURL = bundleDirectory.appendingPathComponent("default.realm", isDirectory: false)
-        try Data("legacy realm placeholder".utf8).write(to: legacyRealmURL)
-
-        let report = UpgradeCompatibility.writeReportIfNeeded()
-        let reportData = try Data(contentsOf: UpgradeCompatibility.reportURL())
-        let decodedReport = try JSONDecoder().decode(UpgradeCompatibilityReport.self, from: reportData)
-
-        XCTAssertTrue(applicationSupportDirectory.path.hasSuffix("ApplicationSupport"))
-        XCTAssertTrue(report.requiresManualReconfiguration)
-        XCTAssertTrue(report.legacyRealmFiles.contains(legacyRealmURL.path))
-        XCTAssertTrue(report.currentJSONFiles.isEmpty)
-        XCTAssertTrue(report.message.contains("Reconfigure monitoring instances in Settings"))
-        XCTAssertEqual(decodedReport.requiresManualReconfiguration, true)
-        XCTAssertEqual(decodedReport.legacyRealmFiles, report.legacyRealmFiles)
-        XCTAssertEqual(MonitoringInstances().getAll().count, 0)
-        XCTAssertNotNil(MonitoringInstances().getAllEnabled()[LocalIcingaFallback.instanceName])
-    }
-
-    func testLegacyRealmDetectionCoversRawApplicationSupportLocation() throws {
-        let applicationSupportDirectory = try XCTUnwrap(NagBarStorage.applicationSupportDirectoryOverride)
-        try FileManager.default.createDirectory(at: applicationSupportDirectory, withIntermediateDirectories: true)
-        let legacyRealmURL = applicationSupportDirectory.appendingPathComponent("default.realm", isDirectory: false)
-        try Data("legacy realm placeholder".utf8).write(to: legacyRealmURL)
-
-        let report = UpgradeCompatibility.writeReportIfNeeded()
-
-        XCTAssertTrue(report.requiresManualReconfiguration)
-        XCTAssertTrue(report.legacyRealmFiles.contains(legacyRealmURL.path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: UpgradeCompatibility.reportURL().path))
-    }
-
-    func testLegacyRealmWithCurrentJSONUsesCurrentConfigurationAndReportsNoManualReconfiguration() throws {
-        seedSavePassword(false)
-        let bundleDirectory = NagBarStorage.bundleStorageDirectory()
-        try FileManager.default.createDirectory(at: bundleDirectory, withIntermediateDirectories: true)
-        let legacyRealmURL = bundleDirectory.appendingPathComponent("default.realm", isDirectory: false)
-        try Data("legacy realm placeholder".utf8).write(to: legacyRealmURL)
-        let currentRemote = storedMonitoringInstance(name: "current-json-remote", enabled: 1)
-
-        let report = UpgradeCompatibility.writeReportIfNeeded()
-        let enabled = MonitoringInstances().getAllEnabled()
-
-        XCTAssertFalse(report.requiresManualReconfiguration)
-        XCTAssertTrue(report.legacyRealmFiles.contains(legacyRealmURL.path))
-        XCTAssertTrue(report.currentJSONFiles.contains(try XCTUnwrap(MonitoringInstances.storageURLOverride).path))
-        XCTAssertEqual(enabled.count, 1)
-        XCTAssertNotNil(enabled[currentRemote.name])
-        XCTAssertNil(enabled[LocalIcingaFallback.instanceName])
-    }
-
-    func testLegacyRealmWithMalformedCurrentMonitoringJSONRequiresManualReconfiguration() throws {
-        seedSavePassword(false)
-        let bundleDirectory = NagBarStorage.bundleStorageDirectory()
-        try FileManager.default.createDirectory(at: bundleDirectory, withIntermediateDirectories: true)
-        let legacyRealmURL = bundleDirectory.appendingPathComponent("default.realm", isDirectory: false)
-        try Data("legacy realm placeholder".utf8).write(to: legacyRealmURL)
-        let storageURL = try XCTUnwrap(MonitoringInstances.storageURLOverride)
-        try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("{ malformed monitoring json".utf8).write(to: storageURL)
-
-        let report = UpgradeCompatibility.writeReportIfNeeded()
-        let enabled = MonitoringInstances().getAllEnabled()
-
-        XCTAssertTrue(report.requiresManualReconfiguration)
-        XCTAssertTrue(report.legacyRealmFiles.contains(legacyRealmURL.path))
-        XCTAssertTrue(report.currentJSONFiles.contains(storageURL.path))
-        XCTAssertTrue(report.message.contains("no valid current monitoring remote configuration"))
-        XCTAssertNotNil(enabled[LocalIcingaFallback.instanceName])
     }
 
     func testMonitoringInstanceDuplicateNamesCollapseToLastStoredInstance() {
@@ -1472,35 +1396,6 @@ class MonitoringInstancesTest: XCTestCase {
         XCTAssertTrue(sshRecorder.hosts.isEmpty)
         XCTAssertTrue(iTermRecorder.hosts.isEmpty)
         XCTAssertTrue(rdpRecorder.hosts.isEmpty)
-    }
-
-    func testServerLoginImportLegacyItemsSeedsEmptyStorage() {
-        let monitoringItem = HostMonitoringItem()
-        monitoringItem.host = "web-01.example"
-        let legacyItem = ServerLoginItem(host: monitoringItem.host, username: "deploy", loginType: LoginType.rdp.rawValue)
-
-        ServerLogin().importLegacyItems([legacyItem])
-
-        XCTAssertEqual(ServerLogin().getUsername(monitoringItem), "deploy")
-        XCTAssertEqual(ServerLogin().getLoginType(monitoringItem), .rdp)
-    }
-
-    func testServerLoginImportLegacyItemsDoesNotOverwriteExistingStorage() {
-        let currentItem = HostMonitoringItem()
-        currentItem.host = "current.example"
-        let legacyItem = HostMonitoringItem()
-        legacyItem.host = "legacy.example"
-        ServerLogin().setUsername(currentItem, username: "ops")
-        ServerLogin().setLoginType(currentItem, loginType: .ssh)
-
-        ServerLogin().importLegacyItems([
-            ServerLoginItem(host: legacyItem.host, username: "deploy", loginType: LoginType.rdp.rawValue)
-        ])
-
-        XCTAssertEqual(ServerLogin().getUsername(currentItem), "ops")
-        XCTAssertEqual(ServerLogin().getLoginType(currentItem), .ssh)
-        XCTAssertNil(ServerLogin().getUsername(legacyItem))
-        XCTAssertNil(ServerLogin().getLoginType(legacyItem))
     }
 
     func testServerLoginMalformedStorageReturnsEmptyAndRecoversOnSave() throws {

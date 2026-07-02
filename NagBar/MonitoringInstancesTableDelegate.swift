@@ -197,9 +197,10 @@ class MIEnabledTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
         self.setConnectionState(tag, text: "checking", image: "NSStatusNone")
         
         let monitoringInstance = MonitoringInstances().getById(tag)
-        
-        _ = monitoringInstance.monitoringProcessor().httpClient().checkConnection().done { result -> Void in
-            DispatchQueue.main.async {
+
+        Task {
+            let result = await monitoringInstance.monitoringProcessor().httpClient().checkConnection()
+            await MainActor.run {
                 if result {
                     self.setConnectionState(tag, text: "ok", image: "NSStatusAvailable")
                 } else {
@@ -242,8 +243,9 @@ class MIStatusTableColumn : NSTableColumn, MonitoringInstancesTableColumn  {
             statusView.addSubview(text)
         }
         
-        _ = monitoringInstance.monitoringProcessor().httpClient().checkConnection().done { result -> Void in
-            DispatchQueue.main.async {
+        Task {
+            let result = await monitoringInstance.monitoringProcessor().httpClient().checkConnection()
+            await MainActor.run {
                 if result {
                     image.image = NSImage.init(named: "NSStatusAvailable")
                     text.stringValue = NSLocalizedString("ok", comment: "")

@@ -66,7 +66,7 @@ Tradeoffs:
 Focused monitoring-instance verification passes:
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/MonitoringInstancesTest
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/MonitoringInstancesTest
 ```
 
 Result: 11 tests, 0 failures.
@@ -74,7 +74,7 @@ Result: 11 tests, 0 failures.
 Full verification passes:
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS'
 ```
 
 Result: 97 tests, 0 failures.
@@ -82,5 +82,5 @@ Result: 97 tests, 0 failures.
 Release build passes:
 
 ```sh
-xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'
+xcodebuild build -project NagBar.xcodeproj -scheme NagBar -configuration Release -destination 'platform=macOS'
 ```

@@ -27,16 +27,18 @@ class ScheduleDowntimeWindow : NSWindowController {
         minutes.isEnabled = false
         
         if let monitoringInstance = self.monitoringItems.first?.monitoringInstance {
-            let time = monitoringInstance.monitoringProcessor().command().getTime(self.monitoringItems)
-
-            time.done { (arg) -> Void in
-                let (startTime, endTime) = arg
-                DispatchQueue.main.async {
-                    self.startTime.stringValue = startTime
-                    self.endTime.stringValue = endTime
+            let monitoringItems = self.monitoringItems
+            Task {
+                do {
+                    let (startTime, endTime) = try await monitoringInstance.monitoringProcessor().command().getTime(monitoringItems)
+                    await MainActor.run {
+                        self.startTime.stringValue = startTime
+                        self.endTime.stringValue = endTime
+                    }
+                } catch {
+                    await MainActor.run {
+                    }
                 }
-            }.catch { _ in
-                
             }
         }
         
@@ -81,9 +83,24 @@ class ScheduleDowntimeWindow : NSWindowController {
         }
 
         let typeString = String(selectedType.tag)
-        
-        let promise = monitoringInstance.monitoringProcessor().command().scheduleDowntime(self.monitoringItems, from: self.startTime.stringValue, to: self.endTime.stringValue, comment: self.comment.stringValue, type: typeString, hours: self.hours.stringValue, minutes: self.minutes.stringValue)
-        CommandFeedback.shared.observe(.scheduleDowntime, promise: promise)
+
+        let monitoringItems = self.monitoringItems
+        let from = self.startTime.stringValue
+        let to = self.endTime.stringValue
+        let comment = self.comment.stringValue
+        let hours = self.hours.stringValue
+        let minutes = self.minutes.stringValue
+        CommandFeedback.shared.observe(.scheduleDowntime) {
+            try await monitoringInstance.monitoringProcessor().command().scheduleDowntime(
+                monitoringItems,
+                from: from,
+                to: to,
+                comment: comment,
+                type: typeString,
+                hours: hours,
+                minutes: minutes
+            )
+        }
 
         self.close()
     }
@@ -107,7 +124,7 @@ class ScheduleDowntimeWindow : NSWindowController {
     }
 }
 
-class HourNumberFormatter : NumberFormatter {
+class HourNumberFormatter : NumberFormatter, @unchecked Sendable {
     override func isPartialStringValid(_ partialString: String, newEditingString newString: AutoreleasingUnsafeMutablePointer<NSString?>?, errorDescription error: AutoreleasingUnsafeMutablePointer<NSString?>?) -> Bool {
         
         if partialString.count == 0 {
@@ -133,7 +150,7 @@ class HourNumberFormatter : NumberFormatter {
     }
 }
 
-class MinuteNumberFormatter : NumberFormatter {
+class MinuteNumberFormatter : NumberFormatter, @unchecked Sendable {
     override func isPartialStringValid(_ partialString: String, newEditingString newString: AutoreleasingUnsafeMutablePointer<NSString?>?, errorDescription error: AutoreleasingUnsafeMutablePointer<NSString?>?) -> Bool {
         
         if partialString.count == 0 {

@@ -48,9 +48,9 @@ Tradeoffs:
 ## Verification
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/MonitoringInstancesTest -only-testing:NagBarTests/URLProviderTests -only-testing:NagBarTests/StatusItemViewTests
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'
-xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/MonitoringInstancesTest -only-testing:NagBarTests/URLProviderTests -only-testing:NagBarTests/StatusItemViewTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS'
+xcodebuild build -project NagBar.xcodeproj -scheme NagBar -configuration Release -destination 'platform=macOS'
 ```
 
 Result: focused monitoring-instance fallback suite passes 22 tests after the local fake-Icinga conversion;

@@ -26,7 +26,8 @@ jobs:
         run: |
           test ! -f Podfile
           test ! -f Podfile.lock
-          ! grep -ER "Pods\\.xcodeproj|Pods_|Pods/" NagBar.xcworkspace NagBar.xcodeproj
+          test ! -d NagBar.xcworkspace
+          ! grep -ER "Pods\\.xcodeproj|Pods_|Pods/" NagBar.xcodeproj
 
       - name: Check shell helper syntax
         run: find script -name '*.sh' -exec sh -n {} +

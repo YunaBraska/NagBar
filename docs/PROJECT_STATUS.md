@@ -23,8 +23,8 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Full macOS test suite | Done | `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 457 tests |
-| Release build | Done | `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
+| Full macOS test suite | Done | `xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS'` passes with 444 tests |
+| Release build | Done | `xcodebuild build -project NagBar.xcodeproj -scheme NagBar -configuration Release -destination 'platform=macOS'` passes |
 | Local acceptance | Done | `./script/build_and_run.sh --acceptance` runs full tests, Release build, and live runtime smoke |
 | Runtime smoke | Done | `./script/build_and_run.sh --smoke` verifies the status-item menu, Show Status, keyboard activation, Refresh, Preferences, and Quit in isolated storage |
 | Local/private packaging | Done | `./script/build_and_run.sh --package` creates a zip, checksum, and manifest under `dist/`, then verifies the packaged app signature |
@@ -34,7 +34,7 @@ Snapshot date: 2026-07-01.
 | Status-panel command hardening | Done | Public menu/action regressions cover malformed or empty command input, nil monitoring instances, unsupported filter statuses, and pre-assignment command window loading |
 | Backend compatibility smoke | Done | Recorded real-shape fixture tests cover Nagios CGI, Icinga CGI, Icinga 2 API, Thruk JSON, and Check_MK JSON view parsing; fake-server tests cover auth/session/command protocol behavior |
 | Accessibility automation evidence | Done | Status-item AX press, accessible menu item identifiers, status panel identifiers, command windows, monitoring instance table cells, and About content are covered by repeatable macOS tests |
-| Legacy dependency guardrails | Done | Tests and CI reject CocoaPods/project references and removed runtime imports for Alamofire, PromiseKit, RealmSwift, SAMKeychain, SwiftyJSON, and hpple |
+| Legacy dependency guardrails | Done | Tests and CI reject CocoaPods/project references and removed runtime imports for Alamofire, PromiseKit, RealmSwift, SAMKeychain, SwiftyJSON, hpple, and the app-local Promise bridge |
 
 ## Supported Backends
 
@@ -50,9 +50,10 @@ Snapshot date: 2026-07-01.
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| CocoaPods removal | Done | No `Podfile`, `Podfile.lock`, or Pods workspace/project wiring remain |
+| CocoaPods removal | Done | No `Podfile`, `Podfile.lock`, pods workspace, or Pods project wiring remain |
 | Active Realm storage removal | Done | Scalar settings live in `UserDefaults`; filters, server logins, and monitoring instances live in JSON/Application Support |
-| Legacy Realm import | Dismissed | Legacy-only installs now receive `upgrade-compatibility.json`; this branch does not import Realm data |
+| Legacy Realm import | Removed | Current builds do not scan for or report `default.realm*`; only the active JSON and `UserDefaults` stores remain supported |
+| Promise bridge | Removed | HTTP, refresh, and backend command flows use Swift structured concurrency instead of the temporary app-local Promise layer |
 | Local fake first-run path | Done | Uses a loopback fake Icinga server through the normal Icinga stack; no app-side demo branch |
 | Status-item product entrypoint | Done | Status, About, Preferences, refresh, and quit are reachable from the menu bar entrypoint |
 | Local/private release path | Done | Ad-hoc signing, hardened runtime verification, packaging, checksum, and manifest are in place |
@@ -74,8 +75,8 @@ Daily maintainer commands:
 Focused fake-server coverage:
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/CheckMKHTTPClientFakeServerTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/CheckMKHTTPClientFakeServerTests
 ```
 
 Release-only helpers:

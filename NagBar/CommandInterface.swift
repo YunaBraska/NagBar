@@ -44,17 +44,43 @@ final class CommandFeedback {
     private init() {
     }
 
-    func observe(_ action: CommandAction, promise: Promise<CommandResult>) {
-        promise.done { result in
-            DispatchQueue.main.async {
-                self.presenter.showSuccess(result)
-            }
-        }.catch { error in
-            DispatchQueue.main.async {
-                self.presenter.showFailure(action: action, error: error)
+    func observe(_ action: CommandAction, operation: @escaping @Sendable () async throws -> CommandResult) {
+        Task {
+            do {
+                let result = try await operation()
+                await MainActor.run {
+                    self.presenter.showSuccess(result)
+                }
+            } catch {
+                await MainActor.run {
+                    self.presenter.showFailure(action: action, error: error)
+                }
             }
         }
     }
+
+    func observe(_ action: CommandAction, task: Task<CommandResult, Error>) {
+        Task {
+            do {
+                let result = try await task.value
+                await MainActor.run {
+                    self.presenter.showSuccess(result)
+                }
+            } catch {
+                await MainActor.run {
+                    self.presenter.showFailure(action: action, error: error)
+                }
+            }
+        }
+    }
+}
+
+protocol CommandInterface {
+    func getTime(_ monitoringItems: Array<MonitoringItem>) async throws -> (String,String)
+    func recheck(_ monitoringItems: Array<MonitoringItem>) async throws -> CommandResult
+    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) async throws -> CommandResult
+    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) async throws -> CommandResult
+    func capabilities() -> Array<CommandTypes>
 }
 
 final class AlertCommandFeedbackPresenter: CommandFeedbackPresenting {
@@ -111,14 +137,6 @@ func applyButtonAccessibility(in view: NSView?, identifier: String, accessibilit
 
         applyButtonAccessibility(in: subview, identifier: identifier, accessibilityIdentifier: accessibilityIdentifier, label: label)
     }
-}
-
-protocol CommandInterface {
-    func getTime(_ monitoringItems: Array<MonitoringItem>) -> Promise<(String,String)>
-    @discardableResult func recheck(_ monitoringItems: Array<MonitoringItem>) -> Promise<CommandResult>
-    @discardableResult func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) -> Promise<CommandResult>
-    @discardableResult func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) -> Promise<CommandResult>
-    func capabilities() -> Array<CommandTypes>
 }
 
 enum CommandTypes {

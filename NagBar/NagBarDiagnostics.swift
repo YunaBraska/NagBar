@@ -32,14 +32,11 @@ struct NagBarRuntimeSnapshot: Equatable {
     let configuredRemoteCount: Int
     let enabledConfiguredRemoteCount: Int
     let usingLocalFallback: Bool
-    let legacyRealmFileCount: Int
-    let requiresManualReconfiguration: Bool
 
     static func capture(
         bundle: Bundle = .main,
         processInfo: ProcessInfo = .processInfo,
-        monitoringInstances: MonitoringInstances = MonitoringInstances(),
-        upgradeReport: UpgradeCompatibilityReport = UpgradeCompatibility.assess()
+        monitoringInstances: MonitoringInstances = MonitoringInstances()
     ) -> NagBarRuntimeSnapshot {
         let allInstances = monitoringInstances.getAll().values
         let configuredRemotes = allInstances.filter { $0.isConfiguredRemote }
@@ -53,9 +50,7 @@ struct NagBarRuntimeSnapshot: Equatable {
             applicationSupportPath: NagBarStorage.bundleStorageDirectory().path,
             configuredRemoteCount: configuredRemotes.count,
             enabledConfiguredRemoteCount: enabledConfiguredRemotes.count,
-            usingLocalFallback: configuredRemotes.isEmpty,
-            legacyRealmFileCount: upgradeReport.legacyRealmFiles.count,
-            requiresManualReconfiguration: upgradeReport.requiresManualReconfiguration
+            usingLocalFallback: configuredRemotes.isEmpty
         )
     }
 }
@@ -69,14 +64,7 @@ enum NagBarDiagnostics {
     static func startupEvent(_ snapshot: NagBarRuntimeSnapshot) -> NagBarDiagnosticEvent {
         return NagBarDiagnosticEvent(
             category: .startup,
-            message: "startup bundle=\(snapshot.bundleIdentifier) version=\(snapshot.version) build=\(snapshot.build) pid=\(snapshot.processIdentifier) appSupport=\(snapshot.applicationSupportPath) configuredRemotes=\(snapshot.configuredRemoteCount) enabledRemotes=\(snapshot.enabledConfiguredRemoteCount) localFallback=\(snapshot.usingLocalFallback) legacyRealmFiles=\(snapshot.legacyRealmFileCount) manualReconfiguration=\(snapshot.requiresManualReconfiguration)"
-        )
-    }
-
-    static func upgradeEvent(_ report: UpgradeCompatibilityReport) -> NagBarDiagnosticEvent {
-        return NagBarDiagnosticEvent(
-            category: .storage,
-            message: "upgradeCompatibility legacyRealmFiles=\(report.legacyRealmFiles.count) currentJSONFiles=\(report.currentJSONFiles.count) manualReconfiguration=\(report.requiresManualReconfiguration) message=\"\(report.message)\""
+            message: "startup bundle=\(snapshot.bundleIdentifier) version=\(snapshot.version) build=\(snapshot.build) pid=\(snapshot.processIdentifier) appSupport=\(snapshot.applicationSupportPath) configuredRemotes=\(snapshot.configuredRemoteCount) enabledRemotes=\(snapshot.enabledConfiguredRemoteCount) localFallback=\(snapshot.usingLocalFallback)"
         )
     }
 
@@ -104,13 +92,6 @@ enum NagBarDiagnostics {
 
     static func logStartup(_ snapshot: NagBarRuntimeSnapshot = NagBarRuntimeSnapshot.capture()) {
         log(startupEvent(snapshot), type: .info)
-    }
-
-    static func logUpgradeReport(_ report: UpgradeCompatibilityReport) {
-        if report.legacyRealmFiles.isEmpty {
-            return
-        }
-        log(upgradeEvent(report), type: report.requiresManualReconfiguration ? .fault : .info)
     }
 
     static func logRefreshFailure(instance: MonitoringInstance, reason: FailReason, error: Error) {

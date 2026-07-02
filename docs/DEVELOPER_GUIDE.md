@@ -9,10 +9,10 @@ Requirements:
 - macOS 12.4 or newer
 - Xcode
 
-Open the workspace:
+Open the project:
 
 ```sh
-open NagBar.xcworkspace
+open NagBar.xcodeproj
 ```
 
 ## Daily Commands
@@ -34,10 +34,10 @@ Release-only helpers live under `script/cicd/`.
 Focused fake-server coverage:
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/CheckMKHTTPClientFakeServerTests
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/URLProviderTests
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/StatusItemViewTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/LoadMonitoringDataFakeIcingaTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/CheckMKHTTPClientFakeServerTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/URLProviderTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/StatusItemViewTests
 ```
 
 ## Testing Priorities

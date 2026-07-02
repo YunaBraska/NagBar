@@ -49,7 +49,7 @@ Negative:
 
 ## Verification
 
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/NagiosParserTests -only-testing:NagBarTests/IcingaParserTests` passes with 21 tests.
+- `xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/NagiosParserTests -only-testing:NagBarTests/IcingaParserTests` passes with 21 tests.
 - Full suite passes with 89 tests.
 - Release build passes.
 - Search finds no Hpple/hpple/TFHpple/XPath references in app, tests, project,

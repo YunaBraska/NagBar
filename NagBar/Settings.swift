@@ -9,58 +9,58 @@
 import Foundation
 
 enum SettingDefaults {
-    static let values = [
-        "refreshInterval": "30",
-        "monitoringInstance": "1",
-        "status": "1",
-        "lastCheck": "1",
-        "duration": "1",
-        "attempt": "1",
-        "statusInformation": "1",
-        "critical": "1",
-        "warning": "1",
-        "unknown": "1",
-        "pending": "1",
-        "down": "1",
-        "unreachable": "1",
-        "hostPending": "1",
-        "sortColumn": "1",
-        "sortOrder": "1",
-        "statusInformationLength": "200",
-        "ok": "0",
-        "up": "0",
-        "scheduledDowntime": "0",
-        "acknowledged": "0",
-        "flapping": "0",
-        "checksDisabled": "0",
-        "disabledNotifications": "0",
-        "softState": "0",
-        "skipServicesOfHostsWithScD": "0",
-        "hostScheduledDowntime": "0",
-        "hostAcknowledged": "0",
-        "hostFlapping": "0",
-        "hostDisabledNotifications": "0",
-        "hostSoftState": "0",
-        "hostChecksDisabled": "0",
-        "showExtendedStatusInformation": "1",
-        "flashStatusBar": "1",
-        "flashStatusBarType": "2",
-        "savePassword": "1",
-        "acceptInvalidCertificates": "0",
-        "enableAudibleAlarms": "1",
-        "enableAudibleAlarmsCritical": "1",
-        "enableAudibleAlarmsWarning": "1",
-        "enableAudibleAlarmsDown": "1",
-        "enableAudibleAlarmsUnreachable": "1",
-        "enableAudibleAlarmsRecovery": "1",
+    static let values: [String: Any] = [
+        "refreshInterval": 30,
+        "monitoringInstance": true,
+        "status": true,
+        "lastCheck": true,
+        "duration": true,
+        "attempt": true,
+        "statusInformation": true,
+        "critical": true,
+        "warning": true,
+        "unknown": true,
+        "pending": true,
+        "down": true,
+        "unreachable": true,
+        "hostPending": true,
+        "sortColumn": 1,
+        "sortOrder": 1,
+        "statusInformationLength": 200,
+        "ok": false,
+        "up": false,
+        "scheduledDowntime": false,
+        "acknowledged": false,
+        "flapping": false,
+        "checksDisabled": false,
+        "disabledNotifications": false,
+        "softState": false,
+        "skipServicesOfHostsWithScD": false,
+        "hostScheduledDowntime": false,
+        "hostAcknowledged": false,
+        "hostFlapping": false,
+        "hostDisabledNotifications": false,
+        "hostSoftState": false,
+        "hostChecksDisabled": false,
+        "showExtendedStatusInformation": true,
+        "flashStatusBar": true,
+        "flashStatusBarType": 2,
+        "savePassword": true,
+        "acceptInvalidCertificates": false,
+        "enableAudibleAlarms": true,
+        "enableAudibleAlarmsCritical": true,
+        "enableAudibleAlarmsWarning": true,
+        "enableAudibleAlarmsDown": true,
+        "enableAudibleAlarmsUnreachable": true,
+        "enableAudibleAlarmsRecovery": true,
         "audibleAlarmsCriticalSoundFile": "",
         "audibleAlarmsWarningSoundFile": "",
         "audibleAlarmsDownSoundFile": "",
         "audibleAlarmsUnreachableSoundFile": "",
         "audibleAlarmsRecoverySoundFile": "",
-        "showDockIcon": "1",
-        "useNotifications": "0",
-        "newVersionCheck": "1",
+        "showDockIcon": true,
+        "useNotifications": false,
+        "newVersionCheck": true,
         "acknowledgementDefaultComment": "",
         "scheduleDowntimeDefaultComment": "",
         "criticalColor": "1.0,0.804,0.804,1.0",
@@ -93,6 +93,9 @@ class Settings {
     }
     
     func doubleForKey(_ defaultName: String) -> Double {
+        if let number = defaults.object(forKey: defaultName) as? NSNumber {
+            return number.doubleValue
+        }
         return Double(stringValue(forKey: defaultName)) ?? 0.0
     }
     
@@ -100,28 +103,29 @@ class Settings {
         return stringValue(forKey: defaultName)
     }
     
-    func valueForKey(_ key: String) -> Any? {
-        return stringValue(forKey: key)
-    }
-    
     func boolForKey(_ defaultName: String) -> Bool {
-        let resultMap = ["0": false, "1": true]
-        
-        return resultMap[stringValue(forKey: defaultName)] ?? false
+        if let bool = defaults.object(forKey: defaultName) as? Bool {
+            return bool
+        }
+        if let number = defaults.object(forKey: defaultName) as? NSNumber {
+            return number.intValue != 0
+        }
+        return stringValue(forKey: defaultName).toBool() ?? false
     }
     
     func integerForKey(_ defaultName: String) -> Int {
+        if let number = defaults.object(forKey: defaultName) as? NSNumber {
+            return number.intValue
+        }
         return Int(stringValue(forKey: defaultName)) ?? 0
     }
     
     func setBool(_ value: Bool, forKey: String) {
-        let resultMap = [false: "0", true: "1"]
-        
-        defaults.set(resultMap[value] ?? "0", forKey: forKey)
+        defaults.set(value, forKey: forKey)
     }
     
     func setInteger(_ value: Int, forKey: String) {
-        defaults.set(String(value), forKey: forKey)
+        defaults.set(value, forKey: forKey)
     }
     
     func setString(_ value: String, forKey: String) {
@@ -145,7 +149,22 @@ class Settings {
     }
 
     private func stringValue(forKey key: String) -> String {
-        return defaults.string(forKey: key) ?? SettingDefaults.values[key] ?? ""
+        if let string = defaults.string(forKey: key) {
+            return string
+        }
+        if let number = defaults.object(forKey: key) as? NSNumber {
+            if CFGetTypeID(number) == CFBooleanGetTypeID() {
+                return number.boolValue ? "1" : "0"
+            }
+            return number.stringValue
+        }
+        if let fallback = SettingDefaults.values[key] as? NSNumber {
+            if CFGetTypeID(fallback) == CFBooleanGetTypeID() {
+                return fallback.boolValue ? "1" : "0"
+            }
+            return fallback.stringValue
+        }
+        return SettingDefaults.values[key] as? String ?? ""
     }
 }
 

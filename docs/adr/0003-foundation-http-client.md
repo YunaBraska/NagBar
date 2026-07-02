@@ -19,8 +19,7 @@ surface:
 
 ## Decision
 
-Use Foundation `URLSession` through `ConnectionManager` and keep the existing
-`HTTPClient` Promise-based boundary for now.
+Use Foundation `URLSession` through `ConnectionManager`.
 
 `ConnectionManager` owns:
 
@@ -37,8 +36,8 @@ Use Foundation `URLSession` through `ConnectionManager` and keep the existing
 Positive:
 
 - Removes Alamofire from source and CocoaPods.
-- Keeps current HTTP client public contracts intact.
 - Reduces release bundle size and maintenance surface.
+- Leaves the HTTP boundary on Swift structured concurrency instead of a custom async layer.
 
 Negative:
 

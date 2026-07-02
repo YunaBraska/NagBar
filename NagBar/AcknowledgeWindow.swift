@@ -39,9 +39,12 @@ class AcknowledgeWindow: NSWindowController {
         guard let monitoringInstance = self.monitoringItems.first?.monitoringInstance else {
             return
         }
-        
-        let promise = monitoringInstance.monitoringProcessor().command().acknowledge(self.monitoringItems, comment: self.comment.stringValue)
-        CommandFeedback.shared.observe(.acknowledge, promise: promise)
+
+        let monitoringItems = self.monitoringItems
+        let comment = self.comment.stringValue
+        CommandFeedback.shared.observe(.acknowledge) {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge(monitoringItems, comment: comment)
+        }
 
         self.close()
     }

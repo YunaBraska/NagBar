@@ -294,10 +294,8 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
 
         let expectation = self.expectation(description: "Check connection")
         var connected: Bool?
-        NagiosHTTPClient(monitoringInstance).checkConnection().done { value in
-            connected = value
-            expectation.fulfill()
-        }.catch { _ in
+        Task {
+            connected = await NagiosHTTPClient(monitoringInstance).checkConnection()
             expectation.fulfill()
         }
 
@@ -359,10 +357,8 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let expectation = self.expectation(description: "Thruk check connection")
         var connected: Bool?
 
-        ThrukHTTPClient(monitoringInstance).checkConnection().done { value in
-            connected = value
-            expectation.fulfill()
-        }.catch { _ in
+        Task {
+            connected = await ThrukHTTPClient(monitoringInstance).checkConnection()
             expectation.fulfill()
         }
 
@@ -378,11 +374,13 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let server = try makeThrukServer()
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Thruk)
 
-        let result = waitForDataResult(ThrukHTTPClient(monitoringInstance).post("http://127.0.0.1:\(server.port)/icinga/cgi-bin/cmd.cgi", postData: [
+        let result = waitForDataResult {
+            try await ThrukHTTPClient(monitoringInstance).post("http://127.0.0.1:\(server.port)/icinga/cgi-bin/cmd.cgi", postData: [
             "cmd_typ": "7",
             "host": "web 01",
             "service": "Disk / Root"
-        ]))
+            ])
+        }
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
 
@@ -401,7 +399,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Thruk)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Handled in Thruk"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Handled in Thruk")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
@@ -424,7 +424,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Known outage"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Known outage")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
@@ -452,7 +454,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         )
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Known outage"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Known outage")
+        }
         let requests = server.requests()
 
         XCTAssertNil(commandResult.result)
@@ -466,7 +470,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Handled")
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Handled")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
@@ -481,7 +487,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30-06-2026 12:00:00", to: "30-06-2026 13:00:00", comment: "Maintenance", type: "1", hours: "1", minutes: "0")
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30-06-2026 12:00:00", to: "30-06-2026 13:00:00", comment: "Maintenance", type: "1", hours: "1", minutes: "0")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
@@ -500,7 +508,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().recheck([service])
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().recheck([service])
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/cmd.cgi")
         let form = formValues(request.body)
@@ -520,7 +530,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().recheck([host, service]))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().recheck([host, service])
+        }
 
         let requests = authorizedPosts(pathSuffix: "/cmd.cgi")
         let forms = requests.map { formValues($0.body) }
@@ -538,7 +550,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Known issue")
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Known issue")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/acknowledge-problem")
         let json = try jsonValues(request.body)
@@ -553,7 +567,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let service = makeService(host: "web 01", service: "Disk / Root", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Known issue")
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([service], comment: "Known issue")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/acknowledge-problem")
         XCTAssertEqual(request.query, "service=web%2001!Disk%20%2F%20Root")
@@ -564,7 +580,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let host = makeHost(name: "db / primary", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().recheck([host])
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().recheck([host])
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/reschedule-check")
         XCTAssertEqual(request.query, "host=db%20%2F%20primary")
@@ -575,7 +593,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().recheck([host]))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().recheck([host])
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/reschedule-check")
         let json = try jsonValues(request.body)
@@ -762,7 +782,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "0", hours: "2", minutes: "30")
+        _ = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "0", hours: "2", minutes: "30")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/schedule-downtime")
         let json = try jsonValues(request.body)
@@ -780,7 +802,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let service = makeService(host: "web-01", service: "Disk", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().scheduleDowntime([service], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "1", hours: "2", minutes: "30"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().scheduleDowntime([service], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "1", hours: "2", minutes: "30")
+        }
 
         let request = try waitForAuthorizedPost(pathSuffix: "/actions/schedule-downtime")
         let json = try jsonValues(request.body)
@@ -816,7 +840,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let result = waitForTimeResult(monitoringInstance.monitoringProcessor().command().getTime([host]))
+        let result = waitForTimeResult {
+            try await monitoringInstance.monitoringProcessor().command().getTime([host])
+        }
 
         XCTAssertEqual(result.start, formattedIcinga2CommandTime(programStart + uptime))
         XCTAssertEqual(result.end, formattedIcinga2CommandTime(programStart + uptime + 3_600))
@@ -829,7 +855,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = makeMonitoringInstance(server: server, type: .Icinga2)
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let result = waitForTimeResult(monitoringInstance.monitoringProcessor().command().getTime([host]))
+        let result = waitForTimeResult {
+            try await monitoringInstance.monitoringProcessor().command().getTime([host])
+        }
 
         XCTAssertNil(result.start)
         XCTAssertNil(result.end)
@@ -848,7 +876,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         )
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().recheck([host]))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().recheck([host])
+        }
 
         XCTAssertNil(commandResult.result)
         XCTAssertEqual(commandResult.error?.localizedDescription, "Commands are not supported for this monitoring backend")
@@ -858,7 +888,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = unsupportedCommandMonitoringInstance()
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandError = waitForRejectedPromise(monitoringInstance.monitoringProcessor().command().getTime([host]))
+        let commandError = waitForRejectedPromise {
+            try await monitoringInstance.monitoringProcessor().command().getTime([host])
+        }
 
         XCTAssertEqual(commandError?.localizedDescription, "Commands are not supported for this monitoring backend")
     }
@@ -867,7 +899,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = unsupportedCommandMonitoringInstance()
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Seen"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().acknowledge([host], comment: "Seen")
+        }
 
         XCTAssertNil(commandResult.result)
         XCTAssertEqual(commandResult.error?.localizedDescription, "Commands are not supported for this monitoring backend")
@@ -877,7 +911,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         let monitoringInstance = unsupportedCommandMonitoringInstance()
         let host = makeHost(name: "web-01", monitoringInstance: monitoringInstance)
 
-        let commandResult = waitForCommandResult(monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "1", hours: "1", minutes: "0"))
+        let commandResult = waitForCommandResult {
+            try await monitoringInstance.monitoringProcessor().command().scheduleDowntime([host], from: "30.06.2026, 12:00:00", to: "30.06.2026, 13:00:00", comment: "Maintenance", type: "1", hours: "1", minutes: "0")
+        }
 
         XCTAssertNil(commandResult.result)
         XCTAssertEqual(commandResult.error?.localizedDescription, "Commands are not supported for this monitoring backend")
@@ -901,7 +937,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         CommandFeedback.shared.presenter = presenter
         defer { CommandFeedback.shared.presenter = previousPresenter }
 
-        CommandFeedback.shared.observe(.acknowledge, promise: Promise<CommandResult>.value(CommandResult(action: .acknowledge, itemCount: 2)))
+        CommandFeedback.shared.observe(.acknowledge) {
+            CommandResult(action: .acknowledge, itemCount: 2)
+        }
 
         waitForExpectations(timeout: 5)
         XCTAssertEqual(presenter.successes.count, 1)
@@ -917,9 +955,9 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         defer { CommandFeedback.shared.presenter = previousPresenter }
         let error = NSError(domain: "NagBarTests.CommandFeedback", code: 7, userInfo: [NSLocalizedDescriptionKey: "Rejected by backend"])
 
-        CommandFeedback.shared.observe(.scheduleDowntime, promise: Promise<CommandResult> { seal in
-            seal.reject(error)
-        })
+        CommandFeedback.shared.observe(.scheduleDowntime) {
+            throw error
+        }
 
         waitForExpectations(timeout: 5)
         XCTAssertTrue(presenter.successes.isEmpty)
@@ -974,11 +1012,12 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         var loadedData: Data?
         var loadedError: Error?
 
-        client.get(url).done { data in
-            loadedData = data
-            expectation.fulfill()
-        }.catch { error in
-            loadedError = error
+        Task {
+            do {
+                loadedData = try await client.get(url)
+            } catch {
+                loadedError = error
+            }
             expectation.fulfill()
         }
 
@@ -986,16 +1025,17 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return (loadedData, loadedError)
     }
 
-    private func waitForCommandResult(_ promise: Promise<CommandResult>) -> (result: CommandResult?, error: Error?) {
+    private func waitForCommandResult(_ operation: @escaping () async throws -> CommandResult) -> (result: CommandResult?, error: Error?) {
         let expectation = self.expectation(description: "Command result")
         var commandResult: CommandResult?
         var commandError: Error?
 
-        promise.done { result in
-            commandResult = result
-            expectation.fulfill()
-        }.catch { error in
-            commandError = error
+        Task {
+            do {
+                commandResult = try await operation()
+            } catch {
+                commandError = error
+            }
             expectation.fulfill()
         }
 
@@ -1003,16 +1043,17 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return (commandResult, commandError)
     }
 
-    private func waitForDataResult(_ promise: Promise<Data>) -> (data: Data?, error: Error?) {
+    private func waitForDataResult(_ operation: @escaping () async throws -> Data) -> (data: Data?, error: Error?) {
         let expectation = self.expectation(description: "Data promise")
         var data: Data?
         var error: Error?
 
-        promise.done { loadedData in
-            data = loadedData
-            expectation.fulfill()
-        }.catch { loadedError in
-            error = loadedError
+        Task {
+            do {
+                data = try await operation()
+            } catch let operationError {
+                error = operationError
+            }
             expectation.fulfill()
         }
 
@@ -1020,18 +1061,20 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return (data, error)
     }
 
-    private func waitForTimeResult(_ promise: Promise<(String, String)>) -> (start: String?, end: String?, error: Error?) {
+    private func waitForTimeResult(_ operation: @escaping () async throws -> (String, String)) -> (start: String?, end: String?, error: Error?) {
         let expectation = self.expectation(description: "Time promise")
         var startTime: String?
         var endTime: String?
         var error: Error?
 
-        promise.done { start, end in
-            startTime = start
-            endTime = end
-            expectation.fulfill()
-        }.catch { loadedError in
-            error = loadedError
+        Task {
+            do {
+                let result = try await operation()
+                startTime = result.0
+                endTime = result.1
+            } catch let operationError {
+                error = operationError
+            }
             expectation.fulfill()
         }
 
@@ -1039,14 +1082,16 @@ final class LoadMonitoringDataFakeIcingaTests: XCTestCase {
         return (startTime, endTime, error)
     }
 
-    private func waitForRejectedPromise<T>(_ promise: Promise<T>) -> Error? {
+    private func waitForRejectedPromise<T>(_ operation: @escaping () async throws -> T) -> Error? {
         let expectation = self.expectation(description: "Rejected promise")
         var rejectedError: Error?
 
-        promise.done { _ in
-            expectation.fulfill()
-        }.catch { error in
-            rejectedError = error
+        Task {
+            do {
+                _ = try await operation()
+            } catch {
+                rejectedError = error
+            }
             expectation.fulfill()
         }
 

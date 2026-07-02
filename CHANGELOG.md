@@ -63,10 +63,9 @@ tags were removed.
 ### Upgrade Notes
 
 - Current JSON/UserDefaults/Keychain configuration is preserved.
-- Legacy Realm-only `default.realm*` configuration is detected and reported in
-  `upgrade-compatibility.json`, but it is not imported by this Realm-free build.
+- Current builds no longer scan for or report legacy `default.realm*` data.
 - Users upgrading directly from a Realm-only build must reconfigure monitoring
-  instances in Settings or migrate through an earlier bridge build.
+  instances in Settings.
 
 ### Verification
 

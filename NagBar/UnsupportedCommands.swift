@@ -13,28 +13,20 @@ class UnsupportedCommands: MonitoringProcessorBase, CommandInterface {
         return [CommandTypes.openInBrowser]
     }
 
-    func getTime(_ monitoringItems: Array<MonitoringItem>) -> Promise<(String, String)> {
-        return Promise { seal in
-            seal.reject(self.unsupportedError())
-        }
+    func getTime(_ monitoringItems: Array<MonitoringItem>) async throws -> (String, String) {
+        throw self.unsupportedError()
     }
 
-    func recheck(_ monitoringItems: Array<MonitoringItem>) -> Promise<CommandResult> {
-        return Promise { seal in
-            seal.reject(self.unsupportedError())
-        }
+    func recheck(_ monitoringItems: Array<MonitoringItem>) async throws -> CommandResult {
+        throw self.unsupportedError()
     }
 
-    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) -> Promise<CommandResult> {
-        return Promise { seal in
-            seal.reject(self.unsupportedError())
-        }
+    func scheduleDowntime(_ monitoringItems: Array<MonitoringItem>, from: String, to: String, comment: String, type: String, hours: String, minutes: String) async throws -> CommandResult {
+        throw self.unsupportedError()
     }
 
-    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) -> Promise<CommandResult> {
-        return Promise { seal in
-            seal.reject(self.unsupportedError())
-        }
+    func acknowledge(_ monitoringItems: Array<MonitoringItem>, comment: String) async throws -> CommandResult {
+        throw self.unsupportedError()
     }
 
     private func unsupportedError() -> NSError {

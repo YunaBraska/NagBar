@@ -21,15 +21,30 @@ class LoadMonitoringDataCore {
     }
 
     func refreshStatusData(completion: ((Array<MonitoringItem>, FailedMonitoringInstances) -> Void)? = nil) {
+        Task {
+            let (allResults, failedMonitoringInstances) = await self.loadMonitoringData()
+            await MainActor.run {
+                if let oldStatusData = OldStatusData.sharedInstance.statusData {
+                    for dataRefreshAction in self.dataRefreshActions {
+                        dataRefreshAction.process(oldStatusData, newResults: allResults)
+                    }
+                }
 
+                OldStatusData.sharedInstance.statusData = allResults
+                NagBarDiagnostics.logRefreshFinished(itemCount: allResults.count, failedCount: failedMonitoringInstances.count)
+                self.loadStatusBar(allResults, failedMonitoringInstances)
+                completion?(allResults, failedMonitoringInstances)
+            }
+        }
+    }
+
+    private func loadMonitoringData() async -> (Array<MonitoringItem>, FailedMonitoringInstances) {
         // load the actions that will be performed after all results
         // are fetched
         initDataRefreshAction()
 
         // get all enabled monitoring instances
         let monitoringInstances = MonitoringInstances().getAllEnabled()
-
-        var promise: Promise<Void> = Promise<Void>.value(Void())
 
         // store the results from all monitoring instances here
         var allResults: Array<MonitoringItem> = []
@@ -49,60 +64,22 @@ class LoadMonitoringDataCore {
             let urls = monitoringInstance.monitoringProcessor().urlProvider().create().sorted(by: { $0.priority < $1.priority })
 
             for url in urls {
-
-                promise = promise
-                    .then { _ -> Promise<Data> in
-                        return monitoringInstance.monitoringProcessor().httpClient().get(url.url)
-                    }
-                    .done { data -> Void in
-                        // parse the data into Array<HostMonitoringItem>
-                        let urlResults = monitoringInstance.monitoringProcessor().parser().parse(urlType: url.urlType, data: data as Data)
-
-                        // process the data (add the monitoring items form the previous request,
-                        // filter out some of them and etc.)
-                        monitoringInstanceResults = self.processMonitoringData(urlResults, allItems: monitoringInstanceResults, urlType: url.urlType)
-
-                    }.recover { error -> Void in
-                        // if the promise was rejected (i.e. when connection to the
-                        // monitoring instance could not be established), then add
-                        // the monitoring instance to the failed list
-                        let reason = self.errorCodes[(error as NSError).code] ?? .unknown
-                        failedMonitoringInstances[monitoringInstance] = reason
-                        NagBarDiagnostics.logRefreshFailure(instance: monitoringInstance, reason: reason, error: error)
+                do {
+                    let data = try await monitoringInstance.monitoringProcessor().httpClient().get(url.url)
+                    let urlResults = monitoringInstance.monitoringProcessor().parser().parse(urlType: url.urlType, data: data)
+                    monitoringInstanceResults = self.processMonitoringData(urlResults, allItems: monitoringInstanceResults, urlType: url.urlType)
+                } catch {
+                    let reason = self.errorCodes[(error as NSError).code] ?? .unknown
+                    failedMonitoringInstances[monitoringInstance] = reason
+                    NagBarDiagnostics.logRefreshFailure(instance: monitoringInstance, reason: reason, error: error)
+                    break
                 }
             }
 
-            _ = promise.done { _ -> Void in
-                // add the results from the current monitoring instance to the
-                // results with all monitoring instances
-                allResults += monitoringInstanceResults
-
-            }
+            allResults += monitoringInstanceResults
         }
 
-        // after all data is parsed and filtered, update the status bar
-        _ = promise.done { _ -> Void in
-            DispatchQueue.main.async {
-
-                // before the update, do some other tasks (e.g. visual notifications and sound alarms based on the difference
-                // of the old and new monitoring data)
-                // NOTE: The status bar takes care by itself for its animation; check the StatusBar class
-                if let oldStatusData = OldStatusData.sharedInstance.statusData {
-                    for dataRefreshAction in self.dataRefreshActions {
-                        dataRefreshAction.process(oldStatusData, newResults: allResults)
-                    }
-                }
-
-                // after we used the old data, overwrite it with the new data that will become old data
-                // on the next run
-                OldStatusData.sharedInstance.statusData = allResults
-                NagBarDiagnostics.logRefreshFinished(itemCount: allResults.count, failedCount: failedMonitoringInstances.count)
-
-                // finally update the status bar
-                self.loadStatusBar(allResults, failedMonitoringInstances)
-                completion?(allResults, failedMonitoringInstances)
-            }
-        }
+        return (allResults, failedMonitoringInstances)
     }
 
     private func initDataRefreshAction() {

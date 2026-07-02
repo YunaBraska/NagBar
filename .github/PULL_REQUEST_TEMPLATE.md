@@ -15,5 +15,5 @@
 - [ ] Docs are updated when user-visible behavior changes.
 - [ ] Dependency changes include an ADR.
 - [ ] Dependency changes update `docs/DEPENDENCIES.md` and `NOTICE` when relevant.
-- [ ] CocoaPods files and workspace/project references were not reintroduced.
+- [ ] CocoaPods files or pod-era project wiring were not reintroduced.
 - [ ] No secrets, credentials, private URLs, or private screenshots are included.

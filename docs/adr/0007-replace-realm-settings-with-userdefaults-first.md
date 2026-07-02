@@ -53,7 +53,7 @@ Tradeoffs:
 Focused persistence/settings verification passes:
 
 ```sh
-xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/NagiosSettingsTests -only-testing:NagBarTests/MonitoringInstancesTest -only-testing:NagBarTests/FilterItemsProcessorTests -only-testing:NagBarTests/URLProviderTests -only-testing:NagBarTests/Icinga2ParserTests
+xcodebuild test -project NagBar.xcodeproj -scheme NagBar -destination 'platform=macOS' -only-testing:NagBarTests/NagiosSettingsTests -only-testing:NagBarTests/MonitoringInstancesTest -only-testing:NagBarTests/FilterItemsProcessorTests -only-testing:NagBarTests/URLProviderTests -only-testing:NagBarTests/Icinga2ParserTests
 ```
 
 Result: 30 tests, 0 failures.

@@ -33,7 +33,7 @@ class MonitoringInstancesTabController: NSWindowController {
         
         refreshInterval.integerValue = stepper.integerValue
         
-        Settings().setString(stepper.stringValue, forKey: "refreshInterval")
+        Settings().setInteger(stepper.integerValue, forKey: "refreshInterval")
     }
 }
 

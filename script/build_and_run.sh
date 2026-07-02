@@ -83,7 +83,7 @@ APP_BINARY="$APP_PATH/Contents/MacOS/$APP_NAME"
 
 build_app() {
   xcodebuild build \
-    -workspace "$ROOT_DIR/NagBar.xcworkspace" \
+    -project "$ROOT_DIR/NagBar.xcodeproj" \
     -scheme "$APP_NAME" \
     -configuration "$CONFIGURATION" \
     -destination 'platform=macOS' \
@@ -92,7 +92,7 @@ build_app() {
 
 test_app() {
   xcodebuild test \
-    -workspace "$ROOT_DIR/NagBar.xcworkspace" \
+    -project "$ROOT_DIR/NagBar.xcodeproj" \
     -scheme "$APP_NAME" \
     -destination 'platform=macOS'
 }

@@ -35,6 +35,14 @@ class ConnectionManager: NSObject, URLSessionDelegate {
         self.setSession()
     }
 
+    func request(_ url: String, method: String = "GET", headers: [String: String] = [:], body: Data? = nil, username: String? = nil, password: String? = nil, validateStatus: Bool = false) async throws -> HTTPResponse {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.request(url, method: method, headers: headers, body: body, username: username, password: password, validateStatus: validateStatus) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
     func request(_ url: String, method: String = "GET", headers: [String: String] = [:], body: Data? = nil, username: String? = nil, password: String? = nil, validateStatus: Bool = false, completion: @escaping (Result<HTTPResponse, Error>) -> Void) {
         guard let requestURL = URL(string: url) else {
             completion(.failure(NSError(domain: NSURLErrorDomain, code: NSURLErrorBadURL, userInfo: nil)))

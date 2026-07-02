@@ -114,7 +114,5 @@ Do not publish screenshots that expose private infrastructure or desktop data.
 
 ## Upgrade Note
 
-This branch no longer imports Realm data. If NagBar finds legacy
-`default.realm*` files but no valid current monitoring configuration, it writes
-`~/Library/Application Support/com.volendavidov.NagBar/upgrade-compatibility.json`
-as a manual reconfiguration notice.
+Current builds do not import or report legacy Realm data. Supported persisted
+state is the active JSON and `UserDefaults` store only.

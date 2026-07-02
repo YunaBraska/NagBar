@@ -63,9 +63,6 @@
 		5E3C9711233FB92000CE55B9 /* UnsupportedCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C9712233FB92000CE55B9 /* UnsupportedCommands.swift */; };
 		5E3C9713233FC10000CE55B9 /* FakeCheckMKServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C9715233FC10000CE55B9 /* FakeCheckMKServer.swift */; };
 		5E3C9714233FC10000CE55B9 /* CheckMKHTTPClientFakeServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C9716233FC10000CE55B9 /* CheckMKHTTPClientFakeServerTests.swift */; };
-		5E3C9718233FD00000CE55B9 /* Promise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C9717233FD00000CE55B9 /* Promise.swift */; };
-		5E3C9719233FD00000CE55B9 /* Promise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C9717233FD00000CE55B9 /* Promise.swift */; };
-		5E3C971A233FD20000CE55B9 /* PromiseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C971B233FD20000CE55B9 /* PromiseTests.swift */; };
 		5E3C971C233FE20000CE55B9 /* ServerLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9B04FF1F49EA6800F90135 /* ServerLogin.swift */; };
 		5E3C971D233FF00000CE55B9 /* LocalIcingaFallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C971F233FF00000CE55B9 /* LocalIcingaFallback.swift */; };
 		5E3C971E233FF00000CE55B9 /* LocalIcingaFallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3C971F233FF00000CE55B9 /* LocalIcingaFallback.swift */; };
@@ -292,8 +289,6 @@
 		5E3C9712233FB92000CE55B9 /* UnsupportedCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsupportedCommands.swift; sourceTree = "<group>"; };
 		5E3C9715233FC10000CE55B9 /* FakeCheckMKServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCheckMKServer.swift; sourceTree = "<group>"; };
 		5E3C9716233FC10000CE55B9 /* CheckMKHTTPClientFakeServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckMKHTTPClientFakeServerTests.swift; sourceTree = "<group>"; };
-		5E3C9717233FD00000CE55B9 /* Promise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promise.swift; sourceTree = "<group>"; };
-		5E3C971B233FD20000CE55B9 /* PromiseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromiseTests.swift; sourceTree = "<group>"; };
 		5E3C971F233FF00000CE55B9 /* LocalIcingaFallback.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalIcingaFallback.swift; sourceTree = "<group>"; };
 		5E3C97212340000000CE55B9 /* StatusItemViewTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatusItemViewTests.swift; sourceTree = "<group>"; };
 		5E3C97242340100000CE55B9 /* StatusItemMenuBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatusItemMenuBuilder.swift; sourceTree = "<group>"; };
@@ -551,7 +546,6 @@
 				5E246A5B1F49E34D0015CA71 /* ServiceMonitoringItem.swift */,
 				5E9B05371F49F0EF00F90135 /* DataProcessor.swift */,
 				5E3C970F233FA12800CE55B9 /* JSONValue.swift */,
-				5E3C9717233FD00000CE55B9 /* Promise.swift */,
 				5EBBEC8E1F49FFC800A00BCC /* Utilities.swift */,
 				5E77194A1F51B1450058029E /* StatusBar */,
 				5E7719491F51AF7B0058029E /* StatusPanel */,
@@ -586,7 +580,6 @@
 				5E3C970A233F857D00CE55B9 /* LoadMonitoringDataFakeIcingaTests.swift */,
 				5E7719571F51B47A0058029E /* MonitoringInstancesTest.swift */,
 				5E77195D1F51B47A0058029E /* NagiosParserTests.swift */,
-				5E3C971B233FD20000CE55B9 /* PromiseTests.swift */,
 				5E3C97572341950000CE55B9 /* PasswordPromptFlowTests.swift */,
 				5E3C97212340000000CE55B9 /* StatusItemViewTests.swift */,
 				5E3C97372340950000CE55B9 /* CommandWindowAccessibilityTests.swift */,
@@ -879,7 +872,6 @@
 				5E3C97492341200000CE55B9 /* StatusBarAnimationTrigger.swift in Sources */,
 				5E246A501F49E29D0015CA71 /* Icinga2Parser.swift in Sources */,
 				5E246A4E1F49E2770015CA71 /* ParserInterface.swift in Sources */,
-				5E3C9718233FD00000CE55B9 /* Promise.swift in Sources */,
 				5E246A5C1F49E34D0015CA71 /* ServiceMonitoringItem.swift in Sources */,
 				5E246A461F49E0B60015CA71 /* AppDelegate.swift in Sources */,
 				5E246A401F49E0350015CA71 /* NagiosSettings.swift in Sources */,
@@ -958,7 +950,6 @@
 					5E3C97202340000000CE55B9 /* StatusItemViewTests.swift in Sources */,
 				5E7719731F51B47A0058029E /* NagiosParserTests.swift in Sources */,
 				5E77196F1F51B47A0058029E /* MonitoringInstancesTest.swift in Sources */,
-				5E3C971A233FD20000CE55B9 /* PromiseTests.swift in Sources */,
 				5E3C97582341950000CE55B9 /* PasswordPromptFlowTests.swift in Sources */,
 				5E3C970B233F907A00CE55B9 /* URLProviderTests.swift in Sources */,
 				5E77196A1F51B47A0058029E /* Icinga2ParserTests.swift in Sources */,

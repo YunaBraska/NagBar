@@ -365,11 +365,12 @@ final class URLProviderTests: XCTestCase {
         var resultData: Data?
         var resultError: NSError?
 
-        client.get(url).done { data in
-            resultData = data
-            expectation.fulfill()
-        }.catch { error in
-            resultError = error as NSError
+        Task {
+            do {
+                resultData = try await client.get(url)
+            } catch {
+                resultError = error as NSError
+            }
             expectation.fulfill()
         }
 

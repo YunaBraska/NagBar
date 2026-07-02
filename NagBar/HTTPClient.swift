@@ -9,7 +9,7 @@
 import Foundation
 
 protocol HTTPClient {
-    func get(_ url: String) -> Promise<Data>
-    func checkConnection() -> Promise<Bool>
-    func post(_ url: String, postData: Dictionary<String, String>) -> Promise<Data>
+    func get(_ url: String) async throws -> Data
+    func checkConnection() async -> Bool
+    func post(_ url: String, postData: Dictionary<String, String>) async throws -> Data
 }
