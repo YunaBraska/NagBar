@@ -201,6 +201,7 @@ class StatusBar : NSObject {
             target: statusItemMenuTarget(),
             actions: StatusItemMenuActions(
                 status: #selector(AppDelegate.showStatusFromStatusItem),
+                update: #selector(AppDelegate.openAvailableUpdateFromStatusItem),
                 about: #selector(AppDelegate.showAboutFromStatusItem),
                 preferences: #selector(AppDelegate.openPreferencesFromStatusItem),
                 refresh: #selector(AppDelegate.refreshFromStatusItem)

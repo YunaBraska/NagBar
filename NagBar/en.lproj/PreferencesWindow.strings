@@ -149,8 +149,8 @@
 /* Class = "NSBox"; title = "Sorting"; ObjectID = "OZ7-hn-VD6"; */
 "OZ7-hn-VD6.title" = "Sorting";
 
-/* Class = "NSButtonCell"; title = "Automatically check for new version on startup"; ObjectID = "Oa5-TJ-Pth"; */
-"Oa5-TJ-Pth.title" = "Automatically check for new version on startup";
+/* Class = "NSButtonCell"; title = "Automatically check weekly for new versions"; ObjectID = "Oa5-TJ-Pth"; */
+"Oa5-TJ-Pth.title" = "Automatically check weekly for new versions";
 
 /* Class = "NSButtonCell"; title = "Flapping"; ObjectID = "PGu-27-uLx"; */
 "PGu-27-uLx.title" = "Flapping";

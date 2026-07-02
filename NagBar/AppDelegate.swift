@@ -10,6 +10,10 @@ import Cocoa
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
+    static var openURL: (URL) -> Void = { url in
+        NSWorkspace.shared.open(url)
+    }
+
     
     var preferencesWindow: PreferencesWindowController?
     
@@ -73,6 +77,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc(showAbout) func showAboutFromStatusItem() {
         openAbout(self)
+    }
+
+    @objc(openAvailableUpdate) func openAvailableUpdateFromStatusItem() {
+        guard let releaseURL = AvailableRelease.current()?.releaseURL,
+              let url = URL(string: releaseURL) else {
+            return
+        }
+
+        NagBarDiagnostics.logStatusItemEvent(message: "openAvailableUpdateRequested")
+        Self.openURL(url)
     }
 
     @IBAction func showStatus(_ sender: AnyObject) {

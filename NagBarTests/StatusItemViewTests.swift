@@ -43,6 +43,9 @@ final class StatusItemViewTests: XCTestCase {
         StatusItemView.refreshStatusData = {
             LoadMonitoringData().refreshStatusData()
         }
+        AppDelegate.openURL = { url in
+            NSWorkspace.shared.open(url)
+        }
         super.tearDown()
     }
 
@@ -53,10 +56,12 @@ final class StatusItemViewTests: XCTestCase {
             target: target,
             actions: StatusItemMenuActions(
                 status: #selector(StatusItemMenuTarget.showStatus(_:)),
+                update: #selector(StatusItemMenuTarget.openUpdate(_:)),
                 about: #selector(StatusItemMenuTarget.showAbout(_:)),
                 preferences: #selector(StatusItemMenuTarget.openPreferences(_:)),
                 refresh: #selector(StatusItemMenuTarget.refresh(_:))
-            )
+            ),
+            availableRelease: nil
         )
 
         XCTAssertEqual(menu.items.map { $0.title }, ["Show Status", "", "About NagBar", "Preferences", "", "Refresh", "", "Quit"])
@@ -89,13 +94,38 @@ final class StatusItemViewTests: XCTestCase {
             target: target,
             actions: StatusItemMenuActions(
                 status: #selector(StatusItemMenuTarget.showStatus(_:)),
+                update: #selector(StatusItemMenuTarget.openUpdate(_:)),
                 about: #selector(StatusItemMenuTarget.showAbout(_:)),
                 preferences: #selector(StatusItemMenuTarget.openPreferences(_:)),
                 refresh: #selector(StatusItemMenuTarget.refresh(_:))
-            )
+            ),
+            availableRelease: nil
         )
 
         XCTAssertTrue(menu.items.contains { $0.title == "Preferences" })
+    }
+
+    func testStatusItemMenuShowsUpdateIndicatorWhenReleaseIsAvailable() {
+        let target = StatusItemMenuTarget()
+        let release = AvailableRelease(version: "2026.07.1820815", releaseURL: "https://github.com/YunaBraska/NagBar/releases/tag/2026.07.1820815")
+
+        let menu = StatusItemMenuBuilder.build(
+            target: target,
+            actions: StatusItemMenuActions(
+                status: #selector(StatusItemMenuTarget.showStatus(_:)),
+                update: #selector(StatusItemMenuTarget.openUpdate(_:)),
+                about: #selector(StatusItemMenuTarget.showAbout(_:)),
+                preferences: #selector(StatusItemMenuTarget.openPreferences(_:)),
+                refresh: #selector(StatusItemMenuTarget.refresh(_:))
+            ),
+            availableRelease: release
+        )
+
+        XCTAssertEqual(menu.items.map { $0.title }, ["Show Status", "", "Update Available...", "About NagBar", "Preferences", "", "Refresh", "", "Quit"])
+        XCTAssertEqual(menu.items[2].action, #selector(StatusItemMenuTarget.openUpdate(_:)))
+        XCTAssertTrue(menu.items[2].target === target)
+        XCTAssertEqual(menu.items[2].accessibilityIdentifier(), StatusItemAccessibility.updateAvailableIdentifier)
+        XCTAssertEqual(menu.items[2].representedObject as? String, "https://github.com/YunaBraska/NagBar/releases/tag/2026.07.1820815")
     }
 
     func testStatusItemAccessibilityDescribesMenuEntrypoint() {
@@ -106,6 +136,7 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertEqual(StatusItemAccessibility.statusItemButtonIdentifier, "nagbar.statusItem.button")
         XCTAssertEqual(StatusItemAccessibility.failedStatusItemButtonIdentifier, "nagbar.statusItem.failed.button")
         XCTAssertEqual(StatusItemAccessibility.showStatusIdentifier, "nagbar.statusItem.showStatus")
+        XCTAssertEqual(StatusItemAccessibility.updateAvailableIdentifier, "nagbar.statusItem.updateAvailable")
         XCTAssertEqual(StatusItemAccessibility.aboutIdentifier, "nagbar.statusItem.about")
         XCTAssertEqual(StatusItemAccessibility.preferencesIdentifier, "nagbar.statusItem.preferences")
         XCTAssertEqual(StatusItemAccessibility.refreshIdentifier, "nagbar.statusItem.refresh")
@@ -155,6 +186,17 @@ final class StatusItemViewTests: XCTestCase {
         XCTAssertTrue(menu.items[5].target === target)
         XCTAssertEqual(menu.items[5].action, #selector(AppDelegate.refreshFromStatusItem))
         XCTAssertTrue(menu.items[7].target === NSApplication.shared)
+    }
+
+    func testAppDelegateOpenAvailableUpdateUsesStoredReleaseURL() {
+        var openedURLs: [URL] = []
+        AppDelegate.openURL = { openedURLs.append($0) }
+        Settings().setString("2026.07.1820815", forKey: "availableReleaseVersion")
+        Settings().setString("https://github.com/YunaBraska/NagBar/releases/tag/2026.07.1820815", forKey: "availableReleaseURL")
+
+        (NSApplication.shared.delegate as? AppDelegate)?.openAvailableUpdateFromStatusItem()
+
+        XCTAssertEqual(openedURLs.map(\.absoluteString), ["https://github.com/YunaBraska/NagBar/releases/tag/2026.07.1820815"])
     }
 
     func testStatusItemViewSetStatusItemTitleUpdatesButtonAndStatusItemLength() {
@@ -1310,6 +1352,9 @@ private final class StatusItemMenuTarget: NSObject {
     }
 
     @objc func showAbout(_ sender: AnyObject) {
+    }
+
+    @objc func openUpdate(_ sender: AnyObject) {
     }
 
     @objc func openPreferences(_ sender: AnyObject) {

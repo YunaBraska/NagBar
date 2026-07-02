@@ -109,6 +109,16 @@ class NagiosSettingsTests: XCTestCase {
         XCTAssertEqual(NagiosSettings().getSortColumn(), "1")
     }
 
+    func testUpdateIndicatorSettingsUseSafeDefaultsWhenKeysAreMissing() {
+        let settings = Settings()
+        settings.resetKnownSettings()
+
+        XCTAssertEqual(settings.doubleForKey("newVersionLastCheck"), 0)
+        XCTAssertEqual(settings.stringForKey("availableReleaseVersion"), "")
+        XCTAssertEqual(settings.stringForKey("availableReleaseURL"), "")
+        XCTAssertEqual(settings.stringForKey("availableReleaseNotes"), "")
+    }
+
     func testCheckMKSortSettingsReturnEmptyQueryFragments() {
         XCTAssertEqual(CheckMKSettings().getSortOrder(), "")
         XCTAssertEqual(CheckMKSettings().getSortColumn(), "")

@@ -55,16 +55,23 @@ struct StatusItemTitleFormatter {
 
 struct StatusItemMenuActions {
     let status: Selector
+    let update: Selector
     let about: Selector
     let preferences: Selector
     let refresh: Selector
 }
 
 struct StatusItemMenuBuilder {
-    static func build(target: AnyObject, actions: StatusItemMenuActions) -> NSMenu {
+    static func build(target: AnyObject, actions: StatusItemMenuActions, availableRelease: AvailableRelease? = AvailableRelease.current()) -> NSMenu {
         let menu = NSMenu(title: "")
         menu.addItem(menuItem(title: "Show Status", identifier: StatusItemAccessibility.showStatusIdentifier, action: actions.status, target: target))
         menu.addItem(NSMenuItem.separator())
+        if let availableRelease = availableRelease {
+            let title = NSLocalizedString("updateAvailableMenuItem", comment: "")
+            let item = menuItem(title: title, identifier: StatusItemAccessibility.updateAvailableIdentifier, action: actions.update, target: target)
+            item.representedObject = availableRelease.releaseURL
+            menu.addItem(item)
+        }
         menu.addItem(menuItem(title: "About NagBar", identifier: StatusItemAccessibility.aboutIdentifier, action: actions.about, target: target))
         menu.addItem(menuItem(title: "Preferences", identifier: StatusItemAccessibility.preferencesIdentifier, action: actions.preferences, target: target))
         menu.addItem(NSMenuItem.separator())
@@ -115,6 +122,7 @@ struct StatusItemAccessibility {
     static let statusItemButtonIdentifier = "nagbar.statusItem.button"
     static let failedStatusItemButtonIdentifier = "nagbar.statusItem.failed.button"
     static let showStatusIdentifier = "nagbar.statusItem.showStatus"
+    static let updateAvailableIdentifier = "nagbar.statusItem.updateAvailable"
     static let aboutIdentifier = "nagbar.statusItem.about"
     static let preferencesIdentifier = "nagbar.statusItem.preferences"
     static let refreshIdentifier = "nagbar.statusItem.refresh"

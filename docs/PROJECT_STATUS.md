@@ -2,6 +2,11 @@
 
 Status: Reactivation milestone complete; production-hardening work remains.
 
+Current run status: stopped on request after the reactivation milestone. The
+working branch `feature/update-indicator-spike` contains uncommitted,
+unverified update-indicator prototype work and should be treated as paused spike
+work, not finished product code.
+
 This is the canonical status, scope, and verification document for NagBar.
 Keep ADRs for decisions, `CHANGELOG.md` for release notes, and this file for the
 current truth about behavior and readiness.
@@ -103,6 +108,22 @@ without losing the next useful slices.
 | Update indicator | Medium | Add a weekly release-check indicator that informs the user when a newer GitHub release exists. |
 | UI/UX/DX redesign | Medium | Redesign Preferences, status details, and empty/error states with verified light and dark mode screenshots. |
 | Accessibility evidence | Medium | Replace remaining manual menu-extra accessibility checks with repeatable evidence where macOS automation allows it. |
+
+## Paused Spike Work
+
+`feature/update-indicator-spike` currently contains an uncommitted prototype for
+the update indicator:
+
+- switch the version check endpoint to GitHub latest release metadata;
+- persist a weekly check timestamp and available-release state;
+- add a status-item menu entry for an available update;
+- update Preferences copy from startup checks to weekly checks;
+- add focused tests for GitHub release parsing, weekly cadence, stored update
+  state, settings defaults, and status-item menu integration.
+
+Before this spike can be promoted, compile it, run the focused tests, run
+`./script/build_and_run.sh --acceptance`, update the verified test count, then
+review and squash-merge through the normal branch flow.
 
 ## Documentation Map
 

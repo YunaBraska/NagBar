@@ -23,7 +23,8 @@
 "filterAlreadyExistsHost" = "Filter for host \"%@\" already exists.";
 "filterAlreadyExistsService" = "Filter for host \"%@\", service \"%@\" already exists.";
 "newVersionMessageText" = "New version available";
-"newVersionInformativeText" = "Version %@ of NagBar is available with the following features:\n%@\n\nDownload at https://github.com/volendavidov/NagBar/releases";
+"newVersionInformativeText" = "Version %@ of NagBar is available with the following features:\n%@\n\nDownload at %@";
+"updateAvailableMenuItem" = "Update Available...";
 "pleaseEnterPassword" = "Please enter the password for monitoring instance\n%@";
 "noMonitoringInstancesRequirePassword" = "No monitoring instances require a password.";
 "no" = "No";
