@@ -141,9 +141,9 @@ trap cleanup EXIT HUP INT TERM
 ditto -c -k --norsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
 if [ -n "$KEYCHAIN_PROFILE" ]; then
-  xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$KEYCHAIN_PROFILE" --wait
+  xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$KEYCHAIN_PROFILE" --wait --timeout 90m
 else
-  xcrun notarytool submit "$ZIP_PATH" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$PASSWORD" --wait
+  xcrun notarytool submit "$ZIP_PATH" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$PASSWORD" --wait --timeout 90m
 fi
 
 xcrun stapler staple "$APP_PATH"
