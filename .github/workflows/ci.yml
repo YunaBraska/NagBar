@@ -44,7 +44,13 @@ jobs:
 
       - name: Check public release credential diagnostics
         run: |
-          ! ./script/cicd/sign_release.sh 2>signing.err
+          if ./script/cicd/sign_release.sh 2>signing.err; then
+            echo 'Public signing unexpectedly succeeded without credentials.' >&2
+            exit 1
+          fi
           grep -F "Developer ID identity is required for public signing." signing.err
-          ! ./script/cicd/notarize_release.sh --app build/Release/NagBar.app 2>notary.err
+          if ./script/cicd/notarize_release.sh --app build/Release/NagBar.app 2>notary.err; then
+            echo 'Notarization unexpectedly succeeded without credentials.' >&2
+            exit 1
+          fi
           grep -F "Apple notarization credentials are required." notary.err
