@@ -8,6 +8,12 @@ and Check_MK, then shows the current problem state from the menu bar.
 
 This fork is a maintenance revival of the original project by Volen Davidov.
 
+A modern native replacement is now being built iteratively in the separate
+`NagBarModern` scheme. The first slice covers provider-neutral Icinga 2 source
+setup, macOS Keychain credentials, source-specific TLS policy, and a real
+containerized Icinga 2 connection test. It is a development preview, not the
+shipping app.
+
 ![](screenshot.png)
 
 The first-run experience is backed by a loopback fake Icinga HTTP server and
@@ -39,6 +45,14 @@ Run the full test suite:
 ./script/build_and_run.sh --test
 ```
 
+Build the modern preview and test its core:
+
+```sh
+swift test --package-path Packages/NagBarCore
+xcodebuild build -workspace NagBar.xcworkspace -scheme NagBarModern \
+  -configuration Debug -destination 'platform=macOS'
+```
+
 Run the live status-item smoke:
 
 ```sh
@@ -54,9 +68,10 @@ Create a local/private Release package:
 ## Project State
 
 The canonical project status lives in [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
-As of 2026-07-01:
+As of 2026-11-10:
 
-- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 433 tests.
+- `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 457 tests.
+- `swift test --package-path Packages/NagBarCore` passes with 19 tests.
 - `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes.
 - `./script/build_and_run.sh --acceptance` passes full tests, Release build, and the live runtime smoke.
 - `./script/build_and_run.sh --package` creates a local/private zip, checksum, and manifest under `dist/`.

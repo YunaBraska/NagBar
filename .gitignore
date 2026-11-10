@@ -4,6 +4,7 @@
 # Xcode
 DerivedData/
 build/
+build-modern/
 *.xcuserstate
 *.xccheckout
 *.moved-aside
@@ -27,3 +28,7 @@ Pods/
 .codex/
 /tmp/
 dist/
+
+# Local integration secrets and generated certificates
+**/.env.local
+integration/icinga2/artifacts/

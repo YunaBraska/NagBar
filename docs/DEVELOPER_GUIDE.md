@@ -8,6 +8,7 @@ Requirements:
 
 - macOS 12.4 or newer
 - Xcode
+- Docker Desktop for the real Icinga 2 integration lab
 
 Open the workspace:
 
@@ -30,6 +31,40 @@ open NagBar.xcworkspace
 | Debug under lldb | `./script/build_and_run.sh --debug` |
 
 Release-only helpers live under `script/cicd/`.
+
+## Modern Preview
+
+The new source journey is a separate macOS 14 preview target in the existing
+workspace. It uses the local `NagBarCore` Swift package and does not replace the
+legacy app yet.
+
+```sh
+swift test --package-path Packages/NagBarCore
+xcodebuild build -workspace NagBar.xcworkspace -scheme NagBarModern \
+  -configuration Debug -destination 'platform=macOS' \
+  SYMROOT="$PWD/build-modern"
+open build-modern/Debug/NagBarModern.app
+```
+
+Regenerate `ModernNagBar/NagBarModern.xcodeproj` after changing
+`ModernNagBar/project.yml`:
+
+```sh
+cd ModernNagBar
+xcodegen generate
+```
+
+Run the real Icinga 2 compatibility lab after creating the ignored
+`integration/icinga2/.env.local` from `.env.example`:
+
+```sh
+./script/icinga2_lab.sh start
+./script/icinga2_lab.sh verify
+./script/icinga2_lab.sh stop
+```
+
+Generated CA and PKCS#12 files are written to the external directory selected
+by `NAGBAR_ICINGA_ARTIFACTS_DIR`. No integration password is committed.
 
 Focused fake-server coverage:
 

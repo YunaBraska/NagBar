@@ -1,0 +1,43 @@
+name: NagBarModern
+
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  NagBarCore:
+    path: ../Packages/NagBarCore
+
+targets:
+  NagBarModern:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    dependencies:
+      - package: NagBarCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.volendavidov.NagBar.ModernPreview
+        PRODUCT_NAME: NagBarModern
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: 5.0
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: NagBar Preview
+        INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 NagBar contributors.
+        ENABLE_HARDENED_RUNTIME: YES
+
+schemes:
+  NagBarModern:
+    build:
+      targets:
+        NagBarModern: all
+    run:
+      config: Debug
+    archive:
+      config: Release

@@ -1,6 +1,6 @@
 # Project Status
 
-Status: Reactivation milestone complete; production-hardening work remains.
+Status: Legacy reactivation complete; modern replacement development active.
 
 This is the canonical status, scope, and verification document for NagBar.
 Keep ADRs for decisions, `CHANGELOG.md` for release notes, and this file for the
@@ -19,7 +19,7 @@ state. The maintained product surface is:
 
 ## Verified Snapshot
 
-Snapshot date: 2026-07-01.
+Snapshot date: 2026-11-10.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
@@ -35,6 +35,24 @@ Snapshot date: 2026-07-01.
 | Backend compatibility smoke | Done | Recorded real-shape fixture tests cover Nagios CGI, Icinga CGI, Icinga 2 API, Thruk JSON, and Check_MK JSON view parsing; fake-server tests cover auth/session/command protocol behavior |
 | Accessibility automation evidence | Done | Status-item AX press, accessible menu item identifiers, status panel identifiers, command windows, monitoring instance table cells, and About content are covered by repeatable macOS tests |
 | Legacy dependency guardrails | Done | Tests and CI reject CocoaPods/project references and removed runtime imports for Alamofire, PromiseKit, RealmSwift, SAMKeychain, SwiftyJSON, and hpple |
+
+## Modern Replacement Preview
+
+The `NagBarModern` scheme is the first reviewable vertical slice of the new
+application. It is deliberately separate from the shipping legacy target.
+
+| Area | Current evidence | Remaining gap |
+| --- | --- | --- |
+| Source architecture | Provider-neutral source model, one built-in Icinga 2 adapter, atomic public configuration storage | A second provider is not implemented yet |
+| Credentials | Basic passwords use a real Keychain internet-password item; client identities are referenced from Keychain; PKCS#12 import password is not persisted | App-level mTLS success and denial paths still need proof |
+| TLS | Verification defaults on; unchecked trust is source-specific, visibly warned, and reset after authority changes | Custom CA, certificate pinning, and rotation handling remain |
+| Connection test | The running preview reached the real containerized Icinga 2 hosts and services endpoints with Basic auth | Background refresh does not exist yet |
+| Native setup UI | SwiftUI source setup was inspected in its running macOS window for Basic, client-certificate, insecure-TLS, validation, success, failure, and loading states | Multiple-source management, dark mode, and keyboard traversal remain |
+| Real integration lab | Official pinned Icinga 2.16 image rejects plain HTTP and untrusted private CA, then passes no-auth 401, Basic 200, wrong-password 401, missing-permission 403, trusted private-CA 200, and mTLS 200 | Rotation and recovery scenarios remain |
+
+The preview is development evidence, not a release candidate. It stores source
+configuration under its own stable preview bundle identifier and does not
+migrate legacy settings.
 
 ## Supported Backends
 
@@ -105,7 +123,7 @@ without losing the next useful slices.
 | Public release proof | High | Run and record a Developer ID-signed, notarized, stapled release when Apple signing secrets are available. |
 | Clean-account smoke | High | Install the packaged app in a fresh macOS user account and record launch, status-item, Preferences, fake Icinga fallback, and Quit evidence. |
 | Update indicator | Medium | Add a weekly release-check indicator that informs the user when a newer GitHub release exists. |
-| UI/UX/DX redesign | Medium | Redesign Preferences, status details, and empty/error states with verified light and dark mode screenshots. |
+| Modern replacement | High | Finish TLS trust modes, app-level mTLS evidence, multi-source management, attention-first status, and legacy migration/removal according to `docs/roadmap.md`. |
 
 ## Documentation Map
 

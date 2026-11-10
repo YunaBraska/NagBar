@@ -1,0 +1,355 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		62054BEC4277BC57FF2A61D4 /* NagBarCore in Frameworks */ = {isa = PBXBuildFile; productRef = F95248E4DD22F930E6690327 /* NagBarCore */; };
+		702234D63B88B465B72D4D4B /* StatusMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8560FED7C16FF7E3A4AADBD /* StatusMenuView.swift */; };
+		76E0AA4C144768917905E6AD /* NagBarModernApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C18D8130B533E88F00AA99C /* NagBarModernApp.swift */; };
+		B5F627985E4CFAD0A5C33AE1 /* SourceSetupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F775139D0226CA3E403924 /* SourceSetupModel.swift */; };
+		C4ABE2B9DC64AE520129A78F /* SourceSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F63C36FC44C2A81FDC2B1937 /* SourceSetupView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		09F775139D0226CA3E403924 /* SourceSetupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceSetupModel.swift; sourceTree = "<group>"; };
+		0C9A9C8982709BC074989656 /* NagBarCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = NagBarCore; path = ../Packages/NagBarCore; sourceTree = SOURCE_ROOT; };
+		6C18D8130B533E88F00AA99C /* NagBarModernApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NagBarModernApp.swift; sourceTree = "<group>"; };
+		9DB47DF7A96562B54E427B80 /* NagBarModern.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NagBarModern.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8560FED7C16FF7E3A4AADBD /* StatusMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuView.swift; sourceTree = "<group>"; };
+		F63C36FC44C2A81FDC2B1937 /* SourceSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceSetupView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		10D8DC035A3433CBAA844442 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				62054BEC4277BC57FF2A61D4 /* NagBarCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5DD7C91B9BD9D269C93139D2 = {
+			isa = PBXGroup;
+			children = (
+				E9A1E5C1C383F326528BB6F1 /* Packages */,
+				F290EC965E0045BE36514008 /* Sources */,
+				F454E94AFE162989C99423E3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E9A1E5C1C383F326528BB6F1 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				0C9A9C8982709BC074989656 /* NagBarCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		F290EC965E0045BE36514008 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6C18D8130B533E88F00AA99C /* NagBarModernApp.swift */,
+				09F775139D0226CA3E403924 /* SourceSetupModel.swift */,
+				F63C36FC44C2A81FDC2B1937 /* SourceSetupView.swift */,
+				C8560FED7C16FF7E3A4AADBD /* StatusMenuView.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		F454E94AFE162989C99423E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9DB47DF7A96562B54E427B80 /* NagBarModern.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0C2D375D3E2CA00FC2E95793 /* NagBarModern */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 88629501DFB4C0E11BEFCB4B /* Build configuration list for PBXNativeTarget "NagBarModern" */;
+			buildPhases = (
+				4C7C01F87CBFE1937B27E5B1 /* Sources */,
+				10D8DC035A3433CBAA844442 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NagBarModern;
+			packageProductDependencies = (
+				F95248E4DD22F930E6690327 /* NagBarCore */,
+			);
+			productName = NagBarModern;
+			productReference = 9DB47DF7A96562B54E427B80 /* NagBarModern.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		64AB20F027E9DEF47F225E5B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					0C2D375D3E2CA00FC2E95793 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 7CA78ED979EF938499805711 /* Build configuration list for PBXProject "NagBarModern" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5DD7C91B9BD9D269C93139D2;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AC14D8E8C16DF17201196996 /* XCLocalSwiftPackageReference "../Packages/NagBarCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F454E94AFE162989C99423E3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0C2D375D3E2CA00FC2E95793 /* NagBarModern */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4C7C01F87CBFE1937B27E5B1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				76E0AA4C144768917905E6AD /* NagBarModernApp.swift in Sources */,
+				B5F627985E4CFAD0A5C33AE1 /* SourceSetupModel.swift in Sources */,
+				C4ABE2B9DC64AE520129A78F /* SourceSetupView.swift in Sources */,
+				702234D63B88B465B72D4D4B /* StatusMenuView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2F073DBDD2466271C766095A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "NagBar Preview";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 NagBar contributors.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.volendavidov.NagBar.ModernPreview;
+				PRODUCT_NAME = NagBarModern;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		5CB75406463AF25366DEF98B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "NagBar Preview";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 NagBar contributors.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.volendavidov.NagBar.ModernPreview;
+				PRODUCT_NAME = NagBarModern;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A7C13DC4851262C41709B095 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E10604CE9A9782DF459B5EB7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7CA78ED979EF938499805711 /* Build configuration list for PBXProject "NagBarModern" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7C13DC4851262C41709B095 /* Debug */,
+				E10604CE9A9782DF459B5EB7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		88629501DFB4C0E11BEFCB4B /* Build configuration list for PBXNativeTarget "NagBarModern" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5CB75406463AF25366DEF98B /* Debug */,
+				2F073DBDD2466271C766095A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AC14D8E8C16DF17201196996 /* XCLocalSwiftPackageReference "../Packages/NagBarCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/NagBarCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F95248E4DD22F930E6690327 /* NagBarCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NagBarCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 64AB20F027E9DEF47F225E5B /* Project object */;
+}

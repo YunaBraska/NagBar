@@ -4,4 +4,7 @@
    <FileRef
       location = "group:NagBar.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:ModernNagBar/NagBarModern.xcodeproj">
+   </FileRef>
 </Workspace>
