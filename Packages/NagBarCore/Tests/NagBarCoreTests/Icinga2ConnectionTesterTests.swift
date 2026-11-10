@@ -4,6 +4,9 @@ import XCTest
 final class Icinga2ConnectionTesterTests: XCTestCase {
     override func tearDown() {
         StubURLProtocol.handler = nil
+        StubURLProtocol.onStart = nil
+        StubURLProtocol.blocksRequests = false
+        StubURLProtocol.didStopLoading = false
         super.tearDown()
     }
 
@@ -57,6 +60,22 @@ final class Icinga2ConnectionTesterTests: XCTestCase {
         XCTAssertEqual(identityResult, .failed(.clientCertificateNotAvailable))
     }
 
+    func testConnectionCancellationStopsTheActiveRequest() async {
+        let started = expectation(description: "Request started")
+        StubURLProtocol.blocksRequests = true
+        StubURLProtocol.onStart = { started.fulfill() }
+        let connection = Task {
+            await self.tester().test(self.source(), password: "secret")
+        }
+        await fulfillment(of: [started], timeout: 1)
+
+        connection.cancel()
+        let result = await connection.value
+
+        XCTAssertEqual(result, .failed(.cancelled))
+        XCTAssertTrue(StubURLProtocol.didStopLoading)
+    }
+
     private func tester() -> Icinga2ConnectionTester {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -85,6 +104,9 @@ final class Icinga2ConnectionTesterTests: XCTestCase {
 
 private final class StubURLProtocol: URLProtocol {
     static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    static var onStart: (() -> Void)?
+    static var blocksRequests = false
+    static var didStopLoading = false
 
     override class func canInit(with request: URLRequest) -> Bool {
         true
@@ -95,6 +117,8 @@ private final class StubURLProtocol: URLProtocol {
     }
 
     override func startLoading() {
+        Self.onStart?()
+        if Self.blocksRequests { return }
         guard let handler = Self.handler else {
             XCTFail("Missing URL protocol handler")
             return
@@ -110,5 +134,7 @@ private final class StubURLProtocol: URLProtocol {
         }
     }
 
-    override func stopLoading() {}
+    override func stopLoading() {
+        Self.didStopLoading = true
+    }
 }

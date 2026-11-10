@@ -20,10 +20,19 @@ Create `integration/icinga2/.env.local` from `.env.example`, then run:
 ./script/icinga2_lab.sh stop
 ```
 
-`start` also creates a `nagbar-client` identity signed by the lab CA. The
+`start` also creates accepted `nagbar-live-client.nagbar.invalid` and rejected
+`nagbar-live-rejected.nagbar.invalid` identities signed by the lab CA. The
 PKCS#12 file and CA certificate are written to
 `NAGBAR_ICINGA_ARTIFACTS_DIR`. The PKCS#12 password remains only in the ignored
 `.env.local` file.
+
+`verify` temporarily imports those dedicated test identities into the default
+macOS Keychain, resolves their persistent references through `NagBarCore`,
+proves accepted and rejected real mTLS connections, and removes them again. An
+interrupted process can leave a test identity behind. In that case, remove only
+the two `nagbar-live-*.nagbar.invalid` identities and certificates in Keychain
+Access before rerunning. The PKCS#12 files intentionally omit the lab CA so the
+test does not import unrelated trust material into the Keychain.
 
 The matrix intentionally treats plain HTTP and no authentication as negative
 tests because the Icinga 2 API requires HTTPS and authentication. It also proves

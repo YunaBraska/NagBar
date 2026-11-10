@@ -94,6 +94,16 @@ public struct MonitoringSource: Codable, Equatable, Identifiable, Sendable {
         endpoint = newEndpoint
         return authorityChanged
     }
+
+    public mutating func setServerCertificateVerification(enabled: Bool) {
+        if enabled {
+            if serverTrust == .disabled {
+                serverTrust = .system
+            }
+        } else {
+            serverTrust = .disabled
+        }
+    }
 }
 
 public enum SourceValidationIssue: Error, Equatable, Hashable, Sendable {

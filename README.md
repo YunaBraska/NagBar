@@ -71,7 +71,8 @@ The canonical project status lives in [docs/PROJECT_STATUS.md](docs/PROJECT_STAT
 As of 2026-11-10:
 
 - `xcodebuild test -workspace NagBar.xcworkspace -scheme NagBar -destination 'platform=macOS'` passes with 457 tests.
-- `swift test --package-path Packages/NagBarCore` passes with 19 tests.
+- `swift test --package-path Packages/NagBarCore` passes 21 local tests; two
+  additional live Icinga tests run through the integration lab.
 - `xcodebuild build -workspace NagBar.xcworkspace -scheme NagBar -configuration Release -destination 'platform=macOS'` passes.
 - `./script/build_and_run.sh --acceptance` passes full tests, Release build, and the live runtime smoke.
 - `./script/build_and_run.sh --package` creates a local/private zip, checksum, and manifest under `dist/`.

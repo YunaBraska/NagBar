@@ -51,6 +51,19 @@ final class MonitoringSourceTests: XCTestCase {
         XCTAssertEqual(source(serverTrust: .disabled).serverTrust.method, .disabled)
     }
 
+    func testChangingVerificationPreservesSpecificTrustUntilItIsExplicitlyDisabled() {
+        var source = source(serverTrust: .customCertificate(certificateID: "private-ca"))
+
+        source.setServerCertificateVerification(enabled: true)
+        XCTAssertEqual(source.serverTrust, .customCertificate(certificateID: "private-ca"))
+
+        source.setServerCertificateVerification(enabled: false)
+        XCTAssertEqual(source.serverTrust, .disabled)
+
+        source.setServerCertificateVerification(enabled: true)
+        XCTAssertEqual(source.serverTrust, .system)
+    }
+
     private func source(
         name: String = "Production",
         endpoint: URL = URL(string: "https://icinga.example.test:5665/v1")!,

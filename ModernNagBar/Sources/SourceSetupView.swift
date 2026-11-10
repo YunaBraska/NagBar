@@ -7,6 +7,7 @@ struct SourceSetupView: View {
     @State private var isChoosingIdentity = false
     @State private var isImportingIdentity = false
     @State private var isConfirmingDeletion = false
+    @State private var connectionTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -96,10 +97,16 @@ struct SourceSetupView: View {
                     .disabled(isWorking)
                 }
                 Spacer()
-                Button("Verbindung testen") {
-                    Task { await model.testConnection() }
+                if model.isTestingConnection {
+                    Button("Abbrechen", role: .cancel) {
+                        connectionTask?.cancel()
+                    }
+                } else {
+                    Button("Verbindung testen") {
+                        connectionTask = Task { await model.testConnection() }
+                    }
+                    .disabled(isWorking)
                 }
-                .disabled(isWorking)
 
                 Button("Speichern") {
                     Task { await model.save() }
@@ -112,6 +119,7 @@ struct SourceSetupView: View {
         }
         .frame(minWidth: 560, minHeight: 560)
         .task { await model.load() }
+        .onDisappear { connectionTask?.cancel() }
         .sheet(isPresented: $isImportingIdentity) {
             if let importURL {
                 IdentityImportView(fileURL: importURL, model: model, isPresented: $isImportingIdentity)

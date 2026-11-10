@@ -50,25 +50,47 @@ generate_client_identity() {
   # The quoted script expands inside the container, not in this shell.
   # shellcheck disable=SC2016
   compose exec -T icinga2 sh -ceu '
-    cert_dir=/data/var/lib/icinga2/certs/nagbar-client
-    mkdir -p "$cert_dir"
-    if [ ! -f "$cert_dir/nagbar-client.crt" ]; then
-      icinga2 pki new-cert --cn nagbar-client --key "$cert_dir/nagbar-client.key" --csr "$cert_dir/nagbar-client.csr"
-      icinga2 pki sign-csr --csr "$cert_dir/nagbar-client.csr" --cert "$cert_dir/nagbar-client.crt"
-    fi
-    openssl pkcs12 -export \
-      -inkey "$cert_dir/nagbar-client.key" \
-      -in "$cert_dir/nagbar-client.crt" \
-      -certfile /data/var/lib/icinga2/certs/ca.crt \
-      -out "$cert_dir/nagbar-client.p12" \
-      -passout env:NAGBAR_ICINGA_PKCS12_PASSWORD
+    create_identity() {
+      file_name=$1
+      common_name=$2
+      cert_dir="/data/var/lib/icinga2/certs/$file_name"
+      mkdir -p "$cert_dir"
+      if [ ! -f "$cert_dir/$file_name.crt" ]; then
+        icinga2 pki new-cert \
+          --cn "$common_name" \
+          --key "$cert_dir/$file_name.key" \
+          --csr "$cert_dir/$file_name.csr"
+        icinga2 pki sign-csr \
+          --csr "$cert_dir/$file_name.csr" \
+          --cert "$cert_dir/$file_name.crt"
+      fi
+      openssl pkcs12 -export \
+        -inkey "$cert_dir/$file_name.key" \
+        -in "$cert_dir/$file_name.crt" \
+        -out "$cert_dir/$file_name.p12" \
+        -passout env:NAGBAR_ICINGA_PKCS12_PASSWORD
+    }
+
+    create_identity nagbar-live-client nagbar-live-client.nagbar.invalid
+    create_identity nagbar-live-rejected nagbar-live-rejected.nagbar.invalid
   '
 
   mkdir -p "$NAGBAR_ICINGA_ARTIFACTS_DIR"
   container_id=$(compose ps -q icinga2)
   docker cp "$container_id:/data/var/lib/icinga2/certs/ca.crt" "$NAGBAR_ICINGA_ARTIFACTS_DIR/ca.crt" >/dev/null
-  docker cp "$container_id:/data/var/lib/icinga2/certs/nagbar-client/nagbar-client.p12" "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-client.p12" >/dev/null
-  chmod 600 "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-client.p12"
+  docker cp "$container_id:/data/var/lib/icinga2/certs/nagbar-live-client/nagbar-live-client.p12" "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-client.p12" >/dev/null
+  docker cp "$container_id:/data/var/lib/icinga2/certs/nagbar-live-rejected/nagbar-live-rejected.p12" "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-rejected.p12" >/dev/null
+  chmod 600 "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-client.p12"
+  chmod 600 "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-rejected.p12"
+}
+
+verify_swift_mtls() {
+  NAGBAR_LIVE_ICINGA_URL="https://localhost:$NAGBAR_ICINGA_PORT" \
+  NAGBAR_LIVE_ICINGA_PKCS12_PATH="$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-client.p12" \
+  NAGBAR_LIVE_ICINGA_REJECTED_PKCS12_PATH="$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-rejected.p12" \
+    swift test \
+      --package-path "$ROOT_DIR/Packages/NagBarCore" \
+      --filter Icinga2LiveConnectionTests
 }
 
 request_status() {
@@ -133,9 +155,11 @@ CURL_CONFIG
   expect_status 200 "$trusted" "private CA trust"
 
   mtls=$(curl --silent --show-error --insecure --output /dev/null --write-out '%{http_code}' \
-    --cert-type P12 --cert "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-client.p12:$NAGBAR_ICINGA_PKCS12_PASSWORD" \
+    --cert-type P12 --cert "$NAGBAR_ICINGA_ARTIFACTS_DIR/nagbar-live-client.p12:$NAGBAR_ICINGA_PKCS12_PASSWORD" \
     "https://localhost:$NAGBAR_ICINGA_PORT/v1/objects/hosts?attrs=name&limit=1")
   expect_status 200 "$mtls" "client certificate"
+
+  verify_swift_mtls
 
   printf 'Icinga 2 integration matrix passed.\n'
 }

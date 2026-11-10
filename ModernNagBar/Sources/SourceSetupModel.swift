@@ -29,6 +29,7 @@ final class SourceSetupModel: ObservableObject {
     @Published var verifiesServerCertificate = true
     @Published private(set) var activity = Activity.idle
     @Published private(set) var hasConfiguredSource = false
+    @Published private(set) var isTestingConnection = false
 
     private var sourceID = UUID()
     private var loadedSource: MonitoringSource?
@@ -95,6 +96,8 @@ final class SourceSetupModel: ObservableObject {
 
     func testConnection() async {
         guard let source = sourceFromForm() else { return }
+        isTestingConnection = true
+        defer { isTestingConnection = false }
         activity = .working("Verbindung wird geprüft …")
 
         let result: ConnectionTestResult
@@ -216,9 +219,8 @@ final class SourceSetupModel: ObservableObject {
             existingSource.authentication = authentication
             if existingSource.updateEndpoint(url) {
                 verifiesServerCertificate = true
-            } else {
-                existingSource.serverTrust = verifiesServerCertificate ? .system : .disabled
             }
+            existingSource.setServerCertificateVerification(enabled: verifiesServerCertificate)
             source = existingSource
         } else {
             source = MonitoringSource(
